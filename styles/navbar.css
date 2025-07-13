@@ -1,0 +1,40 @@
+/* Navbar styling */
+.navbar {
+  font-family: "Assistant", sans-serif;
+  font-size: 1rem;
+  background: #fff;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.nav-link {
+  color: #555 !important;
+  margin-right: 1rem;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #7E8EF1 !important;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  color: #7E8EF1;
+}
+
+/* Face Recognition Sign In Button */
+.btn-face-rec {
+  background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
+  background-size: 300% 300%;
+  animation: gradientShift 6s ease infinite;
+  border: none;
+  color: white;
+  border-radius: 30px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.btn-face-rec:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
