@@ -161,12 +161,44 @@ h6 {
 }
 
 /* footer */
-
 .footer {
-  height: 60vh;
-  font-size:20px;
-  background-color: #0b0a0b;
-  font-family: "BenchNine", sans-serif;
-  color: white;
-  padding: 3rem;  
+  color: #ffffff;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  font-family: "Assistant", sans-serif;
 }
+
+.footer-link {
+ 
+  color: #a1c4fd;
+ 
+  font-size: 1.2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #7E8EF1;
+}
+.social-icons a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
+  color: #fff;
+  font-size: 1.2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+}
+
+.social-icons a:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
