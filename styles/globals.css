@@ -163,6 +163,8 @@ h6 {
 
 /* footer */
 .footer {
+  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
+  border-radius: 10px;
   color: #ffffff;
   padding-top: 2rem;
   padding-bottom: 2rem;

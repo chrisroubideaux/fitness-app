@@ -3,8 +3,8 @@ import { FaInstagram, FaFacebookF, FaYoutube, FaTwitter } from "react-icons/fa";
 
 export default function Footer() {
   return (
-    <footer className="footer pt-5 pb-3 text-body">
-      <div className="container">
+    <footer className="footer pt-5 pb-3 text-body mt-5 h-100">
+      <div className="container-fluid">
         <div className="row">
           {/* About */}
           <div className="col-lg-2 col-md-4 col-6 mb-4">

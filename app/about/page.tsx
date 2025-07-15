@@ -16,11 +16,12 @@ export default function About() {
           <MissionSection />
           <TrainerDetails />
           <ServicesSection />
+          <div className="container-fluid  mt-5">
+            <Footer />
         </div>
-          <Footer />
+        </div>
+        
       </div>
-    
-    
     </>
   );
 }

@@ -1,10 +1,15 @@
 // components/about/ServicesSection.tsx
-// components/about/ServicesSection.tsx
 import { FaDumbbell, FaUtensils, FaCalendarAlt, FaHeartbeat } from "react-icons/fa";
+
 
 export default function ServicesSection() {
   return (
-    <section className="services-section py-5">
+    <>
+    <div className="text-center my-5">
+      <h2 className="fw-bold">Our Services</h2>
+      <p className="fs-5 text-muted">Empowering your fitness journey with personalized coaching and support.</p>
+    </div>
+    <section className="services-section container-fluid py-5">
       <div className="container-fluid my-5 pt-5">
         <div className="row align-items-center">
           {/* Left: Grid of Service Cards */}
@@ -56,5 +61,6 @@ export default function ServicesSection() {
         </div>
       </div>
     </section>
+    </>
   );
 }
