@@ -5,6 +5,7 @@ import '@/styles/globals.css';
 import '@/styles/navbar.css';
 import '@/styles/contact.css';
 import '@/styles/about.css';
+import '@/styles/card.css';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

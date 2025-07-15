@@ -2,7 +2,7 @@
 import ContactForm from "@/components/contact/ContactForm";
 import ContactInfo from "@/components/contact/contactInfo";
 import Nav from "@/components/navbar/Nav";
-import AdminContact from "@/components/admin/adminContact";
+import AdminContact from "@/components/admin/about/adminContact";
 
 export default function Contact() {
   return (

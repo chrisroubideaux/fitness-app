@@ -1,7 +1,9 @@
 // About Page
-import AboutIntro from "@/components/admin/aboutIntro";
-import MissionSection from "@/components/admin/MissionSection";
-import TrainerDetails from "@/components/admin/TrainerDetails";
+import AboutIntro from "@/components/admin/about/aboutIntro";
+import MissionSection from "@/components/admin/about/MissionSection";
+import ServicesSection from "@/components/admin/about/ServicesSection";
+import TrainerDetails from "@/components/admin/about/TrainerDetails";
+import Footer from "@/components/misc/Footer";
 import Nav from "@/components/navbar/Nav";
 
 export default function About() {
@@ -9,14 +11,16 @@ export default function About() {
     <>
       <Nav />
       <AboutIntro />
-        <div className="layout  ">
-            <div className="container">
-            
-           
-      <MissionSection />
-      <TrainerDetails />
-       </div>
+      <div className="layout h-100">
+        <div className="container">
+          <MissionSection />
+          <TrainerDetails />
+          <ServicesSection />
         </div>
+          <Footer />
+      </div>
+    
+    
     </>
   );
 }

@@ -6,3 +6,39 @@
   border-radius: 50%;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
+
+.services-section {
+  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
+  padding: 60px 0;
+  border-radius: 15px;
+}
+
+.service-card {
+  border-radius: 15px;
+  background-color: #ffffff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.service-icon {
+  font-size: 2rem;
+  color:  #a1c4fd;
+}
+.service-icon {
+  font-size: 2.5rem;
+  background: linear-gradient(234deg, #a1c4fd, #fcb69f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: transform 0.3s ease;
+}
+
+.service-card:hover .service-icon {
+  transform: scale(1.1);
+}
+
+
