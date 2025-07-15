@@ -1,0 +1,99 @@
+.about-intro {
+  position: relative;
+  padding: 8rem 1rem;
+  background-image: linear-gradient(
+      rgba(0, 0, 0, 0.4),
+      rgba(0, 0, 0, 0.4)
+    ),
+    url("/images/hero/hero.png");
+  height: 35rem;  
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: white;
+ 
+   /* ✅ Box shadow added here */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.about-intro h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.about-intro p {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.avatar-lg {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+/* mission section */
+.mission-section {
+  /* background: linear-gradient(234deg, #ffecd2, #fcb69f, #a1c4fd, #c2ffd8); */
+  border-radius: 0;
+  color: #fff;
+}
+
+.mission-section h3 {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.mission-section .text-muted {
+  color: #f7f7f7 !important;
+}
+
+.mission-img {
+  width: 400px;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+
+/* File: styles/about.css 
+.about-intro {
+  background: linear-gradient(234deg, #fcb69f, #a1c4fd, #c2ffd8);
+  padding: 6rem 1rem;
+  color: #fff;
+  text-align: center;
+  border-radius: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.about-intro h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.about-intro p {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.avatar-lg {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+
+
+
+
+
+*/

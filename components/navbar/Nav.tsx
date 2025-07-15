@@ -6,7 +6,7 @@ export default function Nav() {
     <div>
      
         <nav className="navbar navbar-expand-lg shadow-sm px-4 py-3">
-  <a className="navbar-brand fw-bold" href="#">Lena Cruz</a>
+  <Link className="navbar-brand fw-bold" href="/">Lena Cruz</Link>
 
   <button
     className="navbar-toggler"
@@ -23,19 +23,19 @@ export default function Nav() {
   <div className="collapse navbar-collapse" id="navbarNav">
     <ul className="navbar-nav ms-auto align-items-center">
       <li className="nav-item">
-        <Link className="nav-link" href="#">Courses</Link>
+        <Link className="nav-link" href="/">Courses</Link>
       </li>
       <li className="nav-item">
-        <Link className="nav-link" href="#">Events</Link>
+        <Link className="nav-link" href="/">Events</Link>
       </li>
       <li className="nav-item">
-        <Link className="nav-link" href="#">About</Link>
+        <Link className="nav-link" href="/about">About</Link>
       </li>
       <li className="nav-item">
         <Link className="nav-link" href="/contact">Contact</Link>
       </li>
       <li className="nav-item">
-        <Link className="btn btn-face-rec ms-lg-3" href="/contact">
+        <Link className="btn btn-face-rec ms-lg-3" href="/">
           <i className="fas fa-user-circle me-2"></i> Sign In
         </Link>
       </li>

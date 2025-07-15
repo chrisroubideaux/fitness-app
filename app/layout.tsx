@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import '@/styles/globals.css';
 import '@/styles/navbar.css';
 import '@/styles/contact.css';
+import '@/styles/about.css';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
