@@ -1,10 +1,11 @@
-
+// Nav component 
+import Link from "next/link"
 
 export default function Nav() {
   return (
     <div>
      
-        <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm px-4 py-3">
+        <nav className="navbar navbar-expand-lg shadow-sm px-4 py-3">
   <a className="navbar-brand fw-bold" href="#">Lena Cruz</a>
 
   <button
@@ -22,21 +23,21 @@ export default function Nav() {
   <div className="collapse navbar-collapse" id="navbarNav">
     <ul className="navbar-nav ms-auto align-items-center">
       <li className="nav-item">
-        <a className="nav-link" href="#">Courses</a>
+        <Link className="nav-link" href="#">Courses</Link>
       </li>
       <li className="nav-item">
-        <a className="nav-link" href="#">Events</a>
+        <Link className="nav-link" href="#">Events</Link>
       </li>
       <li className="nav-item">
-        <a className="nav-link" href="#">About</a>
+        <Link className="nav-link" href="#">About</Link>
       </li>
       <li className="nav-item">
-        <a className="nav-link" href="#">Contact</a>
+        <Link className="nav-link" href="/contact">Contact</Link>
       </li>
       <li className="nav-item">
-        <a className="btn btn-face-rec ms-lg-3" href="#">
+        <Link className="btn btn-face-rec ms-lg-3" href="/contact">
           <i className="fas fa-user-circle me-2"></i> Sign In
-        </a>
+        </Link>
       </li>
     </ul>
   </div>
