@@ -14,13 +14,13 @@ export default function About() {
       <div className="layout h-100">
         <div className="container">
           <MissionSection />
+          
           <TrainerDetails />
-          <ServicesSection />
-          <div className="container-fluid  mt-5">
-            <Footer />
+          <div className="mt-5 py-5">
+            <ServicesSection />
+          </div>
         </div>
-        </div>
-        
+        <Footer />
       </div>
     </>
   );

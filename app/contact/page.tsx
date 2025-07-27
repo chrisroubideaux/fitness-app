@@ -3,6 +3,7 @@ import ContactForm from "@/components/contact/ContactForm";
 import ContactInfo from "@/components/contact/contactInfo";
 import Nav from "@/components/navbar/Nav";
 import AdminContact from "@/components/admin/about/adminContact";
+import Footer from "@/components/misc/Footer";
 
 export default function Contact() {
   return (
@@ -10,10 +11,11 @@ export default function Contact() {
     <div className="">
       <Nav />
     </div>
-    <section className="layout py-5">
+    <div className="layout">
+    <section className=" py-5">
       <AdminContact />
       <div className="container text-center mb-5">
-        <h2 className="fw-bold">Contact Us</h2>
+        <h5 className="fw-bold fs-2">Contact Us</h5>
       </div>
       <div className="container">
         <div className="row g-5 align-items-start">
@@ -25,7 +27,10 @@ export default function Contact() {
           </div>
         </div>
       </div>
+   
     </section>
+      <Footer />
+    </div>
     </>
   );
 }

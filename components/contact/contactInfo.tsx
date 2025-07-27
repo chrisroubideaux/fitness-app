@@ -4,8 +4,8 @@ import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
 
 export default function ContactInfo() {
   return (
-    <div className="p-4 rounded shadow-sm">
-      <h4 className="mb-3 fw-bold">Get in Touch</h4>
+    <div className=" contact-section p-4 rounded shadow-sm">
+      <h5 className="mb-3 fw-bold">Get in Touch</h5>
       <ul className="list-unstyled mb-4">
         <li className="mb-2">
           <FaEnvelope className="social-icon me-2" />

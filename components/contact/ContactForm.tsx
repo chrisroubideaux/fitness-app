@@ -22,7 +22,7 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="p-4 rounded shadow-sm ">
-      <h4 className="mb-3 fw-bold">Send a Message</h4>
+      <h5 className="mb-3 fw-bold">Send a Message</h5>
       <div className="mb-3">
         <input
           type="text"

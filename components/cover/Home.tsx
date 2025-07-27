@@ -1,4 +1,4 @@
-
+// Home.tsx
 
 export default function Home() {
   return (
@@ -14,7 +14,7 @@ export default function Home() {
                 <span className="text-bottom-line">Lena Cruz,</span>
                 Certified Fitness Coach
               </h1>
-              <p className="mb-4">
+              <p className="par mb-4">
                 Ready to transform your body and boost your confidence?
                 I create custom fitness programs that fit your goals, schedule, and lifestyle.
               </p>

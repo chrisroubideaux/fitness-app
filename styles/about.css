@@ -1,20 +1,38 @@
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (max-width: 768px) {
+  .about-intro {
+    background-attachment: scroll;
+  }
+}
+
+
+/* about-intro */
+
 .about-intro {
   position: relative;
   padding: 8rem 1rem;
+  height: 35rem;
   background-image: linear-gradient(
       rgba(0, 0, 0, 0.4),
       rgba(0, 0, 0, 0.4)
     ),
-    url("/images/hero/hero.png");
-  height: 35rem;  
+    url("/images/admin/image6.png");
   background-size: cover;
   background-position: center;
+  background-attachment: fixed; /* 👈 This enables parallax */
   background-repeat: no-repeat;
   color: white;
- 
-   /* ✅ Box shadow added here */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 
 .about-intro h2 {
   font-size: 2.5rem;
@@ -58,6 +76,41 @@
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
+
+.mission-gradient-box {
+  width: 400px;
+  height: 400px;
+  border-radius: 20px;
+  background: linear-gradient(234deg, #fcb69f, #a1c4fd);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.mission-icon {
+   color:  #9c97ff;
+  font-size: 6rem;
+  background-size: 400% 400%;
+  border-radius: 50%;
+  
+}
+
+/* trainer team section */
+.team-gradient-box {
+  width: 350px;
+  height: 350px;
+  border-radius: 20px;
+  background: linear-gradient(234deg, #a1c4fd, #dcecfe);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.team-icon {
+  font-size: 8rem;
+  color:  #a1c4fd;
+ 
+ /* background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);*/
+  padding: 20px;
+  border-radius: 50%;
+}
+
 
 
 /* File: styles/about.css 
