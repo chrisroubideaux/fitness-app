@@ -1,9 +1,10 @@
 # routes
-# users/routes.py
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from uuid import uuid4
 from .models import User, db
+from utils.jwt_token import generate_jwt_token
+from utils.decorators import token_required
 
 user_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
@@ -17,7 +18,6 @@ def register_user():
         if field not in data:
             return jsonify({'error': f'Missing field: {field}'}), 400
 
-    # Check if email already exists
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already registered'}), 400
 
@@ -48,7 +48,8 @@ def register_user():
 
     return jsonify({'message': 'User registered successfully', 'user_id': new_user.id}), 201
 
-# LOGIN user
+
+# LOGIN user (password-based)
 @user_bp.route('/login', methods=['POST'])
 def login_user():
     data = request.get_json()
@@ -57,11 +58,18 @@ def login_user():
     if not user or not check_password_hash(user.password_hash, data.get('password')):
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    # Placeholder for future facial rec / token issuance
-    return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
+    token = generate_jwt_token(user.id, user.email)
 
-# GET all users (admin usage)
+    return jsonify({
+        'message': 'Login successful',
+        'user_id': user.id,
+        'token': token
+    }), 200
+
+
+# GET all users (admin-only; protect this route)
 @user_bp.route('/', methods=['GET'])
+@token_required
 def get_all_users():
     users = User.query.all()
     return jsonify([
@@ -77,8 +85,10 @@ def get_all_users():
         } for user in users
     ]), 200
 
-# GET single user
+
+# GET single user by ID (protect this route)
 @user_bp.route('/<string:user_id>', methods=['GET'])
+@token_required
 def get_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -95,8 +105,10 @@ def get_user(user_id):
         'membership_plan_id': user.membership_plan_id
     }), 200
 
-# UPDATE user
+
+# UPDATE user (protect this route)
 @user_bp.route('/<string:user_id>', methods=['PUT'])
+@token_required
 def update_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -122,8 +134,10 @@ def update_user(user_id):
 
     return jsonify({'message': 'User updated successfully'}), 200
 
-# DELETE user
+
+# DELETE user (protect this route)
 @user_bp.route('/<string:user_id>', methods=['DELETE'])
+@token_required
 def delete_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -133,3 +147,25 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({'message': f"User '{user.full_name}' deleted"}), 200
+
+# GET current user info using token
+@user_bp.route('/me', methods=['GET'])
+@token_required
+def get_current_user():
+    user_info = request.user  # Set by the decorator
+    user = User.query.get(user_info['id'])
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({
+        'id': user.id,
+        'full_name': user.full_name,
+        'email': user.email,
+        'bio': user.bio,
+        'address': user.address,
+        'phone': user.phone,
+        'profile_image': user.profile_image,
+        'membership_plan_id': user.membership_plan_id
+    }), 200
+

@@ -8,7 +8,7 @@ from extensions import db  # ✅ Shared db instance
 
 from memberships.routes import membership_bp
 from users.routes import user_bp  # ✅ Correct import
-
+from users.oauth import oauth_bp
 # Load .env variables
 load_dotenv()
 
@@ -28,6 +28,7 @@ def create_app():
     # Register Blueprints
     app.register_blueprint(membership_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(oauth_bp)
 
     @app.route('/')
     def hello():
