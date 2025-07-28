@@ -1,12 +1,13 @@
 # app.py
-# app.py
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_migrate import Migrate  # ✅ import Migrate
+from flask_migrate import Migrate
 from dotenv import load_dotenv
-from memberships.models import db
+from extensions import db  # ✅ Shared db instance
+
 from memberships.routes import membership_bp
+from users.routes import user_bp  # ✅ Correct import
 
 # Load .env variables
 load_dotenv()
@@ -22,19 +23,23 @@ def create_app():
 
     # Init extensions
     db.init_app(app)
-    migrate = Migrate(app, db)  # ✅ This line registers Flask-Migrate
+    migrate = Migrate(app, db)
 
     # Register Blueprints
-    app.register_blueprint(membership_bp, url_prefix="/api/memberships")
+    app.register_blueprint(membership_bp)
+    app.register_blueprint(user_bp)
 
     @app.route('/')
     def hello():
         return jsonify({"message": "Flask backend is running!"})
 
     return app
+
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)  # Run the Flask app in debug mode
+    app.run(debug=True)
+
+
 
 #from flask import Flask, jsonify
 #from flask_cors import CORS
