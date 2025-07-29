@@ -1,20 +1,35 @@
 // 
-import { useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { FaFacebookSquare, FaGoogle } from 'react-icons/fa';
-//import axios from 'axios';
 
 const Login: React.FC = () => {
   const [error] = useState<string | null>(null);
 
-  // Google redirect login
+  // Redirect to Google OAuth
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:5000/auth/google/login';
   };
 
-  // Facebook redirect login
+  // Redirect to Facebook OAuth
   const handleFacebookLogin = () => {
-    window.open('http://localhost:5000/auth/facebook/login', '_self');
+    window.location.href = 'http://localhost:5000/auth/facebook/login';
   };
+
+  // Optional: Handle token in URL on mount (for redirect-based flow)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('token');
+    const userId = url.pathname.split('/').pop(); // Assumes /profile/:id route
+
+    if (token) {
+      localStorage.setItem('authToken', token);
+      if (userId) {
+        window.location.href = `/profile/${userId}`;
+      }
+    }
+  }, []);
 
   return (
     <div className="container py-5" style={{ maxWidth: '400px', margin: 'auto' }}>

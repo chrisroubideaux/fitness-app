@@ -1,11 +1,13 @@
-# routes
+# routes.py
+from flask_cors import cross_origin
+
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from uuid import uuid4
 from .models import User, db
 from utils.jwt_token import generate_jwt_token
 from utils.decorators import token_required
-
+from flask import g
 user_bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 # REGISTER a new user
@@ -46,8 +48,7 @@ def register_user():
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({'message': 'User registered successfully', 'user_id': new_user.id}), 201
-
+    return jsonify({'message': 'User registered successfully', 'user_id': str(new_user.id)}), 201
 
 # LOGIN user (password-based)
 @user_bp.route('/login', methods=['POST'])
@@ -58,23 +59,22 @@ def login_user():
     if not user or not check_password_hash(user.password_hash, data.get('password')):
         return jsonify({'error': 'Invalid email or password'}), 401
 
-    token = generate_jwt_token(user.id, user.email)
+    token = generate_jwt_token(str(user.id), user.email)
 
     return jsonify({
         'message': 'Login successful',
-        'user_id': user.id,
+        'user_id': str(user.id),
         'token': token
     }), 200
 
-
-# GET all users (admin-only; protect this route)
+# GET all users (admin-only)
 @user_bp.route('/', methods=['GET'])
 @token_required
 def get_all_users():
     users = User.query.all()
     return jsonify([
         {
-            'id': user.id,
+            'id': str(user.id),
             'full_name': user.full_name,
             'email': user.email,
             'bio': user.bio,
@@ -85,8 +85,7 @@ def get_all_users():
         } for user in users
     ]), 200
 
-
-# GET single user by ID (protect this route)
+# GET single user by ID
 @user_bp.route('/<string:user_id>', methods=['GET'])
 @token_required
 def get_user(user_id):
@@ -95,7 +94,7 @@ def get_user(user_id):
         return jsonify({'error': 'User not found'}), 404
 
     return jsonify({
-        'id': user.id,
+        'id': str(user.id),
         'full_name': user.full_name,
         'email': user.email,
         'bio': user.bio,
@@ -105,8 +104,7 @@ def get_user(user_id):
         'membership_plan_id': user.membership_plan_id
     }), 200
 
-
-# UPDATE user (protect this route)
+# UPDATE user
 @user_bp.route('/<string:user_id>', methods=['PUT'])
 @token_required
 def update_user(user_id):
@@ -134,8 +132,7 @@ def update_user(user_id):
 
     return jsonify({'message': 'User updated successfully'}), 200
 
-
-# DELETE user (protect this route)
+# DELETE user
 @user_bp.route('/<string:user_id>', methods=['DELETE'])
 @token_required
 def delete_user(user_id):
@@ -148,24 +145,20 @@ def delete_user(user_id):
 
     return jsonify({'message': f"User '{user.full_name}' deleted"}), 200
 
-# GET current user info using token
-@user_bp.route('/me', methods=['GET'])
+# GET current user info (from token)
+@user_bp.route('/me', methods=['GET', 'OPTIONS'])
 @token_required
-def get_current_user():
-    user_info = request.user  # Set by the decorator
-    user = User.query.get(user_info['id'])
-
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+def get_current_user(current_user):
+    if request.method == 'OPTIONS':
+        return '', 200  # respond OK to preflight
 
     return jsonify({
-        'id': user.id,
-        'full_name': user.full_name,
-        'email': user.email,
-        'bio': user.bio,
-        'address': user.address,
-        'phone': user.phone,
-        'profile_image': user.profile_image,
-        'membership_plan_id': user.membership_plan_id
-    }), 200
-
+        'id': current_user.id,
+        'full_name': current_user.full_name,
+        'email': current_user.email,
+        'bio': current_user.bio,
+        'address': current_user.address,
+        'phone_number': current_user.phone_number,
+        'profile_image_url': current_user.profile_image_url,
+        'membership_plan_id': current_user.membership_plan_id
+    })

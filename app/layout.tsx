@@ -1,3 +1,4 @@
+import Script from "next/script"; // ✅ Add this
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -29,6 +30,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Google Identity Services Script */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          async
+          defer
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
       </body>
