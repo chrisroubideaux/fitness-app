@@ -146,24 +146,22 @@ def delete_admin(current_admin, admin_id):
 
     return jsonify({'message': f"Admin '{admin.full_name}' deleted"}), 200
 
-# GET current logged-in admin (token-based)
-@admin_bp.route('/me', methods=['GET', 'OPTIONS'])
+# GET current admin profile
+@admin_bp.route('/me', methods=['GET'])
 @admin_token_required
-def get_current_admin(current_admin):
-    if request.method == 'OPTIONS':
-        return '', 200
-
+def get_admin_profile(current_admin):
     return jsonify({
-        'admin_id': current_admin.id,
-        'full_name': current_admin.full_name,
+        'id': str(current_admin.id),
         'email': current_admin.email,
+        'full_name': current_admin.full_name,
+        'profile_image_url': current_admin.profile_image_url,
         'bio': current_admin.bio,
         'address': current_admin.address,
-        'phone_number': current_admin.phone_number,
-        'profile_image_url': current_admin.profile_image_url,
-        'membership_plan_id': current_admin.membership_plan_id
-        
-    })
+        'phone': current_admin.phone_number,  # ✅ Corrected here
+        'membership_plan_id': str(current_admin.membership_plan_id) if current_admin.membership_plan_id else None
+    }), 200
+
+
     
 # DELETE any user (admin only)
 @admin_bp.route('/delete_user/<string:user_id>', methods=['DELETE'])

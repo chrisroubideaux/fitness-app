@@ -1,5 +1,4 @@
 # admin/models.py
-# admin/models.py
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -28,13 +27,17 @@ class Admin(db.Model):
     height = db.Column(db.Float)
     gender = db.Column(db.String(20))
     fitness_goal = db.Column(db.String(100))
-    activity_level = db.Column(db.String(50))       
+    activity_level = db.Column(db.String(50))
     experience_level = db.Column(db.String(50))
     medical_conditions = db.Column(db.Text)
 
     # Membership relation
     membership_plan_id = db.Column(UUID(as_uuid=True), db.ForeignKey('membership_plans.id'))
     membership_plan = db.relationship("MembershipPlan", backref="admins")
+
+    # Soft-delete support
+    is_active = db.Column(db.Boolean, default=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

@@ -1,4 +1,4 @@
-# oauth.py for handling OAuth login with Google and Facebook
+# oauth.py for users
 import os
 import logging
 import requests

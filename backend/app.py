@@ -1,7 +1,4 @@
 # app.py
-
-# app.py
-
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -11,6 +8,10 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 from extensions import db
+
+# ✅ Import models explicitly so Alembic detects them
+from workout_session import WorkoutSession
+from login_session import LoginSession
 
 # Import route blueprints
 from memberships.routes import membership_bp

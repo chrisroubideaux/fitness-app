@@ -1,4 +1,4 @@
-#
+# users/models.py
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -31,9 +31,13 @@ class User(db.Model):
     experience_level = db.Column(db.String(50))     # e.g., Beginner, Intermediate, Advanced
     medical_conditions = db.Column(db.Text)
 
-    # Foreign key to membership
+    # Membership relationship
     membership_plan_id = db.Column(UUID(as_uuid=True), db.ForeignKey('membership_plans.id'))
     membership_plan = db.relationship("MembershipPlan", backref="users")
+
+    # Audit fields
+    is_active = db.Column(db.Boolean, default=True)  # Soft-delete flag
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
