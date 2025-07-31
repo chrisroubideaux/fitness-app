@@ -1,0 +1,56 @@
+// Admin Dashboard
+'use client';
+
+import { useEffect, useState } from 'react';
+import { FaFacebookSquare, FaGoogle } from 'react-icons/fa';
+
+const AdminLogin: React.FC = () => {
+  const [error] = useState<string | null>(null);
+
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:5000/auth/google/login?admin=true';
+  };
+
+  const handleFacebookLogin = () => {
+    window.location.href = 'http://localhost:5000/auth/facebook/login?admin=true';
+  };
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('token');
+    const adminId = url.pathname.split('/').pop(); // Assumes /admin/:id
+
+    if (token) {
+      localStorage.setItem('adminToken', token);
+      if (adminId) {
+        window.location.href = `/admin/${adminId}`;
+      }
+    }
+  }, []);
+
+  return (
+    <div className="container py-5" style={{ maxWidth: '400px', margin: 'auto' }}>
+      <h2 className="text-center mb-4">Admin Login</h2>
+
+      <div className="d-flex flex-column gap-3">
+        <button
+          className="btn btn-outline-danger d-flex align-items-center justify-content-center gap-2"
+          onClick={handleGoogleLogin}
+        >
+          <FaGoogle /> Continue with Google (Admin)
+        </button>
+
+        <button
+          className="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2"
+          onClick={handleFacebookLogin}
+        >
+          <FaFacebookSquare /> Continue with Facebook (Admin)
+        </button>
+
+        {error && <p className="text-danger text-center mt-3">{error}</p>}
+      </div>
+    </div>
+  );
+};
+
+export default AdminLogin;

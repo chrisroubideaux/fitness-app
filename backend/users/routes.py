@@ -135,7 +135,11 @@ def update_user(user_id):
 # DELETE user
 @user_bp.route('/<string:user_id>', methods=['DELETE'])
 @token_required
-def delete_user(user_id):
+def delete_user(current_user, user_id):
+    # Prevent users from deleting other users' accounts
+    if str(current_user.id) != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
     user = User.query.get(user_id)
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -144,6 +148,7 @@ def delete_user(user_id):
     db.session.commit()
 
     return jsonify({'message': f"User '{user.full_name}' deleted"}), 200
+
 
 # GET current user info (from token)
 @user_bp.route('/me', methods=['GET', 'OPTIONS'])

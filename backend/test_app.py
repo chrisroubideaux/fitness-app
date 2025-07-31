@@ -1,23 +1,16 @@
-# app.py
-
-# app.py
 
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from dotenv import load_dotenv
-
 from extensions import db
 
-# Import route blueprints
 from memberships.routes import membership_bp
 from users.routes import user_bp
 from users.oauth import oauth_bp
 from admin.routes import admin_bp
-from admin.oauth import admin_oauth_bp  # ✅ Admin OAuth blueprint
 
 from flask_dance.contrib.facebook import make_facebook_blueprint
 
@@ -26,11 +19,11 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    # ✅ Facebook OAuth for users
+    # ✅ Create Facebook OAuth blueprint (no name param)
     facebook_bp = make_facebook_blueprint(
         client_id=os.getenv("FACEBOOK_CLIENT_ID"),
         client_secret=os.getenv("FACEBOOK_CLIENT_SECRET"),
-        redirect_to="oauth.facebook_callback",  # must match oauth.py
+        redirect_to="oauth.facebook_callback",  # matches callback route in oauth.py
         scope=["email"]
     )
     app.register_blueprint(facebook_bp, url_prefix="/auth/facebook")
@@ -44,7 +37,7 @@ def create_app():
          supports_credentials=False
     )
 
-    # ✅ Config
+    # ✅ App config
     app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
     app.config['SQLALCHEMY_DATABASE_URI'] = (
         f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
@@ -55,12 +48,11 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
 
-    # ✅ Register all blueprints
+    # ✅ Register Blueprints (no duplicates!)
     app.register_blueprint(membership_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(oauth_bp)
-    app.register_blueprint(admin_bp)
-    app.register_blueprint(admin_oauth_bp)  # ✅ Register Admin OAuth
+    app.register_blueprint(admin_bp)  
 
     @app.route('/')
     def hello():
@@ -71,17 +63,3 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
-
-
-#from flask import Flask, jsonify
-#from flask_cors import CORS
-
-#app = Flask(__name__)
-#CORS(app)
-
-#@app.route('/')
-#def home():
-#    return jsonify({"message": "Flask backend is running!"})
-
-#if __name__ == '__main__':
-#   app.run(debug=True)
