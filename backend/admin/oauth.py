@@ -85,9 +85,10 @@ def google_callback():
     return redirect(f"http://localhost:3000/admin/{admin.id}?token={jwt_token}&name={admin.full_name}")
 
 # === FACEBOOK OAuth Flow ===
+# === FACEBOOK OAuth Flow ===
 @admin_oauth_bp.route('/facebook/login')
 def start_facebook_oauth():
-    return redirect(url_for("admin_facebook.login"))  # ✅ make sure this matches blueprint name in app.py
+    return redirect(url_for("admin_facebook.login"))  # ✅ USE the correct blueprint name for admin
 
 @admin_oauth_bp.route('/facebook/callback')
 def facebook_callback():

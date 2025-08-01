@@ -26,7 +26,7 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-
+    
     # ✅ Facebook OAuth for users
     facebook_bp = make_facebook_blueprint(
         client_id=os.getenv("FACEBOOK_CLIENT_ID"),
@@ -35,6 +35,19 @@ def create_app():
         scope=["email"]
     )
     app.register_blueprint(facebook_bp, url_prefix="/auth/facebook")
+
+   # ✅ Facebook OAuth for admins
+    admin_facebook_bp = make_facebook_blueprint(
+    client_id=os.getenv("FACEBOOK_CLIENT_ID"),
+    client_secret=os.getenv("FACEBOOK_CLIENT_SECRET"),
+    redirect_url="/auth/admin/facebook/callback",
+    scope=["email"],
+    redirect_to=None,
+)
+
+    # Register admin Facebook blueprint with custom name
+    app.register_blueprint(admin_facebook_bp, name="admin_facebook", url_prefix="/auth/admin/facebook")
+
 
     # ✅ CORS
     frontend_origin = os.getenv("FRONTEND_URL", "http://localhost:3000")

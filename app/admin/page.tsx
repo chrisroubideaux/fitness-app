@@ -1,4 +1,5 @@
-// Admin login page
+/* login page for admins */
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,13 +19,11 @@ const AdminLogin: React.FC = () => {
   useEffect(() => {
     const url = new URL(window.location.href);
     const token = url.searchParams.get('token');
-    const adminId = url.pathname.split('/').pop(); // Assumes /admin/:id
+    const adminId = window.location.pathname.split('/admin/')[1]; // ✅ cleaner
 
-    if (token) {
+    if (token && adminId) {
       localStorage.setItem('adminToken', token);
-      if (adminId) {
-        window.location.href = `/admin/${adminId}`;
-      }
+      window.location.href = `/admin/${adminId}`;
     }
   }, []);
 
@@ -56,7 +55,10 @@ const AdminLogin: React.FC = () => {
 export default AdminLogin;
 
 
-/*'use client';
+/*
+
+
+'use client';
 
 import { useEffect, useState } from 'react';
 import { FaFacebookSquare, FaGoogle } from 'react-icons/fa';
@@ -65,11 +67,11 @@ const AdminLogin: React.FC = () => {
   const [error] = useState<string | null>(null);
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/auth/google/login?admin=true';
+    window.location.href = 'http://localhost:5000/auth/admin/google/login';
   };
 
   const handleFacebookLogin = () => {
-    window.location.href = 'http://localhost:5000/auth/facebook/login?admin=true';
+    window.location.href = 'http://localhost:5000/auth/admin/facebook/login';
   };
 
   useEffect(() => {
