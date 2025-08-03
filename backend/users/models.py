@@ -6,8 +6,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from extensions import db
 from memberships.models import MembershipPlan  # 👈 Must be below db import to avoid circular import
+# User model (add this inside the class)
+
 
 class User(db.Model):
+    # Inside class User:
     __tablename__ = 'users'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -34,6 +37,9 @@ class User(db.Model):
     # Membership relationship
     membership_plan_id = db.Column(UUID(as_uuid=True), db.ForeignKey('membership_plans.id'))
     membership_plan = db.relationship("MembershipPlan", backref="users")
+    
+     # Workout plans relationship ✅
+    workout_plans = db.relationship("WorkoutPlan", back_populates="user", cascade="all, delete-orphan")
 
     # Audit fields
     is_active = db.Column(db.Boolean, default=True)  # Soft-delete flag

@@ -52,4 +52,89 @@
   transform: scale(1.1);
 }
 
+/*  */
+/* card.css */
+
+.question-card {
+  background: linear-gradient(135deg, #fdfcff, #e6e9f5);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.question-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #333;
+}
+
+.question-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background-color: white;
+}
+
+/*
+
+/* Modal layout with gradient */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom right, #1e1e2f, #343458, #1e1e2f);
+  background-size: cover;
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+/* Buttons */
+.next-button {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3f5cff;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.75rem;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+}
+
+.next-button:hover {
+  background-color: #2f45cc;
+}
+
+.plan-output {
+  margin-top: 1.5rem;
+  background: #f4f4f7;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+
 

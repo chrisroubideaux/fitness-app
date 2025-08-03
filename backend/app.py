@@ -19,6 +19,7 @@ from users.routes import user_bp
 from users.oauth import oauth_bp
 from admin.routes import admin_bp
 from admin.oauth import admin_oauth_bp  # ✅ Admin OAuth blueprint
+from ai.routes import ai_bp  # ✅ Add AI routes here
 
 from flask_dance.contrib.facebook import make_facebook_blueprint
 
@@ -75,6 +76,7 @@ def create_app():
     app.register_blueprint(oauth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(admin_oauth_bp)  # ✅ Register Admin OAuth
+    app.register_blueprint(ai_bp)  # ✅ Register AI API
 
     @app.route('/')
     def hello():
