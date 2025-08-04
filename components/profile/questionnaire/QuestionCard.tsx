@@ -1,7 +1,5 @@
 // questionnaire/QuestionCard.tsx
-
 'use client';
-
 import { motion } from 'framer-motion';
 
 type QuestionCardProps = {
@@ -29,10 +27,7 @@ export default function QuestionCard({
       exit={{ opacity: 0, y: -40 }}
       transition={{ duration: 0.3 }}
     >
-
-
       <h5 className="form-label fs-5">{question}</h5>
-
       {options ? (
         <select
           name={name}
@@ -56,13 +51,9 @@ export default function QuestionCard({
           required
         />
       )}
-    
-
     </motion.div>
   );
 }
-
-
 /*
 
 'use client';
