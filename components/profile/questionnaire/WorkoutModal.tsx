@@ -5,11 +5,12 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
 import QuestionCard from './QuestionCard';
+import confetti from 'canvas-confetti';
 
 const steps = [
   {
     name: 'goal',
-    question: 'What is your fitness goal?',
+    question: 'What are your fitness goals?',
     options: [
       'Lose weight',
       'Build muscle',
@@ -37,7 +38,7 @@ const steps = [
 ];
 
 export default function WorkoutModal() {
-  const [isModalOpen, setIsModalOpen] = useState(true); // ✅ Control full modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     goal: '',
@@ -68,14 +69,14 @@ export default function WorkoutModal() {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
     const token = localStorage.getItem('authToken');
-
     if (!token) {
       alert('No auth token found. Please log in again.');
-      setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setShowPlan(true);
 
     const totalHeight =
       parseInt(formData.height_feet || '0') * 12 +
@@ -92,7 +93,13 @@ export default function WorkoutModal() {
       });
 
       setPlan(res.data.workout_plan);
-      setShowPlan(true);
+
+      // 🎉 Launch confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.4 },
+      });
     } catch (err) {
       console.error('❌ Submit error:', err);
       alert('Failed to generate workout plan.');
@@ -102,7 +109,7 @@ export default function WorkoutModal() {
   };
 
   const handleClose = () => {
-    setIsModalOpen(false); // ✅ Fully close modal
+    setIsModalOpen(false);
     setShowPlan(false);
     setCurrentStep(0);
     setFormData({
@@ -174,7 +181,13 @@ export default function WorkoutModal() {
   return (
     <>
       {isModalOpen && (
-        <div className="modal-overlay">
+        <motion.div
+          className="modal-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+        >
           {/* Questionnaire Modal */}
           <AnimatePresence>
             {!showPlan && (
@@ -195,7 +208,6 @@ export default function WorkoutModal() {
                   value={formData[current.name as keyof typeof formData]}
                   onChange={handleChange}
                 />
-
                 <button
                   onClick={nextStep}
                   className="btn btn-primary mt-3"
@@ -231,8 +243,27 @@ export default function WorkoutModal() {
 
                 {loading ? (
                   <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: '200px' }}>
-                    <div className="spinner-border text-primary mb-2" role="status" />
-                    <span className="text-muted">Generating your plan...</span>
+                    <motion.div
+                      className="d-flex gap-2"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <motion.span
+                          key={i}
+                          className="dot bg-primary rounded-circle"
+                          style={{ width: 12, height: 12 }}
+                          animate={{ y: [0, -8, 0] }}
+                          transition={{
+                            repeat: Infinity,
+                            duration: 0.6,
+                            ease: 'easeInOut',
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </motion.div>
+                    <span className="text-muted mt-2">Generating your plan...</span>
                   </div>
                 ) : (
                   <>
@@ -247,7 +278,7 @@ export default function WorkoutModal() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
     </>
   );
