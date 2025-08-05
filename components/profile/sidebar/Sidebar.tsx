@@ -50,9 +50,7 @@ export default function Sidebar({ userId, userName, onLogout }: SidebarProps) {
       transition={{ duration: 0.3 }}
       style={{
         minHeight: '100vh',
-        position: 'fixed',
-        top: 0,
-        left: 0,
+      
         zIndex: 1050,
         overflowX: 'hidden',
       }}
