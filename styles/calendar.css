@@ -50,6 +50,30 @@
   border-color: #cacacb;
 }
 
+/* test */
+
+
+/* Pointer cursor + hover effect on selectable cells */
+.rbc-day-slot .rbc-time-slot:hover,
+.rbc-month-view .rbc-date-cell:hover {
+  cursor: pointer;
+  background-color: #f0f8ff;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2); /* Soft blue glow */
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Optional: transition effect for smoothness */
+.rbc-day-slot .rbc-time-slot,
+.rbc-month-view .rbc-date-cell {
+  transition: all 0.2s ease-in-out;
+}
+
+
+
+
+
+
 /* Month view layout */
 .rbc-month-view {
   border: none;

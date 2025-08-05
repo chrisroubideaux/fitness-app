@@ -1,9 +1,17 @@
 // Calendar component
+// components/profile/calendar/CalendarComponent.tsx
 'use client';
 
 import { useState } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import {
+  Calendar,
+  momentLocalizer,
+  SlotInfo,
+  Views,
+  View,
+} from 'react-big-calendar';
 import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 type EventType = {
   title: string;
@@ -32,44 +40,65 @@ const initialEvents: EventType[] = [
 export default function CalendarComponent() {
   const [events] = useState<EventType[]>(initialEvents);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [currentView, setCurrentView] = useState<View>(Views.MONTH);
 
   const handleSelectEvent = (event: EventType) => {
     setSelectedEvent(event);
-    setShowModal(true);
+    setShowEventModal(true);
   };
 
-  const handleClose = () => {
-    setShowModal(false);
+  const handleSelectSlot = (slotInfo: SlotInfo) => {
+    setSelectedSlot(new Date(slotInfo.start));
+    if (currentView === 'month') {
+      setShowSlotModal(true);
+    }
+  };
+
+  const handleCloseModals = () => {
+    setShowEventModal(false);
+    setShowSlotModal(false);
+    setShowTimeModal(false);
     setSelectedEvent(null);
+    setSelectedSlot(null);
   };
 
   return (
     <div
-      className="box rounded-3 shadow-sm p-3"
-      style={{
-        minHeight: '500px',
-        border: '1px solid #e0e0e0',
-      }}
+      className="box p-3 shadow-sm rounded"
+      
     >
       <Calendar
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
-        style={{ height: '80vh' }}
+        views={['month', 'week', 'day']}
+        defaultView={Views.MONTH}
+        view={currentView}
+        onView={(view) => setCurrentView(view)}
+        selectable
         onSelectEvent={handleSelectEvent}
+        onSelectSlot={handleSelectSlot}
         popup
+        style={{ height: '80vh' }}
+        step={currentView === 'week' ? 30 : undefined}
+        timeslots={currentView === 'week' ? 2 : undefined}
+        min={currentView === 'week' ? new Date(new Date().setHours(10, 0, 0)) : undefined}
+        max={currentView === 'week' ? new Date(new Date().setHours(19, 0, 0)) : undefined}
       />
 
-      {/* Modal using Bootstrap 5 markup */}
-      {showModal && selectedEvent && (
-        <div className="modal fade show d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered" role="document">
+      {/* Event Modal */}
+      {showEventModal && selectedEvent && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{selectedEvent.title}</h5>
-                <button type="button" className="btn-close" onClick={handleClose}></button>
+                <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
                 <p><strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
@@ -77,21 +106,65 @@ export default function CalendarComponent() {
                 <p><strong>Description:</strong> {selectedEvent.description}</p>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-danger"  style={{
-                      padding: '4px 10px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.2',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }} onClick={() => alert('Cancel logic TBD')}>Cancel</button>
-                <button className="btn btn-secondary"  style={{
-                      padding: '4px 10px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.2',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }} onClick={() => alert('Reschedule logic TBD')}>Reschedule</button>
+                <button className="btn btn-primary btn-sm" onClick={handleCloseModals}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Slot Modal */}
+      {showSlotModal && selectedSlot && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Schedule Appointment</h5>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Date Selected:</strong> {selectedSlot.toLocaleDateString()}</p>
+                <p>This date is available. Would you like to select a time?</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-success btn-sm" onClick={() => {
+                  setShowSlotModal(false);
+                  setShowTimeModal(true);
+                }}>Select a Time</button>
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Time Picker Modal */}
+      {showTimeModal && selectedSlot && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Select Time – {selectedSlot.toLocaleDateString()}</h5>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+              <div className="modal-body">
+                <div className="d-flex flex-wrap gap-2">
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const hour = 10 + i;
+                    const timeString = new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    });
+                    return (
+                      <button key={hour} className="btn btn-outline-primary btn-sm">
+                        {timeString}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Cancel</button>
               </div>
             </div>
           </div>
@@ -108,7 +181,7 @@ export default function CalendarComponent() {
 'use client';
 
 import { useState } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, SlotInfo } from 'react-big-calendar';
 import moment from 'moment';
 
 type EventType = {
@@ -138,54 +211,192 @@ const initialEvents: EventType[] = [
 export default function CalendarComponent() {
   const [events] = useState<EventType[]>(initialEvents);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showSlotModal, setShowSlotModal] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
 
   const handleSelectEvent = (event: EventType) => {
     setSelectedEvent(event);
-    setShowModal(true);
+    setShowEventModal(true);
   };
 
-  const handleClose = () => {
-    setShowModal(false);
+  const handleSelectSlot = (slotInfo: SlotInfo) => {
+    setSelectedSlot(new Date(slotInfo.start));
+    setShowSlotModal(true);
+  };
+
+  const handleCloseModals = () => {
+    setShowEventModal(false);
+    setShowSlotModal(false);
+    setShowTimeModal(false);
     setSelectedEvent(null);
+    setSelectedSlot(null);
   };
 
   return (
     <div
-      className="bg-white rounded-3 shadow-sm p-3"
-      style={{
-        minHeight: '500px',
-        border: '1px solid #e0e0e0',
-      }}
+      className="box p-3 shadow-sm rounded"
+      style={{ background: 'linear-gradient(145deg, #f8f9ff, #eef1fc)' }}
     >
       <Calendar
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
-        style={{ height: '80vh' }}
+        selectable
         onSelectEvent={handleSelectEvent}
+        onSelectSlot={handleSelectSlot}
         popup
+        style={{ height: '80vh' }}
       />
 
     
-      {showModal && selectedEvent && (
-        <div className="modal fade show d-block" tabIndex={-1} role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered" role="document">
+      {showEventModal && selectedEvent && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{selectedEvent.title}</h5>
-                <button type="button" className="btn-close" onClick={handleClose}></button>
+                <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <p><strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
-                <p><strong>Time:</strong> {selectedEvent.start.toLocaleTimeString()} – {selectedEvent.end.toLocaleTimeString()}</p>
-                <p><strong>Description:</strong> {selectedEvent.description}</p>
+                <p>
+                  <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>Time:</strong>{' '}
+                  {selectedEvent.start.toLocaleTimeString()} –{' '}
+                  {selectedEvent.end.toLocaleTimeString()}
+                </p>
+                <p>
+                  <strong>Description:</strong> {selectedEvent.description}
+                </p>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-danger" onClick={() => alert('Cancel logic TBD')}>Cancel</button>
-                <button className="btn btn-secondary" onClick={() => alert('Reschedule logic TBD')}>Reschedule</button>
-                <button className="btn btn-primary" onClick={handleClose}>Close</button>
+                <button className="btn btn-primary" onClick={handleCloseModals}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    
+      {showSlotModal && selectedSlot && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Schedule Appointment</h5>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  <strong>Date Selected:</strong> {selectedSlot.toLocaleDateString()}
+                </p>
+                <p>
+                  This date is available for booking. Would you like to schedule a
+                  workout or meeting?
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-success"
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={() => {
+                    setShowSlotModal(false);
+                    setShowTimeModal(true);
+                  }}
+                >
+                  Select a Time
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={handleCloseModals}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {showTimeModal && selectedSlot && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Available Times – {selectedSlot.toLocaleDateString()}
+                </h5>
+                <button
+                  className="btn-close" 
+                  onClick={handleCloseModals}>
+
+                  </button>
+              </div>
+              <div className="modal-body">
+                <div className="d-flex flex-wrap gap-2">
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const hour = 10 + i; // 10 AM to 7 PM
+                    const timeString = new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    });
+                    return (
+                      <button key={hour}
+                        className="btn btn-outline-primary btn-sm"
+                        style={{
+                        padding: '4px 10px',
+                        fontSize: '0.8rem',
+                        lineHeight: '1.2',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}>
+                        {timeString}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-sm" 
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={handleCloseModals}>
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -194,6 +405,8 @@ export default function CalendarComponent() {
     </div>
   );
 }
+
+
 
 
 
