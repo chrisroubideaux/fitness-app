@@ -1,5 +1,4 @@
 // Calendar component
-// components/profile/calendar/Calendar.tsx
 'use client';
 
 import { useState } from 'react';

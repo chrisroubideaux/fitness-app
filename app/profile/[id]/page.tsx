@@ -2,10 +2,13 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState,  } from 'react';
 import dynamic from 'next/dynamic';
 import Sidebar from '@/components/profile/sidebar/Sidebar';
 import CalendarComponent from '@/components/profile/calendar/Calendar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaCalendarAlt, FaComments } from 'react-icons/fa';
+import { IoNotificationsOutline } from 'react-icons/io5'; // Notification icon
 
 const WorkoutModal = dynamic<{ onClose: () => void }>(
   () => import('@/components/profile/questionnaire/WorkoutModal'),
@@ -30,7 +33,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'progress' | 'messages'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'notifications' | 'messages'>('calendar');
+
+  const notificationCount = 3; // Static for now
 
   useEffect(() => {
     const tokenFromURL = searchParams.get('token');
@@ -86,8 +91,8 @@ export default function ProfilePage() {
     switch (activeTab) {
       case 'calendar':
         return <CalendarComponent />;
-      case 'progress':
-        return <div>📈 Progress tracking coming soon!</div>;
+      case 'notifications':
+        return <div>🔔 Notification center coming soon!</div>;
       case 'messages':
         return <div>💬 Messaging feature coming soon!</div>;
       default:
@@ -113,59 +118,112 @@ export default function ProfilePage() {
     );
   }
 
- return (
-  <div className="d-flex" style={{ minHeight: '100vh', overflow: 'hidden' }}>
-    <Sidebar userId={user.id} userName={user.full_name} onLogout={handleLogout} />
+  return (
+    <div className="layout h-100">
+      <div className="container-fluid">
+        <div className="container-fluid py-3">
+          <div className="row">
+            {/* Sidebar */}
+            <div className="col-lg-4 col-xxl-3 mb-4">
+              <Sidebar userId={user.id} userName={user.full_name} onLogout={handleLogout} />
+            </div>
 
-    <div
-      className="flex-grow-1 p-4"
-      style={{
-        overflowY: 'auto',
-        maxWidth: '100%',
-        paddingLeft: '2rem',
-        paddingRight: '2rem',
-      }}
-    >
-      {showModal && (
-        <WorkoutModal
-          onClose={() => {
-            localStorage.setItem('hasCompletedQuestionnaire', 'true');
-            setShowModal(false);
-          }}
-        />
-      )}
+            {/* Main Content */}
+            <div className="col-lg-8 col-xxl-9">
+              {showModal && (
+                <WorkoutModal
+                  onClose={() => {
+                    localStorage.setItem('hasCompletedQuestionnaire', 'true');
+                    setShowModal(false);
+                  }}
+                />
+              )}
 
-      {/* Tab Navigation */}
-      <div className="mb-4 d-flex flex-wrap gap-3">
-        <button
-          className={`btn btn-${activeTab === 'calendar' ? 'primary' : 'outline-primary'}`}
-          onClick={() => setActiveTab('calendar')}
-        >
-          Calendar
-        </button>
-        <button
-          className={`btn btn-${activeTab === 'progress' ? 'primary' : 'outline-primary'}`}
-          onClick={() => setActiveTab('progress')}
-        >
-          Progress
-        </button>
-        <button
-          className={`btn btn-${activeTab === 'messages' ? 'primary' : 'outline-primary'}`}
-          onClick={() => setActiveTab('messages')}
-        >
-          Messages
-        </button>
+              {/* Tab Navigation */}
+              <div className="mb-4 position-relative">
+                <div className="d-flex justify-content-center flex-wrap gap-2">
+                  {/* Calendar Tab */}
+                  <button
+                    className={`btn btn-sm btn-${activeTab === 'calendar' ? 'primary' : 'outline-primary'}`}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onClick={() => setActiveTab('calendar')}
+                  >
+                    <FaCalendarAlt className="me-2" style={{ fontSize: '0.9rem' }} />
+                    Calendar
+                  </button>
+
+                  {/* Notifications Tab */}
+                  <button
+                    className={`btn btn-sm btn-${activeTab === 'notifications' ? 'primary' : 'outline-primary'} position-relative`}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onClick={() => setActiveTab('notifications')}
+                  >
+                    <IoNotificationsOutline className="me-2" style={{ fontSize: '0.9rem' }} />
+                    Notifications
+                    {notificationCount > 0 && (
+                      <span
+                        className="badge bg-danger ms-2"
+                        style={{
+                          fontSize: '0.7rem',
+                          padding: '2px 6px',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        {notificationCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Messages Tab */}
+                  <button
+                    className={`btn btn-sm btn-${activeTab === 'messages' ? 'primary' : 'outline-primary'}`}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    onClick={() => setActiveTab('messages')}
+                  >
+                    <FaComments className="me-2" style={{ fontSize: '0.9rem' }} />
+                    Messages
+                  </button>
+                </div>
+              </div>
+
+              {/* Animated Tab Content */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.3 }}
+                  className="calendarContainer"
+                >
+                  {renderTabContent()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Tab Content */}
-      <div className="tab-content-wrapper">{renderTabContent()}</div>
     </div>
-  </div>
-);
+  );
 }
-
-
-
 
 /*
 

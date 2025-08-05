@@ -1,24 +1,30 @@
 /* styles/calendar.css */
+/* GLOBAL calendar.css */
 
-/* Calendar Container */
-/* components/profile/calendar/calendar.module.css */
+/* Main calendar wrapper */
 .calendarContainer {
+  width: 100%;
+  min-width: 800px;
   max-width: 100%;
+  padding: 20px;
   overflow-x: auto;
+  box-sizing: border-box;
 }
 
-/* Calendar toolbar */
+/* Toolbar */
 .rbc-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
   font-weight: 600;
+  flex-wrap: wrap;
 }
 
 .rbc-toolbar-label {
   font-size: 1.25rem;
   color: #333;
+  margin-bottom: 0.5rem;
 }
 
 .rbc-btn-group button {
@@ -42,7 +48,7 @@
   border-color: #0a58ca;
 }
 
-/* Calendar cells */
+/* Month view layout */
 .rbc-month-view {
   border: none;
 }
@@ -52,17 +58,24 @@
 }
 
 .rbc-date-cell {
-  padding: 0.25rem;
+  padding: 0.5rem;
   text-align: right;
   font-size: 0.85rem;
   font-weight: 500;
   color: #6c757d;
 }
 
+.rbc-date-cell > a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Today highlight */
 .rbc-today {
   background-color: #e3f2fd !important;
 }
 
+/* Event style */
 .rbc-event {
   background-color: #0d6efd;
   color: white;
@@ -70,13 +83,30 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rbc-event:hover {
   opacity: 0.9;
 }
 
-/* Modal override (fade + center) */
+/* Day background cell */
+.rbc-day-bg {
+  border: 1px solid #f0f0f0;
+}
+
+/* Slot and content */
+.rbc-day-slot {
+  min-height: 80px;
+}
+
+.rbc-time-content {
+  overflow-y: auto;
+}
+
+/* Modal override */
 .modal-backdrop.show {
   opacity: 0.4;
 }
