@@ -60,7 +60,7 @@ export default function Sidebar({ userId, userName, onLogout }: SidebarProps) {
       {/* Header */}
       <div>
         <div className="d-flex align-items-center justify-content-between p-3 border-bottom">
-          <h5 className="mb-0 text-white">
+          <h5 className="mb-0 ">
             {collapsed ? '💪' : `Hi, ${userName.split(' ')[0]}`}
           </h5>
           <button
@@ -81,8 +81,8 @@ export default function Sidebar({ userId, userName, onLogout }: SidebarProps) {
               <li className="nav-item" key={href}>
                 <Link
                   href={href}
-                  className={`nav-link d-flex align-items-center text-white ${
-                    isActive ? 'bg-primary fw-bold' : ''
+                  className={`nav-link d-flex align-items-center  ${
+                    isActive ? ' fw-bold' : ''
                   }`}
                   title={collapsed ? label : ''}
                   aria-label={aria}
@@ -99,7 +99,7 @@ export default function Sidebar({ userId, userName, onLogout }: SidebarProps) {
             <li className="nav-item mt-3">
               <button
                 onClick={onLogout}
-                className="nav-link d-flex align-items-center text-danger bg-transparent border-0 w-100"
+                className="nav-link d-flex align-items-center  bg-transparent border-0 w-100"
                 title={collapsed ? 'Logout' : ''}
                 aria-label="Logout"
               >

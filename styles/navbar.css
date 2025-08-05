@@ -45,7 +45,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
+   background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
   transition: width 0.3s;
   z-index: 1000;
   overflow-x: hidden;

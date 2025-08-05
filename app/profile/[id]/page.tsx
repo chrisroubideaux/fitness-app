@@ -7,9 +7,10 @@ import dynamic from 'next/dynamic';
 import Sidebar from '@/components/profile/sidebar/Sidebar'; // ✅ Sidebar import
 
 // Dynamic import to prevent SSR issues
-const WorkoutModal = dynamic(() => import('@/components/profile/questionnaire/WorkoutModal'), {
-  ssr: false,
-});
+const WorkoutModal = dynamic<{ onClose: () => void }>(
+  () => import('@/components/profile/questionnaire/WorkoutModal'),
+  { ssr: false }
+);
 
 type User = {
   id: string;
@@ -106,26 +107,17 @@ export default function ProfilePage() {
 
       {/* Right Main Content */}
       <div className="flex-grow-1 p-4" style={{ overflowX: 'hidden' }}>
-        {showModal && <WorkoutModal />}
+        {showModal && (
+  <WorkoutModal
+    onClose={() => {
+      localStorage.setItem('hasCompletedQuestionnaire', 'true'); // ✅ Set flag on close
+      setShowModal(false); // ✅ Hide modal
+    }}
+  />
+)}
 
-        <h2>Welcome, {user.full_name}!</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        {user.bio && <p><strong>Bio:</strong> {user.bio}</p>}
-        {user.address && <p><strong>Address:</strong> {user.address}</p>}
-        {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
-        {user.membership_plan_id && (
-          <p><strong>Membership Plan:</strong> {user.membership_plan_id}</p>
-        )}
-        {user.profile_image_url && (
-          <div>
-            <strong>Avatar:</strong><br />
-            <img src={user.profile_image_url} alt="Avatar" width={80} />
-          </div>
-        )}
-        <br />
-        <button onClick={handleLogout} className="btn btn-outline-danger mt-3">
-          Logout
-        </button>
+
+        
       </div>
     </div>
   );
