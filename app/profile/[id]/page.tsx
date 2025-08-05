@@ -1,3 +1,142 @@
+// Profile Page/User[id]/page.tsx
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import Sidebar from '@/components/profile/sidebar/Sidebar'; // ✅ Sidebar import
+
+// Dynamic import to prevent SSR issues
+const WorkoutModal = dynamic(() => import('@/components/profile/questionnaire/WorkoutModal'), {
+  ssr: false,
+});
+
+type User = {
+  id: string;
+  full_name: string;
+  email: string;
+  bio?: string;
+  address?: string;
+  phone?: string;
+  profile_image_url?: string;
+  membership_plan_id?: string;
+};
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    const tokenFromURL = searchParams.get('token');
+    if (tokenFromURL) {
+      localStorage.setItem('authToken', tokenFromURL);
+    }
+
+    const token = tokenFromURL || localStorage.getItem('authToken');
+    if (!token) {
+      setError('No token found. Please log in again.');
+      setLoading(false);
+      return;
+    }
+
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/users/me', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server responded with ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log('✅ User fetched:', data);
+        setUser(data);
+
+        const hasCompleted = localStorage.getItem('hasCompletedQuestionnaire');
+        if (!hasCompleted) {
+          setShowModal(true);
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch user:', err);
+        setError('Failed to load user profile.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [searchParams]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    router.push('/login');
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <h2>Loading profile...</h2>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <h2>Error loading profile</h2>
+        <p>{error || 'User not found.'}</p>
+        <button onClick={handleLogout}>Back to Login</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="d-flex" style={{ minHeight: '100vh' }}>
+      {/* Left Sidebar */}
+    <Sidebar userId={user.id} userName={user.full_name}  onLogout={handleLogout}  />
+
+      {/* Right Main Content */}
+      <div className="flex-grow-1 p-4" style={{ overflowX: 'hidden' }}>
+        {showModal && <WorkoutModal />}
+
+        <h2>Welcome, {user.full_name}!</h2>
+        <p><strong>Email:</strong> {user.email}</p>
+        {user.bio && <p><strong>Bio:</strong> {user.bio}</p>}
+        {user.address && <p><strong>Address:</strong> {user.address}</p>}
+        {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
+        {user.membership_plan_id && (
+          <p><strong>Membership Plan:</strong> {user.membership_plan_id}</p>
+        )}
+        {user.profile_image_url && (
+          <div>
+            <strong>Avatar:</strong><br />
+            <img src={user.profile_image_url} alt="Avatar" width={80} />
+          </div>
+        )}
+        <br />
+        <button onClick={handleLogout} className="btn btn-outline-danger mt-3">
+          Logout
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+/*
+
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -126,119 +265,5 @@ export default function ProfilePage() {
 }
 
 
-
-/*
-
-'use client';
-
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-type User = {
-  id: string;
-  full_name: string;
-  email: string;
-  bio?: string;
-  address?: string;
-  phone?: string;
-  profile_image_url?: string;
-  membership_plan_id?: string;
-};
-
-export default function ProfilePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const tokenFromURL = searchParams.get('token');
-    if (tokenFromURL) {
-      localStorage.setItem('authToken', tokenFromURL);
-    }
-
-    const token = tokenFromURL || localStorage.getItem('authToken');
-    if (!token) {
-      setError('No token found.');
-      setLoading(false);
-      return;
-    }
-
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/users/me', {
-  method: 'GET',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  }
-});
-
-
-        if (!res.ok) {
-          throw new Error(`Server responded with ${res.status}`);
-        }
-
-        const data = await res.json();
-        console.log('✅ User fetched:', data);
-        setUser(data);
-      } catch (err) {
-        console.error('❌ Failed to fetch user:', err);
-        setError('Failed to load user profile.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [searchParams]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    router.push('/login');
-  };
-
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <h2>Loading profile...</h2>
-      </div>
-    );
-  }
-
-  if (error || !user) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <h2>Error loading profile</h2>
-        <p>{error || 'User not found.'}</p>
-        <button onClick={handleLogout}>Back to Login</button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Welcome, {user.full_name}!</h2>
-      <p><strong>Email:</strong> {user.email}</p>
-      {user.bio && <p><strong>Bio:</strong> {user.bio}</p>}
-      {user.address && <p><strong>Address:</strong> {user.address}</p>}
-      {user.phone && <p><strong>Phone:</strong> {user.phone}</p>}
-      {user.membership_plan_id && (
-        <p><strong>Membership Plan:</strong> {user.membership_plan_id}</p>
-      )}
-      {user.profile_image_url && (
-        <div>
-          <strong>Avatar:</strong><br />
-          <img src={user.profile_image_url} alt="Avatar" width={80} />
-        </div>
-      )}
-      <br />
-      <button onClick={handleLogout} style={{ marginTop: '1rem' }}>
-        Logout
-      </button>
-    </div>
-  );
-}
 
 */

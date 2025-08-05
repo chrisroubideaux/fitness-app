@@ -37,3 +37,34 @@
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+/* sidebar */
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
+  transition: width 0.3s;
+  z-index: 1000;
+  overflow-x: hidden;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar .nav-link {
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+}
+

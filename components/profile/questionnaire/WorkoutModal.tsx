@@ -237,7 +237,7 @@ export default function WorkoutModal() {
                 transition={{ duration: 0.4 }}
               >
                 <div className="d-flex justify-content-between align-items-start">
-                  <h4 className="mb-3">Your AI-Powered Workout Plan</h4>
+                  <h4 className="mb-3 text-center">Your Workout Plan</h4>
                   <button className="btn-close" onClick={handleClose} />
                 </div>
 
