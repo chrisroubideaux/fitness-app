@@ -1,7 +1,5 @@
 /* styles/calendar.css */
-/* GLOBAL calendar.css */
 
-/* Main calendar wrapper */
 .calendarContainer {
   width: 100%;
   min-width: 800px;
@@ -9,6 +7,10 @@
   padding: 20px;
   overflow-x: auto;
   box-sizing: border-box;
+}
+
+.box {
+  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
 }
 
 /* Toolbar */
@@ -23,7 +25,7 @@
 
 .rbc-toolbar-label {
   font-size: 1.25rem;
-  color: #333;
+  color: #939292;
   margin-bottom: 0.5rem;
 }
 
@@ -43,9 +45,9 @@
 
 .rbc-btn-group button:active,
 .rbc-btn-group button.rbc-active {
-  background-color: #0d6efd;
+  background:  #cfc7fd;
   color: white;
-  border-color: #0a58ca;
+  border-color: #cacacb;
 }
 
 /* Month view layout */
@@ -72,12 +74,12 @@
 
 /* Today highlight */
 .rbc-today {
-  background-color: #e3f2fd !important;
+  background: linear-gradient(-45deg, #ecd2ff, #a1c4fd, #c2e2ff);
 }
 
 /* Event style */
 .rbc-event {
-  background-color: #0d6efd;
+  background-color: #b8aafa; 
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
