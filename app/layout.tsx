@@ -9,6 +9,7 @@ import '@/styles/contact.css';
 import '@/styles/about.css';
 import '@/styles/card.css';
 import '@/styles/calendar.css';
+import '@/styles/messages.css';
 
 
 const geistSans = Geist({

@@ -1,0 +1,174 @@
+/* messages.css */
+
+/* Remove all focus outlines and box shadows globally */
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: #ccc !important;
+}
+
+
+/* Remove default focus outline on inputs, buttons, and pagination links */
+input:focus,
+button:focus,
+.page-link:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: #bbb; /* Optional custom border on focus */
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Wrapper for entire messaging panel */
+.panel-wrapper {
+  padding: 1.5rem;
+  background: #f0f2f5;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  min-height: 400px;
+}
+
+/* Inbox */
+.inbox-wrapper {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Chat window wrapper */
+.chat-window-wrapper {
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+/* Chat messages area */
+.chat-messages {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1rem;
+  background-color: #fafafa;
+  height: 60vh;
+  overflow-y: auto;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+/* Gradient chat bubbles */
+.chat-message-admin {
+  background: linear-gradient(135deg, #ece9e6, #ffffff);
+  color: #333;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  max-width: 70%;
+}
+
+.chat-message-user {
+  background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  max-width: 70%;
+}
+
+/* Optional generic message container */
+.chat-message {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Avatar styles */
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Input area */
+.chat-input {
+  display: flex;
+  margin-top: 1rem;
+}
+
+.chat-input input {
+  flex: 1;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.chat-input button {
+  margin-left: 8px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  background-color: #0d6efd;
+  border: none;
+  color: white;
+  transition: background 0.3s ease;
+}
+
+.chat-input button:hover {
+  background-color: #084298;
+}
+
+/* Sub-tab button overrides */
+.btn.btn-sm {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* Pagination */
+.pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.pagination .page-link {
+  color: #0d6efd;
+  font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .panel-wrapper {
+    padding: 1rem;
+  }
+
+  .chat-message-admin,
+  .chat-message-user {
+    max-width: 90%;
+  }
+
+  .chat-input button {
+    padding: 6px 10px;
+  }
+}

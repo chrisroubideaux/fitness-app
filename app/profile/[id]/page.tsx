@@ -6,6 +6,8 @@ import { useEffect, useState,  } from 'react';
 import dynamic from 'next/dynamic';
 import Sidebar from '@/components/profile/sidebar/Sidebar';
 import CalendarComponent from '@/components/profile/calendar/Calendar';
+import MessagesPanel from '@/components/profile/messages/MessagesPanel';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCalendarAlt, FaComments } from 'react-icons/fa';
 import { IoNotificationsOutline } from 'react-icons/io5'; // Notification icon
@@ -94,7 +96,8 @@ export default function ProfilePage() {
       case 'notifications':
         return <div>🔔 Notification center coming soon!</div>;
       case 'messages':
-        return <div>💬 Messaging feature coming soon!</div>;
+        return <MessagesPanel />;
+
       default:
         return null;
     }
