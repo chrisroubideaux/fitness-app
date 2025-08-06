@@ -45,7 +45,7 @@ button:focus,
 
 /* Chat window wrapper */
 .chat-window-wrapper {
-  background-color: #ffffff;
+  background-color: #f5f3f3;
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
@@ -76,7 +76,7 @@ button:focus,
 
 /* Gradient chat bubbles */
 .chat-message-admin {
-  background: linear-gradient(135deg, #ece9e6, #ffffff);
+  background: linear-gradient(135deg, #ece9e6, #ddfafc);
   color: #333;
   padding: 10px 14px;
   border-radius: 16px;
@@ -86,7 +86,7 @@ button:focus,
 }
 
 .chat-message-user {
-  background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+  background: linear-gradient(135deg, #c6dbfb, #abcbfb);
   color: #fff;
   padding: 10px 14px;
   border-radius: 16px;
