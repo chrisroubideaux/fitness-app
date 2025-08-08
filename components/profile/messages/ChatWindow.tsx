@@ -122,7 +122,7 @@ export default function ChatWindow({
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
         />
-        <button onClick={handleSendMessage}>Send</button>
+        <button className='btn btn-sm' onClick={handleSendMessage}>Send</button>
       </div>
     </div>
   );

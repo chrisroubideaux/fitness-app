@@ -172,3 +172,32 @@ button:focus,
     padding: 6px 10px;
   }
 }
+
+/* Notifications.css */
+.notifications-panel {
+  background: linear-gradient(135deg, #ece9e6, #ddfafc);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.notifications-panel ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.notifications-panel .list-group-item {
+  border: none;
+  border-bottom: 1px solid #eee;
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+  transition: background 0.2s ease;
+}
+
+.notifications-panel .list-group-item:hover {
+  background: linear-gradient(135deg, #ece9e6, #ddfafc);
+}
+
+.notifications-panel .text-muted.small {
+  font-size: 0.85rem;
+}
