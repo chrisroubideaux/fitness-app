@@ -67,15 +67,17 @@ export default function WorkoutPlanViewer() {
   if (!latestPlan) return null;
 
   return (
-    <div className="workout-plan-viewer p-3 bg-white rounded shadow-sm">
-      <h5 className="mb-3">📋 Your Workout Plan</h5>
-      <p className="text-muted small mb-2">
+    <div className="workout-plan-viewer p-3  shadow-sm">
+      <div className="mt-3 pt-3">
+      <h5 className="mb-3 text-bold">📋 Your Workout Plan</h5>
+      <p className=" small mb-2">
         Last Updated: {new Date(latestPlan.created_at).toLocaleString()}
       </p>
       <div
         className="text-body small"
         dangerouslySetInnerHTML={{ __html: renderMarkdown(latestPlan.content) }}
       />
+      </div>
     </div>
   );
 }

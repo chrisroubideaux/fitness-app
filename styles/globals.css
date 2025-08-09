@@ -60,11 +60,29 @@ h5 {
 }
 
 h6 {
-  color: #464545;
+  color: hsl(0, 1%, 27%);
 }
 
+
+/* buttons */
+
+/*
 .btn {
   background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+  border: none;
+  color: #fafafa;
+  border-radius: 30px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+*/
+
+
+.btn {
+  background: linear-gradient(-45deg, #9fa2fc, #c0c4fc, #a1c4fd, #c2cbff);
   background-size: 400% 400%;
   animation: gradientShift 8s ease infinite;
   border: none;

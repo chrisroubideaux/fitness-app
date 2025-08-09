@@ -1,4 +1,4 @@
-/* card */
+/* card.css */
 .avatar {
  
   object-fit: cover;
@@ -175,4 +175,65 @@
 .plan-output::-webkit-scrollbar-thumb {
   background: #999;
   border-radius: 10px;
+}
+
+/* card */
+
+/* Workout Plan Viewer */
+.workout-plan-viewer {
+ /* background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff); */
+  background: linear-gradient(
+    330deg,
+    rgb(230, 223, 251) 0%,       /* Alice blue */
+    rgb(232, 229, 254) 15%,      /* Very light baby blue */
+    rgb(233, 237, 253) 35%,      /* Soft sky blue */
+    rgba(235, 240, 255, 1) 60%,      /* Cloud white */
+    rgb(219, 219, 247) 100%      /* Near-white lavender tint */
+  );
+  padding: 2rem;
+  border-radius: 30px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  max-width: 900px;
+  margin: 0 auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.workout-plan-viewer:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+}
+
+
+/* Last updated text */
+.workout-plan-viewer .text-muted {
+  font-size: 0.9rem;
+}
+
+
+.workout-plan-viewer .text-body h2,
+.workout-plan-viewer .text-body h3,
+.workout-plan-viewer .text-body strong {
+  color: #787afc;
+}
+
+.workout-plan-viewer .text-body ul {
+  padding-left: 1.25rem;
+}
+
+.workout-plan-viewer .text-body li {
+  margin-bottom: 0.4rem;
+}
+
+/* Scrollbar styling */
+.workout-plan-viewer .text-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workout-plan-viewer .text-body::-webkit-scrollbar-thumb {
+  background: rgba(52, 52, 88, 0.4);
+  border-radius: 10px;
+}
+
+.workout-plan-viewer .text-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 52, 88, 0.6);
 }

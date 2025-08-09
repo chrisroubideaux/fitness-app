@@ -61,6 +61,7 @@
   align-items: center;
   font-size: 0.95rem;
   transition: background 0.2s;
+    color: #7E8EF1;
 }
 
 .sidebar .nav-link:hover {
