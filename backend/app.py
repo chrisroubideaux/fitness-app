@@ -9,17 +9,22 @@ from dotenv import load_dotenv
 
 from extensions import db
 
-# ✅ Import models explicitly so Alembic detects them
-from workout_session import WorkoutSession
-from login_session import LoginSession
 
+# ✅ Import models explicitly so Alembic detects them
+
+from login_session import LoginSession
+from workout_session.models import WorkoutSession
 # Import route blueprints
+
 from memberships.routes import membership_bp
 from users.routes import user_bp
 from users.oauth import oauth_bp
 from admin.routes import admin_bp
 from admin.oauth import admin_oauth_bp  # ✅ Admin OAuth blueprint
 from ai.routes import ai_bp  # ✅ Add AI routes here
+from workout_session import workout_sessions_bp  # ✅ Import workout session routes
+
+
 
 from flask_dance.contrib.facebook import make_facebook_blueprint
 
@@ -77,6 +82,10 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(admin_oauth_bp)  # ✅ Register Admin OAuth
     app.register_blueprint(ai_bp)  # ✅ Register AI API
+    
+    app.register_blueprint(workout_sessions_bp, url_prefix="/api/workout_sessions")
+
+    
 
     @app.route('/')
     def hello():

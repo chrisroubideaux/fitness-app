@@ -175,7 +175,14 @@ button:focus,
 
 /* Notifications.css */
 .notifications-panel {
-  background: linear-gradient(135deg, #ece9e6, #ddfafc);
+  background: linear-gradient(
+    330deg,
+    rgb(230, 223, 251) 0%,       /* Alice blue */
+    rgb(232, 229, 254) 15%,      /* Very light baby blue */
+    rgb(233, 237, 253) 35%,      /* Soft sky blue */
+    rgba(235, 240, 255, 1) 60%,      /* Cloud white */
+    rgb(219, 219, 247) 100%      /* Near-white lavender tint */
+  );
   max-height: 60vh;
   overflow-y: auto;
 }

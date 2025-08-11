@@ -68,22 +68,24 @@ def login_user():
     }), 200
 
 # GET all users (admin-only)
+# GET all users
 @user_bp.route('/', methods=['GET'])
 @token_required
-def get_all_users():
+def get_all_users(current_user):   # <- accept current_user
     users = User.query.all()
     return jsonify([
         {
-            'id': str(user.id),
-            'full_name': user.full_name,
-            'email': user.email,
-            'bio': user.bio,
-            'address': user.address,
-            'phone': user.phone,
-            'profile_image': user.profile_image,
-            'membership_plan_id': user.membership_plan_id
+          'id': current_user.id,
+          'full_name': current_user.full_name,
+          'email': current_user.email,
+          'bio': current_user.bio,
+          'address': current_user.address,
+          'phone_number': current_user.phone_number,
+          'profile_image_url': current_user.profile_image_url,
+          'membership_plan_id': current_user.membership_plan_id
         } for user in users
     ]), 200
+
 
 # GET single user by ID
 @user_bp.route('/<string:user_id>', methods=['GET'])

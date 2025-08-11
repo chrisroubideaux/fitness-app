@@ -1,2 +1,4 @@
 # workout_session/__init__.py
-from .workout_session import WorkoutSession
+
+# workout_session/__init__.py
+from .routes import workout_sessions_bp

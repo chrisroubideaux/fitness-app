@@ -48,7 +48,7 @@ export default function NotificationsPanel() {
 
   return (
     <div className="notifications-panel p-3 rounded shadow-sm bg-white">
-      <h6 className="mb-3">📬 Notifications</h6>
+      <h5 className="mb-3">📬 Notifications</h5>
       <ul className="list-group">
         {notifications.map((note) => (
           <li key={note.id} className="list-group-item">

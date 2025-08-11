@@ -161,6 +161,26 @@ def get_admin_profile(current_admin):
         'membership_plan_id': str(current_admin.membership_plan_id) if current_admin.membership_plan_id else None
     }), 200
 
+# GET all users (admin only)
+@admin_bp.route('/users', methods=['GET'])
+@admin_token_required
+def get_all_users_as_admin(current_admin):
+    """
+    Returns a list of all registered users. Admin authentication required.
+    """
+    users = User.query.all()
+    return jsonify([
+        {
+            'id': str(user.id),
+            'full_name': user.full_name,
+            'email': user.email,
+            'bio': user.bio,
+            'address': user.address,
+            'phone': user.phone,
+            'profile_image_url': user.profile_image_url,
+            'membership_plan_id': str(user.membership_plan_id) if user.membership_plan_id else None
+        } for user in users
+    ]), 200
 
     
 # DELETE any user (admin only)
