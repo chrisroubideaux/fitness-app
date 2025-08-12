@@ -1,8 +1,9 @@
 // WeeklyProgressChart.tsx
 
+// components/profile/charts/WeeklyProgressChart.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Chart as ChartJS,
@@ -21,8 +22,9 @@ import { format, parseISO } from "date-fns";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
+/** ---- Types (match your API) ---- */
 type DayPoint = {
-  label: string;
+  label: string;              // Mon..Sun
   minutes: number;
   sessions: number;
   workouts?: string[];
@@ -31,38 +33,51 @@ type DayPoint = {
 
 type WeeklyResponse = {
   user_id: string;
-  week_start: string; // YYYY-MM-DD
+  week_start: string;         // YYYY-MM-DD
   points: DayPoint[];
 };
 
-type Props = {
-  apiBase?: string; // default http://localhost:5000
-  tz?: string;      // still used for API query only
+type WeekBucket = {
+  week_start: string;         // YYYY-MM-DD (Monday)
+  points: DayPoint[];         // 7 days Mon..Sun
 };
 
-type ChartKind =
-  | "weekly"
-  | "weeksHistory"
-  | "monthlySummary"
-  | "exerciseTrend"
-  | "typeBreakdown";
+type WeeksHistoryResponse = {
+  weeks: WeekBucket[];
+};
 
+type Props = {
+  apiBase?: string;           // default http://localhost:5000 (via NEXT_PUBLIC_API_BASE_URL)
+  tz?: string;                // still used for API query only
+};
+
+type ChartKind = "weekly" | "weeksHistory" | "monthlySummary" | "exerciseTrend" | "typeBreakdown";
+
+/** ---- Component ---- */
 export default function WeeklyProgressChart({
   apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000",
   tz = "America/Chicago",
 }: Props) {
-  const [data, setData] = useState<WeeklyResponse | null>(null);
+  // global state
+  const [chartKind, setChartKind] = useState<ChartKind>("weekly");
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+
+  // weekly state
+  const [weeklyData, setWeeklyData] = useState<WeeklyResponse | null>(null);
   const [weeksBack, setWeeksBack] = useState<number>(0);
-  const [chartKind, setChartKind] = useState<ChartKind>("weekly");
+
+  // weeks history state
+  const [weeksHistory, setWeeksHistory] = useState<WeeksHistoryResponse | null>(null);
+  const [weeksCount, setWeeksCount] = useState<number>(8);
+
   const chartRef = useRef<ChartJS<"bar"> | null>(null);
 
   // sanitize base (avoid trailing slash)
   const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
+  /** ---- API calls ---- */
   const fetchWeekly = async (wb: number) => {
     setLoading(true);
     setErr(null);
@@ -76,7 +91,7 @@ export default function WeeklyProgressChart({
       });
       if (!res.ok) throw new Error(`Weekly fetch failed: ${res.status}`);
       const json: WeeklyResponse = await res.json();
-      setData(json);
+      setWeeklyData(json);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -84,6 +99,28 @@ export default function WeeklyProgressChart({
     }
   };
 
+  const fetchWeeksHistory = async (n: number) => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const url = new URL(`${base}/api/workout_sessions/history/weeks`);
+      url.searchParams.set("tz", tz);
+      url.searchParams.set("n", String(n));
+
+      const res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${token ?? ""}` },
+      });
+      if (!res.ok) throw new Error(`Weeks history fetch failed: ${res.status}`);
+      const json: WeeksHistoryResponse = await res.json();
+      setWeeksHistory(json);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** ---- Effects ---- */
   useEffect(() => {
     if (!token) {
       setErr("No token. Log in again.");
@@ -92,42 +129,41 @@ export default function WeeklyProgressChart({
     }
     if (chartKind === "weekly") {
       fetchWeekly(weeksBack);
+    } else if (chartKind === "weeksHistory") {
+      fetchWeeksHistory(weeksCount);
     } else {
-      // placeholders for other charts (no fetch yet)
+      // placeholders for others
       setLoading(false);
       setErr(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, weeksBack, chartKind]);
+  }, [token, chartKind, weeksBack, weeksCount, tz, base]);
 
-  const rows = useMemo(() => {
-    if (!data?.points) return [];
-    return data.points.map((p) => ({
+  /** ---- Weekly view data ---- */
+  const weeklyRows = useMemo(() => {
+    const d = weeklyData;
+    if (!d?.points) return [];
+    return d.points.map((p) => ({
       label: p.label,
       Minutes: p.minutes,
       sessions: p.sessions,
       workouts: p.workouts ?? [],
     }));
-  }, [data]);
+  }, [weeklyData]);
 
-  const barData: ChartData<"bar", number[], string> = useMemo(() => {
+  const weeklyBarData: ChartData<"bar", number[], string> = useMemo(() => {
     return {
-      labels: rows.map((d) => d.label),
+      labels: weeklyRows.map((d) => d.label),
       datasets: [
         {
           label: "Minutes",
-          data: rows.map((d) => d.Minutes),
+          data: weeklyRows.map((d) => d.Minutes),
           borderRadius: 8,
           backgroundColor: (ctx: ScriptableContext<"bar">) => {
             const chart = ctx.chart;
             const { ctx: canvasCtx, chartArea } = chart;
             if (!chartArea) return "#4A90E2"; // initial layout pass
-            const gradient = canvasCtx.createLinearGradient(
-              0,
-              chartArea.bottom,
-              0,
-              chartArea.top
-            );
+            const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
             gradient.addColorStop(0, "rgba(74, 144, 226, 0.8)");
             gradient.addColorStop(1, "rgba(123, 237, 159, 0.9)");
             return gradient;
@@ -135,9 +171,9 @@ export default function WeeklyProgressChart({
         },
       ],
     };
-  }, [rows]);
+  }, [weeklyRows]);
 
-  const options: ChartOptions<"bar"> = {
+  const weeklyOptions: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -154,11 +190,78 @@ export default function WeeklyProgressChart({
   };
 
   const weekStartPretty = useMemo(() => {
-    if (!data?.week_start) return "--";
-    return format(parseISO(data.week_start), "MMMM d, yyyy");
-  }, [data?.week_start]);
+    const d = weeklyData?.week_start;
+    if (!d) return "--";
+    return format(parseISO(d), "MMMM d, yyyy");
+  }, [weeklyData?.week_start]);
 
-  // --- placeholder card for future charts ---
+  /** ---- Weeks History view data ---- */
+  const historyRows = useMemo(() => {
+    if (!weeksHistory?.weeks) return [];
+    return weeksHistory.weeks.map((w) => {
+      const totalMinutes = w.points.reduce((sum, p) => sum + (p.minutes || 0), 0);
+      return {
+        week_start_iso: w.week_start,
+        label: format(parseISO(w.week_start), "MMM d"), // e.g. "Aug 5"
+        totalMinutes,
+        days: w.points, // keep for tooltip
+      };
+    });
+  }, [weeksHistory]);
+
+  const historyBarData: ChartData<"bar", number[], string> = useMemo(() => {
+    return {
+      labels: historyRows.map((r) => r.label),
+      datasets: [
+        {
+          label: "Total Minutes",
+          data: historyRows.map((r) => r.totalMinutes),
+          borderRadius: 8,
+          backgroundColor: (ctx: ScriptableContext<"bar">) => {
+            const chart = ctx.chart;
+            const { ctx: canvasCtx, chartArea } = chart;
+            if (!chartArea) return "#4A90E2";
+            const gradient = canvasCtx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            gradient.addColorStop(0, "rgba(74,144,226,0.85)");
+            gradient.addColorStop(1, "rgba(123,237,159,0.95)");
+            return gradient;
+          },
+        },
+      ],
+    };
+  }, [historyRows]);
+
+  const historyOptions: ChartOptions<"bar"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => {
+            const idx = items[0]?.dataIndex ?? 0;
+            const wk = historyRows[idx];
+            if (!wk) return "";
+            const startNice = format(parseISO(wk.week_start_iso), "MMMM d, yyyy");
+            return `Week of ${startNice}`;
+          },
+          label: (item: TooltipItem<"bar">) => {
+            const idx = item.dataIndex ?? 0;
+            const wk = historyRows[idx];
+            if (!wk) return "";
+            const parts = wk.days.map((d) => `${d.label} ${d.minutes}m`);
+            return [`Total: ${wk.totalMinutes} min`, ...parts];
+          },
+        },
+      },
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 30 } },
+      x: { ticks: { autoSkip: false, maxRotation: 0 } },
+    },
+  };
+
+  /** ---- Placeholder card for future charts ---- */
   const Placeholder = ({ title, subtitle }: { title: string; subtitle: string }) => (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -170,21 +273,18 @@ export default function WeeklyProgressChart({
       <div className="card-body">
         <h5 className="mb-1">{title}</h5>
         <p className="text-muted mb-0">{subtitle}</p>
-        <div
-          className="w-100 mt-3"
-          style={{ height: 280, borderRadius: 12, background: "rgba(255,255,255,0.35)" }}
-        />
+        <div className="w-100 mt-3" style={{ height: 280, borderRadius: 12, background: "rgba(255,255,255,0.35)" }} />
       </div>
     </motion.div>
   );
 
-  // --- chart renderer ---
+  /** ---- View switcher ---- */
   const renderChart = () => {
     switch (chartKind) {
       case "weekly":
         return (
           <motion.div
-            key={data?.week_start ?? "chart"}
+            key={weeklyData?.week_start ?? "chart-weekly"}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -197,12 +297,12 @@ export default function WeeklyProgressChart({
               </div>
 
               <div style={{ width: "100%", height: 320 }}>
-                <Bar ref={chartRef} data={barData} options={options} />
+                <Bar ref={chartRef} data={weeklyBarData} options={weeklyOptions} />
               </div>
 
-          
+              {/* badges below chart */}
               <div className="mt-3">
-                {rows.map((d) => (
+                {weeklyRows.map((d) => (
                   <motion.div
                     key={`row-${d.label}`}
                     initial={{ opacity: 0, x: 8 }}
@@ -232,11 +332,30 @@ export default function WeeklyProgressChart({
 
       case "weeksHistory":
         return (
-          <Placeholder
-            title="Weeks History"
-            subtitle="Shows multiple past weeks with per-day minutes and exercises. (Coming soon)"
-          />
+          <motion.div
+            key={`weeks-${weeksCount}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="card shadow-sm chart-gradient"
+            style={{ borderRadius: 16 }}
+          >
+            <div className="card-body">
+              <div className="text-muted mb-2" style={{ fontSize: ".9rem" }}>
+                Last <strong>{weeksCount}</strong> week(s)
+              </div>
+
+              <div style={{ width: "100%", height: 340 }}>
+                <Bar ref={chartRef} data={historyBarData} options={historyOptions} />
+              </div>
+
+              <div className="mt-3 text-muted" style={{ fontSize: ".9rem" }}>
+                Tip: hover a bar to see the Mon–Sun breakdown for that week.
+              </div>
+            </div>
+          </motion.div>
         );
+
       case "monthlySummary":
         return (
           <Placeholder
@@ -265,17 +384,17 @@ export default function WeeklyProgressChart({
 
   return (
     <div className="w-100">
-    
+      {/* Header + Controls */}
       <div className="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
         <div>
           <h3 className="mb-1">Progress</h3>
           <div className="text-muted" style={{ fontSize: ".9rem" }}>
-            {chartKind === "weekly" ? "Weekly Progress" : "Explore other views"}
+            {chartKind === "weekly" ? "Weekly Progress" : chartKind === "weeksHistory" ? "Weeks History" : "Explore other views"}
           </div>
         </div>
 
-       
         <div className="d-flex flex-wrap align-items-center gap-2">
+          {/* Weekly navigation buttons */}
           <div className="btn-group" role="group" aria-label="Week navigation">
             <button
               className="btn btn-sm btn-outline-secondary"
@@ -303,7 +422,7 @@ export default function WeeklyProgressChart({
             </button>
           </div>
 
-         
+          {/* Chart selection (gradient + icon) */}
           <div className="gradient-select-wrapper ms-2">
             <select
               className="form-select form-select-sm gradient-select"
@@ -320,17 +439,33 @@ export default function WeeklyProgressChart({
               <option value="exerciseTrend">Exercise Trend</option>
               <option value="typeBreakdown">Type Breakdown</option>
             </select>
-            </div>
+          </div>
 
+          {/* Weeks count dropdown (only for weeksHistory) */}
+          {chartKind === "weeksHistory" && (
+            <div className="gradient-select-wrapper ms-2">
+              <select
+                className="form-select form-select-sm gradient-select"
+                style={{ width: "auto" }}
+                value={weeksCount}
+                onChange={(e) => setWeeksCount(Number(e.target.value))}
+                aria-label="Weeks count"
+                disabled={loading}
+                title="How many weeks"
+              >
+                <option value={4}>4 weeks</option>
+                <option value={8}>8 weeks</option>
+                <option value={12}>12 weeks</option>
+                <option value={24}>24 weeks</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-     
+      {/* Content */}
       {loading && (
-        <div
-          className="w-100"
-          style={{ height: 280, borderRadius: 16, background: "rgba(0,0,0,0.04)" }}
-        />
+        <div className="w-100" style={{ height: 280, borderRadius: 16, background: "rgba(0,0,0,0.04)" }} />
       )}
       {err && !loading && <div className="alert alert-danger">{err}</div>}
       {!loading && !err && renderChart()}
