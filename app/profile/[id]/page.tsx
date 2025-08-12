@@ -13,6 +13,9 @@ import CalendarComponent from '@/components/profile/calendar/Calendar';
 import MessagesPanel from '@/components/profile/messages/MessagesPanel';
 import NotificationsPanel from '@/components/profile/messages/NotificationsPanel';
 import WorkoutPlan from '@/components/profile/charts/WorkoutPlan'; // <— add this import (adjust path if needed)
+import WeeklyProgressChart from '@/components/profile/charts/WeeklyProgressChart';
+
+
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCalendarAlt, FaComments } from 'react-icons/fa';
@@ -103,6 +106,12 @@ export default function ProfilePage() {
         return <WorkoutPlan />;
       case 'dashboard':
       case 'progress':
+      return (
+        <WeeklyProgressChart
+          apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+          tz="America/Chicago"
+        />
+      );
       case 'goals':
       case 'ai':
       case 'settings':
