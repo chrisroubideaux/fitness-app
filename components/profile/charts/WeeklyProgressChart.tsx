@@ -17,6 +17,7 @@ import {
   type ChartData,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { format, parseISO } from "date-fns";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -35,12 +36,12 @@ type WeeklyResponse = {
 };
 
 type Props = {
-  apiBase?: string; // default http://localhost:5000
-  tz?: string;      // default America/Chicago
+  apiBase?: string;           // default http://localhost:5000
+  tz?: string;                // still used for API query only
 };
 
 export default function WeeklyProgressChart({
-  apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000',
+  apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000",
   tz = "America/Chicago",
 }: Props) {
   const [data, setData] = useState<WeeklyResponse | null>(null);
@@ -49,6 +50,9 @@ export default function WeeklyProgressChart({
   const [weeksBack, setWeeksBack] = useState<number>(0);
   const chartRef = useRef<ChartJS<"bar"> | null>(null);
 
+  // sanitize base (avoid trailing slash issues)
+  const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
@@ -56,7 +60,7 @@ export default function WeeklyProgressChart({
     setLoading(true);
     setErr(null);
     try {
-      const url = new URL(`${apiBase}/api/workout_sessions/weekly`);
+      const url = new URL(`${base}/api/workout_sessions/weekly`);
       url.searchParams.set("tz", tz);
       if (wb > 0) url.searchParams.set("weeks_back", String(wb));
 
@@ -104,7 +108,7 @@ export default function WeeklyProgressChart({
           backgroundColor: (ctx: ScriptableContext<"bar">) => {
             const chart = ctx.chart;
             const { ctx: canvasCtx, chartArea } = chart;
-            if (!chartArea) return "#4A90E2"; // during initial layout
+            if (!chartArea) return "#4A90E2"; // initial pass
             const gradient = canvasCtx.createLinearGradient(
               0,
               chartArea.bottom,
@@ -136,6 +140,11 @@ export default function WeeklyProgressChart({
     },
   };
 
+  const weekStartPretty = useMemo(() => {
+    if (!data?.week_start) return "--";
+    return format(parseISO(data.week_start), "MMMM d, yyyy");
+  }, [data?.week_start]);
+
   return (
     <div className="w-100">
       {/* Header + Controls */}
@@ -143,7 +152,7 @@ export default function WeeklyProgressChart({
         <div>
           <h3 className="mb-1">Weekly Progress</h3>
           <div className="text-muted" style={{ fontSize: ".9rem" }}>
-            Week starting <strong>{data?.week_start ?? "--"}</strong> • {tz}
+            Week starting <strong>{weekStartPretty}</strong>
           </div>
         </div>
 
@@ -152,15 +161,15 @@ export default function WeeklyProgressChart({
             className="btn btn-sm btn-outline-secondary"
             onClick={() => setWeeksBack((w) => Math.min(52, w + 1))}
             disabled={loading}
+            title="Previous week"
           >
             ◀ Prev
           </button>
           <button
-            className={`btn btn-sm ${
-              weeksBack === 0 ? "btn-primary" : "btn-outline-primary"
-            }`}
+            className={`btn btn-sm ${weeksBack === 0 ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => setWeeksBack(0)}
             disabled={loading}
+            title="This week"
           >
             This Week
           </button>
@@ -168,6 +177,7 @@ export default function WeeklyProgressChart({
             className="btn btn-sm btn-outline-secondary"
             onClick={() => setWeeksBack((w) => Math.max(0, w - 1))}
             disabled={loading || weeksBack === 0}
+            title="Next week"
           >
             Next ▶
           </button>
