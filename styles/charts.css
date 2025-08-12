@@ -1,0 +1,32 @@
+/* charts.css */
+
+/* Gradient background for chart card */
+.chart-gradient {
+ background: linear-gradient(
+    330deg,
+    rgb(230, 223, 251) 0%,       /* Alice blue */
+    rgb(232, 229, 254) 15%,      /* Very light baby blue */
+    rgb(233, 237, 253) 35%,      /* Soft sky blue */
+    rgba(235, 240, 255, 1) 60%,      /* Cloud white */
+    rgb(219, 219, 247) 100%      /* Near-white lavender tint */
+  );
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+}
+
+/* Optional: make Chart.js bars stand out more on gradient */
+.chart-gradient canvas {
+  background: transparent !important;
+}
+
+/* Optional: add a soft drop shadow */
+.chart-gradient {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Gradient for page background if you want the whole profile page to match */
+.page-gradient {
+  background: linear-gradient(180deg, #eef2f3 0%, #d9e4f5 100%);
+  min-height: 100vh;
+}
