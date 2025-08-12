@@ -346,6 +346,8 @@ export default function WeeklyProgressChart({
 /*
 
 
+// WeeklyProgressChart.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -650,21 +652,24 @@ export default function WeeklyProgressChart({
           </div>
 
          
-          <select
-            className="form-select form-select-sm ms-2"
-            style={{ width: "auto" }}
-            value={chartKind}
-            onChange={(e) => setChartKind(e.target.value as ChartKind)}
-            aria-label="Select chart"
-            disabled={loading}
-            title="Select chart"
-          >
-            <option value="weekly">Weekly</option>
-            <option value="weeksHistory">Weeks History</option>
-            <option value="monthlySummary">Monthly</option>
-            <option value="exerciseTrend">Exercise Trend</option>
-            <option value="typeBreakdown">Type Breakdown</option>
-          </select>
+          <div className="gradient-select-wrapper ms-2">
+            <select
+              className="form-select form-select-sm gradient-select"
+              style={{ width: "auto" }}
+              value={chartKind}
+              onChange={(e) => setChartKind(e.target.value as ChartKind)}
+              aria-label="Select chart"
+              disabled={loading}
+              title="Select chart"
+            >
+              <option value="weekly">Weekly</option>
+              <option value="weeksHistory">Weeks History</option>
+              <option value="monthlySummary">Monthly</option>
+              <option value="exerciseTrend">Exercise Trend</option>
+              <option value="typeBreakdown">Type Breakdown</option>
+            </select>
+            </div>
+
         </div>
       </div>
 
@@ -680,6 +685,10 @@ export default function WeeklyProgressChart({
     </div>
   );
 }
+
+
+
+
 
 
 */

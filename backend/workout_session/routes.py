@@ -219,8 +219,8 @@ def weekly_points(current_user):
             "label": labels[i],
             "minutes": minutes[i],
             "sessions": sess_ct[i],
-            "workouts": workouts_list,         # NEW
-            "exercises": exercises_detail      # NEW
+            "workouts": workouts_list,        
+            "exercises": exercises_detail 
         })
 
     return jsonify({
@@ -230,12 +230,12 @@ def weekly_points(current_user):
     }), 200
     
 # Histogram of workout types
-# history for last weeks (now includes exercises per day)
+
 @workout_sessions_bp.route('/history/weeks', methods=['GET'])
 @token_required
 def weeks_history(current_user):
     tz = request.args.get('tz') or "America/Chicago"
-    n = request.args.get('n', default=8, type=int)  # last N weeks, default 8
+    n = request.args.get('n', default=8, type=int)  
 
     now_local = datetime.now(ZoneInfo(tz))
     start_monday = now_local.date() - timedelta(days=now_local.weekday())
