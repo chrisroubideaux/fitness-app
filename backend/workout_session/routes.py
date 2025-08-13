@@ -393,3 +393,169 @@ def generate_week(current_user):
             db.session.add(session)
     db.session.commit()
     return jsonify({"message": f"Generated data for week starting {week_start_str}"}), 201
+
+# # Distinct exercise names for the logged-in user
+@workout_sessions_bp.route('/exercise/names', methods=['GET'])
+@token_required
+def list_exercise_names(current_user):
+    """
+    Returns distinct exercise names for the logged-in user.
+    Response: { "exercises": ["Bench Press", "Deadlift", ...] }
+    """
+    rows = (
+        db.session.query(WorkoutSession.exercise_name)
+        .filter(WorkoutSession.user_id == current_user.id)
+        .filter(WorkoutSession.exercise_name.isnot(None))
+        .distinct()
+        .order_by(WorkoutSession.exercise_name.asc())
+        .all()
+    )
+    names = [r[0] for r in rows if (r and r[0])]
+    return jsonify({"exercises": names}), 200
+
+
+# Exercise trend time series
+@workout_sessions_bp.route('/exercise/trend', methods=['GET'])
+@token_required
+def exercise_trend(current_user):
+    """
+    Query params:
+      - exercise: string (required)  e.g. "Flat Bench Press"
+      - metric: one of [1rm, max_weight, avg_weight, total_volume, total_reps] (default: 1rm)
+      - group_by: one of [day, week, month] (default: day)
+      - tz: IANA timezone (default: America/Chicago)
+      - from: ISO date/datetime (optional, default: now-90d)  e.g. 2025-05-01 or 2025-05-01T00:00:00-05:00
+      - to:   ISO date/datetime (optional, default: now)
+
+    Response:
+    {
+      "exercise": "Flat Bench Press",
+      "metric": "1rm",
+      "group_by": "day",
+      "points": [
+        {"bucket": "2025-08-01", "value": 185.5, "max_weight": 185.0, "total_reps": 24, "total_volume": 8880.0},
+        ...
+      ]
+    }
+    """
+    from collections import defaultdict
+
+    exercise = (request.args.get("exercise") or "").strip()
+    if not exercise:
+        return jsonify({"error": "Missing ?exercise"}), 400
+
+    metric = (request.args.get("metric") or "1rm").lower()
+    if metric not in {"1rm", "max_weight", "avg_weight", "total_volume", "total_reps"}:
+        return jsonify({"error": "Invalid metric"}), 400
+
+    group_by = (request.args.get("group_by") or "day").lower()
+    if group_by not in {"day", "week", "month"}:
+        return jsonify({"error": "Invalid group_by"}), 400
+
+    tz = request.args.get("tz") or "America/Chicago"
+
+    # Parse range (defaults to last 90 days)
+    to_q = request.args.get("to")
+    from_q = request.args.get("from")
+
+    to_utc = _parse_iso_dt_to_utc(to_q) if to_q else datetime.utcnow().replace(tzinfo=ZoneInfo("UTC"))
+    from_utc = _parse_iso_dt_to_utc(from_q) if from_q else (to_utc - timedelta(days=90))
+
+    # Pull sessions for this exercise & user in range
+    # NOTE: ilike (case-insensitive exact match) is fine here; you can switch to == for strict case-sensitive match.
+    q = (
+        WorkoutSession.query
+        .filter(WorkoutSession.user_id == current_user.id)
+        .filter(WorkoutSession.workout_date >= from_utc)
+        .filter(WorkoutSession.workout_date <= to_utc)
+        .filter(WorkoutSession.exercise_name.isnot(None))
+        .filter(WorkoutSession.exercise_name.ilike(exercise))
+    )
+
+    sessions = q.all()
+    if not sessions:
+        return jsonify({
+            "exercise": exercise,
+            "metric": metric,
+            "group_by": group_by,
+            "points": []
+        }), 200
+
+    tzinfo = ZoneInfo(tz)
+
+    # Bucket helper
+    def bucket_key(dt_utc):
+        local = dt_utc.astimezone(tzinfo)
+        if group_by == "day":
+            return local.strftime("%Y-%m-%d")
+        elif group_by == "week":
+            monday = (local.date() - timedelta(days=local.weekday()))
+            return monday.strftime("%Y-%m-%d")
+        else:  # month
+            return local.replace(day=1).strftime("%Y-%m-01")
+
+    # Aggregate per bucket
+    buckets = defaultdict(list)
+
+    for s in sessions:
+        # Session-level fields; strength sessions have sets/reps/weight_lbs
+        reps = int(s.reps or 0)
+        sets = int(s.sets or 0)
+        weight = float(s.weight_lbs or 0.0)
+        # Treat missing sets as 1 when reps/weight are present
+        eff_sets = sets if sets > 0 else (1 if (reps > 0 or weight > 0) else 0)
+
+        buckets[bucket_key(s.workout_date)].append({
+            "reps": reps,
+            "sets": eff_sets,
+            "weight": weight
+        })
+
+    def epley_1rm(weight_lbs: float, reps: int) -> float:
+        # Epley formula (lbs)
+        if weight_lbs <= 0 or reps <= 0:
+            return 0.0
+        return weight_lbs * (1.0 + reps / 30.0)
+
+    points = []
+    for bkey in sorted(buckets.keys()):
+        sets_list = buckets[bkey]
+
+        total_reps = sum(item["reps"] * max(item["sets"], 1) for item in sets_list)
+        total_volume = sum(item["reps"] * max(item["sets"], 1) * item["weight"] for item in sets_list)
+
+        weights = [item["weight"] for item in sets_list if item["weight"] > 0]
+        max_weight = max(weights) if weights else 0.0
+        avg_weight = (sum(weights) / len(weights)) if weights else 0.0
+
+        # Best single-set 1RM estimate across the bucket
+        best_1rm = 0.0
+        for item in sets_list:
+            best_1rm = max(best_1rm, epley_1rm(item["weight"], item["reps"]))
+
+        if metric == "1rm":
+            value = round(best_1rm, 2)
+        elif metric == "max_weight":
+            value = round(max_weight, 2)
+        elif metric == "avg_weight":
+            value = round(avg_weight, 2)
+        elif metric == "total_volume":
+            value = round(total_volume, 2)
+        else:  # total_reps
+            value = int(total_reps)
+
+        points.append({
+            "bucket": bkey,
+            "value": value,
+            "max_weight": round(max_weight, 2),
+            "total_reps": int(total_reps),
+            "total_volume": round(total_volume, 2),
+        })
+
+    return jsonify({
+        "exercise": exercise,
+        "metric": metric,
+        "group_by": group_by,
+        "points": points
+    }), 200
+

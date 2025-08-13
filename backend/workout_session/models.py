@@ -1,5 +1,5 @@
 # models/workout_session.py
-# models/workout_session.py
+
 import uuid
 from datetime import datetime, timedelta
 from extensions import db
