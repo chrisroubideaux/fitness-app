@@ -46,13 +46,13 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
   }));
 
   return (
-    <div className="inbox-wrapper">
+    <div className="inbox-wrapper bg-transparent">
       <h6 className="mb-3">Inbox</h6>
       <ul className="list-group">
         {mockThreads.map((thread) => (
           <li
             key={thread.id}
-            className="list-group-item list-group-item-action"
+            className="list-group-item list-group-item-action bg-transparent"
             onClick={() => onMessageClick(thread)}
             style={{ cursor: 'pointer' }}
           >

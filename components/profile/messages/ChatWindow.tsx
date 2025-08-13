@@ -79,7 +79,7 @@ export default function ChatWindow({
 
       <h6 className="mb-3">{selectedThread.subject}</h6>
 
-      <div className="chat-messages" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+      <div className="chat-messages bg-transparent" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
         {messages.map((msg) => (
           <motion.div
             key={msg.id}
