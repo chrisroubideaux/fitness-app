@@ -1,12 +1,16 @@
 /* ---------- Bio form look & feel ---------- */
 
 .bio-card {
-  position: relative;       
+  position: relative;
+   background: rgb(249,248,252);
+  background: linear-gradient(234deg, rgba(249,248,252,1) 0%, rgba(205,205,225,1) 50%, rgba(253,253,255,1) 100%);
   border-radius: 16px;
   overflow: hidden;
+  max-width: 350px;     /* ← slimmer card */
+  width: 100%;
 }
 
-/* Inputs */
+/* Inputs (base) */
 .bio-input,
 .bio-textarea {
   border-radius: 12px !important;
@@ -23,6 +27,70 @@
     0 8px 20px rgba(0,0,0,.06);
 }
 
+/* NEW: side-by-side icon + control row */
+.bio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--bs-border-color, rgba(0,0,0,.1));
+  border-radius: 12px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.75);
+  backdrop-filter: blur(2px);
+}
+
+.bio-row:focus-within {
+  box-shadow: 0 0 0 0.2rem rgba(122, 214, 255, 0.25);
+  border-color: rgba(122, 214, 255, 0.8);
+}
+
+.bio-row__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #7E8EF1;    
+  opacity: 0.95;
+}
+
+.bio-row__control {
+  flex: 1 1 auto;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 6px 8px !important;
+  outline: none;
+  box-shadow: none !important;
+  min-height: 34px;
+}
+
+/* ensure any .bio-input/.bio-textarea inside row are borderless */
+.bio-row .bio-input,
+.bio-row .bio-textarea,
+.bio-row input.form-control,
+.bio-row textarea.form-control {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+}
+
+/* NEW: textarea row variant */
+.bio-row--textarea {
+  align-items: flex-start;
+}
+.bio-row--textarea .bio-row__icon {
+  margin-top: 6px;
+}
+.bio-textarea {
+  border: 0 !important;              
+  background: transparent !important;
+  padding: 6px 8px !important;
+  min-height: 110px;
+  resize: vertical;
+}
+
 /* Buttons: a bit slimmer, less “bulbous” */
 .btn-thin {
   padding: .35rem .7rem !important;
@@ -34,6 +102,63 @@
 .btn-outline-primary.btn-thin,
 .btn-outline-secondary.btn-thin {
   border-width: 1px;
+}
+
+/* --- Avatar with camera overlay --- */
+.bio-avatar {
+  position: relative;
+  width: 96px;   /* change this to 72px or 120px if you want */
+  height: 96px;
+}
+
+.bio-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 9999px; /* circle */
+  display: block;
+}
+
+.bio-avatar__placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef1ff;
+  color: #6b7cff;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* camera button in the lower-right corner */
+.bio-avatar__edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border: 2px solid #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #7E8EF1, #5BD1D7);
+  box-shadow: 0 8px 18px rgba(0,0,0,.18);
+  transition: transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+}
+
+.bio-avatar__edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,.22);
+}
+
+.bio-avatar__edit.is-disabled {
+  opacity: .5;
+  pointer-events: none;
 }
 
 /* Floating alert “toast” with gradient background */
@@ -66,14 +191,18 @@
   background: linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.02));
 }
 
+/* (legacy) generic icon rule if needed elsewhere */
+.bio-icon { color: #7E8EF1; }
+
+/* layout helpers you already had */
 .form {
   width: 100%;
   max-width: 330px;
   padding: 15px;
   margin: auto;
   border-radius: 30px;
-  outline: none; 
-  box-shadow: none; 
+  outline: none;
+  box-shadow: none;
 }
 
 .form-label {
@@ -81,3 +210,4 @@
   margin-bottom: 0.5rem;
   color: #b1bcff;
 }
+

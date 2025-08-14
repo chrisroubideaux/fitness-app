@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useMemo, useRef, useState, useEffect } from "react";
-// no CSS import here — styles come from layout.tsx
+import { FiUser, FiMail, FiPhone, FiMapPin, FiInfo, FiAward } from "react-icons/fi";
 
 export type User = { 
   id: string;
@@ -140,7 +140,6 @@ export default function BioCard({
     if (!imageUploadPath || !file) return avatarUrl;
     const fd = new FormData();
     fd.append("file", file);
-
     const res = await fetch(`${base}${imageUploadPath}`, {
       method: "POST",
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -172,14 +171,12 @@ export default function BioCard({
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!token) { setError("No token. Please log in again."); return; }
-
     setSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
       const finalAvatarUrl = await uploadImageIfNeeded();
-
       const payload = {
         full_name: fullName || null,
         bio: bio || null,
@@ -187,7 +184,6 @@ export default function BioCard({
         phone: phone || null,
         profile_image: finalAvatarUrl || null,
       };
-
       const res = await fetch(`${base}/api/users/${encodeURIComponent(user.id)}`, {
         method: "PUT",
         headers: {
@@ -196,14 +192,11 @@ export default function BioCard({
         },
         body: JSON.stringify(payload),
       });
-
       const maybeJson = await res.json().catch(() => null);
-
       if (!res.ok) {
         const msg = (maybeJson && (maybeJson.error || maybeJson.message)) || `Update failed (${res.status})`;
         throw new Error(msg);
       }
-
       let updatedUser: User;
       if (maybeJson && (maybeJson as ServerUser).id) {
         updatedUser = normalizeServerUser(maybeJson as ServerUser);
@@ -217,7 +210,6 @@ export default function BioCard({
           profile_image_url: payload.profile_image,
         };
       }
-
       setSuccess("Profile updated!");
       setIsEditing(false);
       setFile(null);
@@ -240,8 +232,8 @@ export default function BioCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`card shadow-sm chart-gradient bio-card  mx-auto ${className ?? ""}`}
-       style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}  // ← added
+      className={`card shadow-sm chart-gradient bio-card mx-auto ${className ?? ""}`}
+      style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}  /* slimmer */
     >
       <div className="card-body">
         {/* floating gradient alerts */}
@@ -289,6 +281,8 @@ export default function BioCard({
                 {initialsOf(fullName || user.full_name)}
               </div>
             )}
+
+            {/* change/select photo */}
             <div className="mt-2 w-100" style={{ maxWidth: 420 }}>
               {imageUploadPath ? (
                 <div className="d-flex flex-column align-items-stretch">
@@ -310,94 +304,106 @@ export default function BioCard({
                   </button>
                 </div>
               ) : (
-                <>
-                  <label className="form-label mb-1 mt-2">
-                    <h4>Profile</h4>
-                  </label>
-                  {/*
-                  <input
-                    type="url"
-                    className="form-control form-control-sm bio-input"
-                    placeholder="https://example.com/me.jpg"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    disabled={disableFields}
-                  />
-                  */}
-                </>
+                <label className="form-label mb-1 mt-2">
+                  <h4>Profile</h4>
+                </label>
               )}
             </div>
           </div>
 
-          {/* Stacked fields */}
+          {/* Fields with side-by-side icons */}
           <div className="mb-2">
             <label className="form-label mb-1">Full Name</label>
-            <input
-              type="text"
-              className="form-control form-control-sm bio-input"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your name"
-              disabled={disableFields}
-            />
+            <div className="bio-row">
+              <FiUser className="bio-row__icon" aria-hidden="true" />
+              <input
+                type="text"
+                className="form-control form-control-sm bio-row__control"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your name"
+                disabled={disableFields}
+                aria-label="Full name"
+              />
+            </div>
           </div>
 
           <div className="mb-2">
             <label className="form-label mb-1">Email</label>
-            <input
-              type="email"
-              className="form-control form-control-sm bio-input"
-              value={email}
-              readOnly
-              aria-readonly="true"
-              title="Email is managed by your account provider"
-            />
+            <div className="bio-row">
+              <FiMail className="bio-row__icon" aria-hidden="true" />
+              <input
+                type="email"
+                className="form-control form-control-sm bio-row__control"
+                value={email}
+                readOnly
+                aria-readonly="true"
+                title="Email is managed by your account provider"
+                aria-label="Email"
+              />
+            </div>
           </div>
 
           <div className="mb-2">
             <label className="form-label mb-1">Phone</label>
-            <input
-              type="tel"
-              className="form-control form-control-sm bio-input"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="(555) 555-5555"
-              disabled={disableFields}
-            />
+            <div className="bio-row">
+              <FiPhone className="bio-row__icon" aria-hidden="true" />
+              <input
+                type="tel"
+                className="form-control form-control-sm bio-row__control"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 555-5555"
+                disabled={disableFields}
+                aria-label="Phone number"
+              />
+            </div>
           </div>
 
           <div className="mb-2">
             <label className="form-label mb-1">Address</label>
-            <input
-              type="text"
-              className="form-control form-control-sm bio-input"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Street, City, State"
-              disabled={disableFields}
-            />
+            <div className="bio-row">
+              <FiMapPin className="bio-row__icon" aria-hidden="true" />
+              <input
+                type="text"
+                className="form-control form-control-sm bio-row__control"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, City, State"
+                disabled={disableFields}
+                aria-label="Address"
+              />
+            </div>
           </div>
 
           <div className="mb-2">
             <label className="form-label mb-1">Bio</label>
-            <textarea
-              className="form-control bio-textarea"
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself"
-              disabled={disableFields}
-            />
+            <div className="bio-row bio-row--textarea">
+              <FiInfo className="bio-row__icon" aria-hidden="true" />
+              <textarea
+                className="form-control bio-textarea bio-row__control"
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself"
+                disabled={disableFields}
+                aria-label="Bio"
+              />
+            </div>
           </div>
 
           <div className="mb-2">
             <label className="form-label mb-1">Membership Plan</label>
-            <input
-              type="text"
-              className="form-control form-control-sm bio-input"
-              value={planLabel}
-              readOnly
-            />
+            <div className="bio-row">
+              <FiAward className="bio-row__icon" aria-hidden="true" />
+              <input
+                type="text"
+                className="form-control form-control-sm bio-row__control"
+                value={planLabel}
+                readOnly
+                aria-label="Membership plan"
+              />
+            </div>
           </div>
 
           <hr className="bio-divider" />
@@ -405,7 +411,9 @@ export default function BioCard({
           {/* Bottom actions */}
           <div className="d-flex justify-content-between align-items-center">
             <div className="text-muted small">
-              {isEditing ? "Editing enabled — make your changes then save." : "Fields are read-only. Click Edit to make changes."}
+              {isEditing
+                ? "Editing enabled — make your changes then save."
+                : "Fields are read-only. Click Edit to make changes."}
             </div>
             <div className="d-flex gap-2">
               {!isEditing ? (
@@ -442,5 +450,3 @@ export default function BioCard({
     </motion.div>
   );
 }
-
-
