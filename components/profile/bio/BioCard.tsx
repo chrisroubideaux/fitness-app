@@ -1,8 +1,9 @@
 /* BioCard.tsx */
+/* components/profile/bio/BioCard.tsx */
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 
 export type User = { 
   id: string;
@@ -15,10 +16,29 @@ export type User = {
   bio: string | null;
 };
 
+type ServerUser = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  bio: string | null;
+  address: string | null;
+  phone_number?: string | null;   // your /me + PUT response
+  phone?: string | null;          // older field — we normalize it
+  profile_image_url?: string | null;
+  profile_image?: string | null;  // older field — we normalize it
+  membership_plan_id: string | null;
+};
+
 type Props = {
   user: User;
   className?: string;
-  onEdit?: () => void;
+  onSaved?: (updated: User) => void;
+  apiBase?: string;
+  /**
+   * Optional multipart endpoint to upload avatar before saving profile.
+   * Must return {url} or {profile_image_url}.
+   */
+  imageUploadPath?: string;
 };
 
 function initialsOf(name: string | null): string {
@@ -29,18 +49,193 @@ function initialsOf(name: string | null): string {
   return (first + last).toUpperCase();
 }
 
-function formatPhone(phone: string | null): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
-  if (digits.length === 11 && digits.startsWith("1"))
-    return `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
-  return phone;
+function normalizeServerUser(s: ServerUser): User {
+  return {
+    id: s.id,
+    full_name: s.full_name,
+    email: s.email,
+    bio: s.bio,
+    address: s.address,
+    phone_number: s.phone_number ?? s.phone ?? null,
+    profile_image_url: s.profile_image_url ?? s.profile_image ?? null,
+    membership_plan_id: s.membership_plan_id,
+  };
 }
 
-export default function BioCard({ user, className, onEdit }: Props) {
-  const phonePretty = useMemo(() => formatPhone(user.phone_number), [user.phone_number]);
+export default function BioCard({
+  user,
+  className,
+  onSaved,
+  apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000",
+  imageUploadPath,
+}: Props) {
+  const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
+
+  // edit / network state
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // local editable copy
+  const [fullName, setFullName] = useState(user.full_name ?? "");
+  const [email] = useState(user.email ?? "");
+  const [phone, setPhone] = useState(user.phone_number ?? "");
+  const [address, setAddress] = useState(user.address ?? "");
+  const [bio, setBio] = useState(user.bio ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string>(user.profile_image_url ?? "");
+
+  // image upload (optional)
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
   const planLabel = useMemo(() => user.membership_plan_id ?? "Free", [user.membership_plan_id]);
+
+  // reset when user prop changes
+  useEffect(() => {
+    setFullName(user.full_name ?? "");
+    setPhone(user.phone_number ?? "");
+    setAddress(user.address ?? "");
+    setBio(user.bio ?? "");
+    setAvatarUrl(user.profile_image_url ?? "");
+    setFile(null);
+    setPreviewUrl(null);
+    setError(null);
+    setSuccess(null);
+    setIsEditing(false);
+  }, [user]);
+
+  // preview selected file
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const shownAvatar = previewUrl || avatarUrl;
+
+  function handlePickImage() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (!f) { setFile(null); return; }
+    if (!f.type.startsWith("image/")) { setError("Please choose an image file."); return; }
+    if (f.size > 5 * 1024 * 1024) { setError("Image is too large (max 5MB)."); return; }
+    setError(null);
+    setFile(f);
+  }
+
+  async function uploadImageIfNeeded(): Promise<string> {
+    if (!imageUploadPath || !file) return avatarUrl;
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch(`${base}${imageUploadPath}`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: fd,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Image upload failed (${res.status}): ${text || res.statusText}`);
+    }
+    const data: { url?: string; profile_image_url?: string } = await res.json().catch(() => ({}));
+    const url = data.url ?? data.profile_image_url ?? "";
+    if (!url) throw new Error("Upload succeeded but no URL returned by server.");
+    return url;
+  }
+
+  function handleCancel() {
+    setFullName(user.full_name ?? "");
+    setPhone(user.phone_number ?? "");
+    setAddress(user.address ?? "");
+    setBio(user.bio ?? "");
+    setAvatarUrl(user.profile_image_url ?? "");
+    setFile(null);
+    setPreviewUrl(null);
+    setError(null);
+    setSuccess(null);
+    setIsEditing(false);
+  }
+
+  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!token) { setError("No token. Please log in again."); return; }
+
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const finalAvatarUrl = await uploadImageIfNeeded();
+
+      // Backend accepts both styles; we send the "old" names it maps: phone, profile_image
+      const payload = {
+        full_name: fullName || null,
+        bio: bio || null,
+        address: address || null,
+        phone: phone || null,
+        profile_image: finalAvatarUrl || null,
+      };
+
+      const res = await fetch(`${base}/api/users/${encodeURIComponent(user.id)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Attempt to read JSON either way for better error reporting
+      const maybeJson = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg =
+          (maybeJson && (maybeJson.error || maybeJson.message)) ||
+          `Update failed (${res.status})`;
+        throw new Error(msg);
+      }
+
+      // Your route returns the updated user (same shape as /me)
+      let updatedUser: User;
+      if (maybeJson && (maybeJson as ServerUser).id) {
+        updatedUser = normalizeServerUser(maybeJson as ServerUser);
+      } else {
+        // Fallback if backend only sent {message}
+        updatedUser = {
+          ...user,
+          full_name: payload.full_name,
+          bio: payload.bio,
+          address: payload.address,
+          phone_number: payload.phone,
+          profile_image_url: payload.profile_image,
+        };
+      }
+
+      setSuccess("Profile updated!");
+      setIsEditing(false);
+      setFile(null);
+      setPreviewUrl(null);
+      setAvatarUrl(updatedUser.profile_image_url ?? "");
+      onSaved?.(updatedUser);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save profile.";
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const disableFields = !isEditing || saving;
 
   return (
     <motion.div
@@ -52,67 +247,188 @@ export default function BioCard({ user, className, onEdit }: Props) {
       style={{ borderRadius: 16 }}
     >
       <div className="card-body">
-        <div className="d-flex gap-3 align-items-start">
-          <div className="flex-shrink-0">
-            {user.profile_image_url ? (
+        <form onSubmit={handleSave}>
+          {/* Avatar (top) */}
+          <div className="d-flex flex-column align-items-center text-center mb-3">
+            {shownAvatar ? (
               <img
-                src={user.profile_image_url}
-                alt={user.full_name ?? "Profile"}
-                width={72}
-                height={72}
+                src={shownAvatar}
+                alt={fullName || "Profile"}
+                width={96}
+                height={96}
                 className="rounded-circle object-fit-cover"
                 style={{ objectFit: "cover" }}
               />
             ) : (
               <div
                 className="rounded-circle d-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-semibold"
-                style={{ width: 72, height: 72 }}
+                style={{ width: 96, height: 96 }}
+                aria-label="Initials"
               >
-                {initialsOf(user.full_name)}
+                {initialsOf(fullName || user.full_name)}
               </div>
             )}
-          </div>
 
-          <div className="flex-grow-1">
-            <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-              <div>
-                <h5 className="mb-1">{user.full_name ?? "—"}</h5>
-                <div className="d-flex align-items-center gap-2">
-                  <span className="text-muted" style={{ fontSize: ".9rem" }}>
-                    {user.email ?? "No email"}
-                  </span>
-                  <span className="badge text-bg-light border">{planLabel}</span>
+            {/* Avatar control (stacked) */}
+            <div className="mt-2 w-100" style={{ maxWidth: 420 }}>
+              {imageUploadPath ? (
+                <div className="d-flex flex-column align-items-stretch">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="d-none"
+                    disabled={disableFields}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={handlePickImage}
+                    disabled={disableFields}
+                  >
+                    {file ? "Choose Different Photo" : "Choose Photo"}
+                  </button>
                 </div>
-              </div>
-
-              {onEdit && (
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={onEdit}>
-                  Edit Profile
-                </button>
+              ) : (
+                <>
+                  <label className="form-label mb-1 mt-2">Avatar URL</label>
+                  <input
+                    type="url"
+                    className="form-control form-control-sm"
+                    placeholder="https://example.com/me.jpg"
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    disabled={disableFields}
+                  />
+                </>
               )}
             </div>
+          </div>
 
-            {user.bio && (
-              <p className="mt-3 mb-2" style={{ whiteSpace: "pre-wrap" }}>
-                {user.bio}
-              </p>
-            )}
+          {/* Stacked fields */}
+          <div className="mb-2">
+            <label className="form-label mb-1">Full Name</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your name"
+              disabled={disableFields}
+            />
+          </div>
 
-            <div className="row mt-2 g-2 small">
-              <div className="col-md-4">
-                <div className="text-muted">Phone</div>
-                <div>{phonePretty ?? "Not set"}</div>
-              </div>
-              <div className="col-md-4">
-                <div className="text-muted">Address</div>
-                <div>{user.address ?? "Not set"}</div>
-              </div>
-              <div className="col-md-4">
-               
-              </div>
+          <div className="mb-2">
+            <label className="form-label mb-1">Email</label>
+            <input
+              type="email"
+              className="form-control form-control-sm"
+              value={email}
+              readOnly
+              aria-readonly="true"
+              title="Email is managed by your account provider"
+            />
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label mb-1">Phone</label>
+            <input
+              type="tel"
+              className="form-control form-control-sm"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="(555) 555-5555"
+              disabled={disableFields}
+            />
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label mb-1">Address</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Street, City, State"
+              disabled={disableFields}
+            />
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label mb-1">Bio</label>
+            <textarea
+              className="form-control"
+              rows={3}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about yourself"
+              disabled={disableFields}
+            />
+          </div>
+
+          <div className="mb-2">
+            <label className="form-label mb-1">Membership Plan</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={planLabel}
+              readOnly
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label mb-1">User ID</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={user.id}
+              readOnly
+            />
+          </div>
+
+          {/* Alerts */}
+          {error && <div className="alert alert-danger mb-3 py-2" role="alert">{error}</div>}
+          {success && <div className="alert alert-success mb-3 py-2" role="status" aria-live="polite">{success}</div>}
+
+          <hr className="mt-0" />
+
+          {/* Bottom actions */}
+          <div className="d-flex justify-content-between align-items-center">
+            <div className="text-muted small">
+              {isEditing ? "Editing enabled — make your changes then save." : "Fields are read-only. Click Edit to make changes."}
+            </div>
+            <div className="d-flex gap-2">
+              {!isEditing ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit Profile
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </motion.div>
   );

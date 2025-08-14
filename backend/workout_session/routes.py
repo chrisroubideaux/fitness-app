@@ -365,6 +365,9 @@ def monthly_summary(current_user):
     # order by month key
     ordered = [buckets[k] for k in sorted(buckets.keys())]
     return jsonify({"months": ordered}), 200
+
+
+# Generate a week of random workout sessions
 @workout_sessions_bp.route('/generate-week', methods=['POST', 'GET'])
 @token_required
 def generate_week(current_user):
