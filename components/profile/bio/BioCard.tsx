@@ -1,9 +1,11 @@
 /* BioCard.tsx */
+
 /* components/profile/bio/BioCard.tsx */
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import React, { useMemo, useRef, useState, useEffect } from "react";
+// no CSS import here — styles come from layout.tsx
 
 export type User = { 
   id: string;
@@ -22,10 +24,10 @@ type ServerUser = {
   email: string | null;
   bio: string | null;
   address: string | null;
-  phone_number?: string | null;   // your /me + PUT response
-  phone?: string | null;          // older field — we normalize it
+  phone_number?: string | null;
+  phone?: string | null;
   profile_image_url?: string | null;
-  profile_image?: string | null;  // older field — we normalize it
+  profile_image?: string | null;
   membership_plan_id: string | null;
 };
 
@@ -34,10 +36,6 @@ type Props = {
   className?: string;
   onSaved?: (updated: User) => void;
   apiBase?: string;
-  /**
-   * Optional multipart endpoint to upload avatar before saving profile.
-   * Must return {url} or {profile_image_url}.
-   */
   imageUploadPath?: string;
 };
 
@@ -71,13 +69,11 @@ export default function BioCard({
 }: Props) {
   const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
 
-  // edit / network state
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // local editable copy
   const [fullName, setFullName] = useState(user.full_name ?? "");
   const [email] = useState(user.email ?? "");
   const [phone, setPhone] = useState(user.phone_number ?? "");
@@ -85,7 +81,6 @@ export default function BioCard({
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string>(user.profile_image_url ?? "");
 
-  // image upload (optional)
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -93,7 +88,6 @@ export default function BioCard({
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
   const planLabel = useMemo(() => user.membership_plan_id ?? "Free", [user.membership_plan_id]);
 
-  // reset when user prop changes
   useEffect(() => {
     setFullName(user.full_name ?? "");
     setPhone(user.phone_number ?? "");
@@ -107,7 +101,6 @@ export default function BioCard({
     setIsEditing(false);
   }, [user]);
 
-  // preview selected file
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -117,6 +110,16 @@ export default function BioCard({
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
+
+  // auto-dismiss alerts
+  useEffect(() => {
+    if (!error && !success) return;
+    const t = setTimeout(() => {
+      setError(null);
+      setSuccess(null);
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [error, success]);
 
   const shownAvatar = previewUrl || avatarUrl;
 
@@ -177,7 +180,6 @@ export default function BioCard({
     try {
       const finalAvatarUrl = await uploadImageIfNeeded();
 
-      // Backend accepts both styles; we send the "old" names it maps: phone, profile_image
       const payload = {
         full_name: fullName || null,
         bio: bio || null,
@@ -195,22 +197,17 @@ export default function BioCard({
         body: JSON.stringify(payload),
       });
 
-      // Attempt to read JSON either way for better error reporting
       const maybeJson = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const msg =
-          (maybeJson && (maybeJson.error || maybeJson.message)) ||
-          `Update failed (${res.status})`;
+        const msg = (maybeJson && (maybeJson.error || maybeJson.message)) || `Update failed (${res.status})`;
         throw new Error(msg);
       }
 
-      // Your route returns the updated user (same shape as /me)
       let updatedUser: User;
       if (maybeJson && (maybeJson as ServerUser).id) {
         updatedUser = normalizeServerUser(maybeJson as ServerUser);
       } else {
-        // Fallback if backend only sent {message}
         updatedUser = {
           ...user,
           full_name: payload.full_name,
@@ -243,19 +240,43 @@ export default function BioCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`card shadow-sm chart-gradient ${className ?? ""}`}
-      style={{ borderRadius: 16 }}
+      className={`card shadow-sm chart-gradient bio-card  mx-auto ${className ?? ""}`}
+       style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}  // ← added
     >
       <div className="card-body">
+        {/* floating gradient alerts */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              className="bio-alert bio-alert--error"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+            >
+              {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div
+              className="bio-alert bio-alert--success"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+            >
+              {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form onSubmit={handleSave}>
-          {/* Avatar (top) */}
+          {/* Avatar */}
           <div className="d-flex flex-column align-items-center text-center mb-3">
             {shownAvatar ? (
               <img
                 src={shownAvatar}
                 alt={fullName || "Profile"}
-                width={96}
-                height={96}
+                width={50}
+                height={50}
                 className="rounded-circle object-fit-cover"
                 style={{ objectFit: "cover" }}
               />
@@ -268,8 +289,6 @@ export default function BioCard({
                 {initialsOf(fullName || user.full_name)}
               </div>
             )}
-
-            {/* Avatar control (stacked) */}
             <div className="mt-2 w-100" style={{ maxWidth: 420 }}>
               {imageUploadPath ? (
                 <div className="d-flex flex-column align-items-stretch">
@@ -283,7 +302,7 @@ export default function BioCard({
                   />
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn btn-sm btn-outline-secondary btn-thin"
                     onClick={handlePickImage}
                     disabled={disableFields}
                   >
@@ -292,15 +311,19 @@ export default function BioCard({
                 </div>
               ) : (
                 <>
-                  <label className="form-label mb-1 mt-2">Avatar URL</label>
+                  <label className="form-label mb-1 mt-2">
+                    <h4>Profile</h4>
+                  </label>
+                  {/*
                   <input
                     type="url"
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm bio-input"
                     placeholder="https://example.com/me.jpg"
                     value={avatarUrl}
                     onChange={(e) => setAvatarUrl(e.target.value)}
                     disabled={disableFields}
                   />
+                  */}
                 </>
               )}
             </div>
@@ -311,7 +334,7 @@ export default function BioCard({
             <label className="form-label mb-1">Full Name</label>
             <input
               type="text"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm bio-input"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Your name"
@@ -323,7 +346,7 @@ export default function BioCard({
             <label className="form-label mb-1">Email</label>
             <input
               type="email"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm bio-input"
               value={email}
               readOnly
               aria-readonly="true"
@@ -335,7 +358,7 @@ export default function BioCard({
             <label className="form-label mb-1">Phone</label>
             <input
               type="tel"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm bio-input"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(555) 555-5555"
@@ -347,7 +370,7 @@ export default function BioCard({
             <label className="form-label mb-1">Address</label>
             <input
               type="text"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm bio-input"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Street, City, State"
@@ -358,7 +381,7 @@ export default function BioCard({
           <div className="mb-2">
             <label className="form-label mb-1">Bio</label>
             <textarea
-              className="form-control"
+              className="form-control bio-textarea"
               rows={3}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
@@ -371,27 +394,13 @@ export default function BioCard({
             <label className="form-label mb-1">Membership Plan</label>
             <input
               type="text"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm bio-input"
               value={planLabel}
               readOnly
             />
           </div>
 
-          <div className="mb-3">
-            <label className="form-label mb-1">User ID</label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              value={user.id}
-              readOnly
-            />
-          </div>
-
-          {/* Alerts */}
-          {error && <div className="alert alert-danger mb-3 py-2" role="alert">{error}</div>}
-          {success && <div className="alert alert-success mb-3 py-2" role="status" aria-live="polite">{success}</div>}
-
-          <hr className="mt-0" />
+          <hr className="bio-divider" />
 
           {/* Bottom actions */}
           <div className="d-flex justify-content-between align-items-center">
@@ -402,7 +411,7 @@ export default function BioCard({
               {!isEditing ? (
                 <button
                   type="button"
-                  className="btn btn-outline-primary"
+                  className="btn btn-outline-primary btn-thin"
                   onClick={() => setIsEditing(true)}
                 >
                   Edit Profile
@@ -411,7 +420,7 @@ export default function BioCard({
                 <>
                   <button
                     type="button"
-                    className="btn btn-outline-secondary"
+                    className="btn btn-outline-secondary btn-thin"
                     onClick={handleCancel}
                     disabled={saving}
                   >
@@ -419,7 +428,7 @@ export default function BioCard({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-thin"
                     disabled={saving}
                   >
                     {saving ? "Saving..." : "Save Changes"}
@@ -433,4 +442,5 @@ export default function BioCard({
     </motion.div>
   );
 }
+
 

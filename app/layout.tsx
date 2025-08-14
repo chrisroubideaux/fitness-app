@@ -11,6 +11,7 @@ import '@/styles/card.css';
 import '@/styles/calendar.css';
 import '@/styles/messages.css';
 import '@/styles/charts.css';
+import '@/styles/form.css';
 
 
 const geistSans = Geist({
