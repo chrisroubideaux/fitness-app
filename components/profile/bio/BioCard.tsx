@@ -5,9 +5,17 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { FiUser, FiMail, FiPhone, FiMapPin, FiInfo, FiAward } from "react-icons/fi";
+import {
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiMapPin,
+  FiInfo,
+  FiAward,
+  FiCamera,
+} from "react-icons/fi";
 
-export type User = { 
+export type User = {
   id: string;
   full_name: string | null;
   email: string | null;
@@ -36,6 +44,7 @@ type Props = {
   className?: string;
   onSaved?: (updated: User) => void;
   apiBase?: string;
+  /** Optional multipart upload endpoint returning {url} or {profile_image_url} */
   imageUploadPath?: string;
 };
 
@@ -81,13 +90,16 @@ export default function BioCard({
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string>(user.profile_image_url ?? "");
 
+  // File picking & preview
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null); // fallback if no upload route
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
   const planLabel = useMemo(() => user.membership_plan_id ?? "Free", [user.membership_plan_id]);
 
+  // Reset when user changes
   useEffect(() => {
     setFullName(user.full_name ?? "");
     setPhone(user.phone_number ?? "");
@@ -96,22 +108,28 @@ export default function BioCard({
     setAvatarUrl(user.profile_image_url ?? "");
     setFile(null);
     setPreviewUrl(null);
+    setDataUrl(null);
     setError(null);
     setSuccess(null);
     setIsEditing(false);
   }, [user]);
 
+  // Build preview + dataURL when selecting a file
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
+      setDataUrl(null);
       return;
     }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+    const obj = URL.createObjectURL(file);
+    setPreviewUrl(obj);
+    const reader = new FileReader();
+    reader.onload = () => setDataUrl(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(file);
+    return () => URL.revokeObjectURL(obj);
   }, [file]);
 
-  // auto-dismiss alerts
+  // Auto-dismiss alerts
   useEffect(() => {
     if (!error && !success) return;
     const t = setTimeout(() => {
@@ -123,36 +141,50 @@ export default function BioCard({
 
   const shownAvatar = previewUrl || avatarUrl;
 
-  function handlePickImage() {
-    fileInputRef.current?.click();
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
-    if (!f) { setFile(null); return; }
-    if (!f.type.startsWith("image/")) { setError("Please choose an image file."); return; }
-    if (f.size > 5 * 1024 * 1024) { setError("Image is too large (max 5MB)."); return; }
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    if (!f.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError("Image is too large (max 5MB).");
+      return;
+    }
     setError(null);
     setFile(f);
   }
 
   async function uploadImageIfNeeded(): Promise<string> {
-    if (!imageUploadPath || !file) return avatarUrl;
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch(`${base}${imageUploadPath}`, {
-      method: "POST",
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: fd,
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`Image upload failed (${res.status}): ${text || res.statusText}`);
+    // With upload route: POST the file, use returned URL
+    if (imageUploadPath && file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${base}${imageUploadPath}`, {
+        method: "POST",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: fd,
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`Image upload failed (${res.status}): ${text || res.statusText}`);
+      }
+      const data: { url?: string; profile_image_url?: string } =
+        (await res.json().catch(() => ({}))) || {};
+      const url = data.url ?? data.profile_image_url ?? "";
+      if (!url) throw new Error("Upload succeeded but no URL returned by server.");
+      return url;
     }
-    const data: { url?: string; profile_image_url?: string } = await res.json().catch(() => ({}));
-    const url = data.url ?? data.profile_image_url ?? "";
-    if (!url) throw new Error("Upload succeeded but no URL returned by server.");
-    return url;
+
+    // No upload route: send base64 so backend can store it (if you support it)
+    if (!imageUploadPath && dataUrl) return dataUrl;
+
+    // No new file: keep existing
+    return avatarUrl;
   }
 
   function handleCancel() {
@@ -163,6 +195,7 @@ export default function BioCard({
     setAvatarUrl(user.profile_image_url ?? "");
     setFile(null);
     setPreviewUrl(null);
+    setDataUrl(null);
     setError(null);
     setSuccess(null);
     setIsEditing(false);
@@ -170,13 +203,19 @@ export default function BioCard({
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!token) { setError("No token. Please log in again."); return; }
+    if (!token) {
+      setError("No token. Please log in again.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
       const finalAvatarUrl = await uploadImageIfNeeded();
+
+      // Backend expects: full_name, bio, address, phone, profile_image
       const payload = {
         full_name: fullName || null,
         bio: bio || null,
@@ -184,6 +223,7 @@ export default function BioCard({
         phone: phone || null,
         profile_image: finalAvatarUrl || null,
       };
+
       const res = await fetch(`${base}/api/users/${encodeURIComponent(user.id)}`, {
         method: "PUT",
         headers: {
@@ -192,11 +232,15 @@ export default function BioCard({
         },
         body: JSON.stringify(payload),
       });
+
       const maybeJson = await res.json().catch(() => null);
       if (!res.ok) {
-        const msg = (maybeJson && (maybeJson.error || maybeJson.message)) || `Update failed (${res.status})`;
+        const msg =
+          (maybeJson && (maybeJson.error || maybeJson.message)) ||
+          `Update failed (${res.status})`;
         throw new Error(msg);
       }
+
       let updatedUser: User;
       if (maybeJson && (maybeJson as ServerUser).id) {
         updatedUser = normalizeServerUser(maybeJson as ServerUser);
@@ -210,10 +254,12 @@ export default function BioCard({
           profile_image_url: payload.profile_image,
         };
       }
+
       setSuccess("Profile updated!");
       setIsEditing(false);
       setFile(null);
       setPreviewUrl(null);
+      setDataUrl(null);
       setAvatarUrl(updatedUser.profile_image_url ?? "");
       onSaved?.(updatedUser);
     } catch (err) {
@@ -233,7 +279,7 @@ export default function BioCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
       className={`card shadow-sm chart-gradient bio-card mx-auto ${className ?? ""}`}
-      style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}  /* slimmer */
+      style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}
     >
       <div className="card-body">
         {/* floating gradient alerts */}
@@ -261,53 +307,44 @@ export default function BioCard({
         </AnimatePresence>
 
         <form onSubmit={handleSave}>
-          {/* Avatar */}
+          {/* Avatar (camera button is the only trigger) */}
           <div className="d-flex flex-column align-items-center text-center mb-3">
-            {shownAvatar ? (
-              <img
-                src={shownAvatar}
-                alt={fullName || "Profile"}
-                width={50}
-                height={50}
-                className="rounded-circle object-fit-cover"
-                style={{ objectFit: "cover" }}
-              />
-            ) : (
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center bg-secondary-subtle text-secondary fw-semibold"
-                style={{ width: 96, height: 96 }}
-                aria-label="Initials"
-              >
-                {initialsOf(fullName || user.full_name)}
-              </div>
-            )}
-
-            {/* change/select photo */}
-            <div className="mt-2 w-100" style={{ maxWidth: 420 }}>
-              {imageUploadPath ? (
-                <div className="d-flex flex-column align-items-stretch">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="d-none"
-                    disabled={disableFields}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary btn-thin"
-                    onClick={handlePickImage}
-                    disabled={disableFields}
-                  >
-                    {file ? "Choose Different Photo" : "Choose Photo"}
-                  </button>
-                </div>
+            <div className="bio-avatar">
+              {shownAvatar ? (
+                <img
+                  src={shownAvatar}
+                  alt={fullName || "Profile"}
+                  className="bio-avatar__img"
+                />
               ) : (
-                <label className="form-label mb-1 mt-2">
-                  <h4>Profile</h4>
-                </label>
+                <div className="bio-avatar__placeholder" aria-label="Initials">
+                  {initialsOf(fullName || user.full_name)}
+                </div>
               )}
+
+              {/* hidden file input (not disabled) */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="d-none"
+              />
+
+              {/* camera badge — only opens picker when pressed */}
+              <button
+                type="button"
+                className={`bio-avatar__edit ${saving ? "is-disabled" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isEditing) setIsEditing(true);
+                  setTimeout(() => fileInputRef.current?.click(), 0);
+                }}
+                aria-label="Change photo"
+                disabled={saving}
+              >
+                <FiCamera size={16} />
+              </button>
             </div>
           </div>
 
