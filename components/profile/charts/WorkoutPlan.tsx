@@ -19,20 +19,20 @@ import {
 /** ---------- Types ---------- */
 type WorkoutPlan = {
   id: string;
-  content: string;       // markdown-ish block you showed
+  content: string;     
   created_at: string;
 };
 
 type Day = {
-  label: string;         // "Day 1"
-  name: string;          // "Chest & Triceps" (may be "Rest")
-  items: string[];       // exercises / notes
+  label: string;       
+  name: string;        
+  items: string[];       
   rest?: boolean;
 };
 
 type Week = {
-  title: string;         // "Week 1 - Foundation Week"
-  intro?: string;        // Week description lines before first Day
+  title: string;        
+  intro?: string;      
   days: Day[];
 };
 
@@ -40,9 +40,9 @@ type ParsedPlan = {
   weeks: Week[];
 };
 
-/** ---------- Helpers (Parsing) ---------- */
+/** ---------- Helpers ---------- */
 /**
- * Split the whole content into week blocks based on headings like:
+ *  Code split into week blocks based on headings like:
  * "Week 1 - Foundation Week" / "Week 2 - Intensity Week"
  */
 function splitIntoWeeks(raw: string): string[] {
@@ -76,7 +76,6 @@ function parseWeekBlock(block: string): Week {
   const restOf = lines.slice(1).join("\n").trim();
 
   // Split rest of the week into Day chunks even if multiple days are on one line
-  // We’ll inject line breaks before each "Day X:" token to simplify parsing.
   const normalized = restOf.replace(/(?=Day\s+\d+:)/g, "\n");
   const weekLines = normalized.split("\n").map((l) => l.trim());
 
@@ -112,20 +111,18 @@ function parseWeekBlock(block: string): Week {
 
     // Within a day — gather items
     if (/^\*|-|\d+\./.test(ln)) {
-      // bullet/numbered lines -> strip list marker
+
       const item = ln.replace(/^(\*|-|\d+\.)\s*/, "");
       current.items.push(item);
     } else if (/^rest$/i.test(ln)) {
       current.rest = true;
     } else {
-      // Plain sentence = exercise/note line
+     
       current.items.push(ln);
     }
   }
   if (current) days.push(current);
 
-  // Final polish: if week had compressed single-line days but no items,
-  // we’ll at least keep the day headers as cards.
   return {
     title,
     intro: introLines.length ? introLines.join(" ") : undefined,
@@ -176,7 +173,7 @@ function DayCard({ day }: { day: Day }) {
     >
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
         <div className="d-flex align-items-center gap-2">
-          {isRest ? <FiMoon /> : <FiActivity />}
+          {isRest ? <FiMoon className="bio-icon" /> : <FiActivity className="bio-icon" />}
           <strong>
             {day.label}: {day.name}
           </strong>
@@ -200,7 +197,7 @@ function DayCard({ day }: { day: Day }) {
             return (
               <li key={i} className="d-flex align-items-start gap-2 mb-1">
                 <span style={{ lineHeight: 1.2, marginTop: 2 }}>
-                  {isCardio ? <FiHeart /> : isProgress ? <FiTrendingUp /> : <FiCheckCircle />}
+                  {isCardio ? <FiHeart className="bio-icon" /> : isProgress ? <FiTrendingUp className="bio-icon" /> : <FiCheckCircle className="bio-icon" />}
                 </span>
                 <span>{it}</span>
               </li>
@@ -356,7 +353,7 @@ export default function WorkoutPlan() {
         <h5 className="mb-0">📋 Your Workout Plan</h5>
         {updatedAt && (
           <div className="text-muted small d-flex align-items-center gap-2">
-            <FiClock />
+            <FiClock className="bio-icon" />
             Last Updated: {updatedAt}
           </div>
         )}
