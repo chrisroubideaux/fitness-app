@@ -1,54 +1,72 @@
 # users/models.py
+# users/models.py
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
-from werkzeug.security import generate_password_hash, check_password_hash
-
 from extensions import db
-from memberships.models import MembershipPlan  # 👈 Must be below db import to avoid circular import
-# User model (add this inside the class)
-
+from memberships.models import MembershipPlan
 
 class User(db.Model):
-    # Inside class User:
     __tablename__ = 'users'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, index=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)
 
-    # Optional profile info
     bio = db.Column(db.Text)
     address = db.Column(db.String(255))
     phone_number = db.Column(db.String(20))
     profile_image_url = db.Column(db.String(255))
 
-    # Fitness profile fields
     age = db.Column(db.Integer)
     weight = db.Column(db.Float)
     height = db.Column(db.Float)
     gender = db.Column(db.String(20))
     fitness_goal = db.Column(db.String(100))
-    activity_level = db.Column(db.String(50))       # e.g., Sedentary, Moderate, Active
-    experience_level = db.Column(db.String(50))     # e.g., Beginner, Intermediate, Advanced
+    activity_level = db.Column(db.String(50))
+    experience_level = db.Column(db.String(50))
     medical_conditions = db.Column(db.Text)
 
-    # Membership relationship
-    membership_plan_id = db.Column(UUID(as_uuid=True), db.ForeignKey('membership_plans.id'))
-    membership_plan = db.relationship("MembershipPlan", backref="users")
-    
-     # Workout plans relationship ✅
-    workout_plans = db.relationship("WorkoutPlan", back_populates="user", cascade="all, delete-orphan")
+    # ✅ FK + index; ondelete only enforced on Postgres
+    membership_plan_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey('membership_plans.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+    )
+    membership_plan = db.relationship(
+        "MembershipPlan",
+        backref=db.backref("users", lazy="dynamic"),
+        lazy="joined",         # eager load to avoid N+1 in /me
+    )
 
-    # Audit fields
-    is_active = db.Column(db.Boolean, default=True)  # Soft-delete flag
+    # Workout plans
+    workout_plans = db.relationship(
+        "WorkoutPlan", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    is_active = db.Column(db.Boolean, default=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
-
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+    # helpers (optional)
+    @property
+    def plan_name(self) -> str:
+        return self.membership_plan.name if self.membership_plan else "Free"
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def to_me_dict(self):
+        return {
+            "id": str(self.id),
+            "full_name": self.full_name,
+            "email": self.email,
+            "bio": self.bio,
+            "address": self.address,
+            "phone_number": self.phone_number,
+            "profile_image_url": self.profile_image_url,
+            "membership_plan_id": str(self.membership_plan_id) if self.membership_plan_id else None,
+            # Helpful extras for the UI:
+            "plan_name": self.membership_plan.name if self.membership_plan else "Free",
+            "plan_price": self.membership_plan.price if self.membership_plan else 0.0,
+            "plan_features": self.membership_plan.features if self.membership_plan else [],
+        }
