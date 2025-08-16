@@ -12,6 +12,7 @@ import '@/styles/calendar.css';
 import '@/styles/messages.css';
 import '@/styles/charts.css';
 import '@/styles/form.css';
+import '@/styles/memberships.css';
 
 
 const geistSans = Geist({

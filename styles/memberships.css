@@ -1,0 +1,94 @@
+/* --- Membership cards --- */
+
+.membership-card { background: #fff; }
+
+.membership-hero {
+  padding: 14px 16px;
+  color: #222;
+}
+
+.membership-badge {
+  background: #fff;
+  color: #222;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: .7rem;
+  font-weight: 600;
+}
+
+.membership-feature-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(126,142,241,.18);
+  color: #6b7cff;
+}
+
+/* slimmer buttons (reuses your existing pattern) */
+.btn-thin {
+  padding: .35rem .7rem !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+}
+
+/* --- Modal --- */
+.membership-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1070;
+}
+
+.membership-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(2px);
+}
+
+.membership-modal__dialog {
+  position: relative;
+  width: min(560px, 92vw);
+  margin: 10vh auto 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 30px 60px rgba(0,0,0,.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.membership-modal__header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(126,142,241,.2), rgba(91,209,215,.2));
+}
+
+.membership-modal__body {
+  padding: 14px;
+  max-height: 55vh;
+  overflow: auto;
+}
+
+.membership-modal__footer {
+  padding: 12px 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+
+/* small pill for “+N more” */
+.pill-count {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.06);
+  color: #555;
+}
