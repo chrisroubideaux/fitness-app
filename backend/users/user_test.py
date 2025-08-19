@@ -1,5 +1,4 @@
 # users/models.py
-# users/models.py
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -28,11 +27,7 @@ class User(db.Model):
     experience_level = db.Column(db.String(50))
     medical_conditions = db.Column(db.Text)
 
-    # ✅ Stripe fields (add these)
-    stripe_customer_id = db.Column(db.String(255), index=True, unique=True, nullable=True)
-    stripe_subscription_id = db.Column(db.String(255), index=True, unique=True, nullable=True)
-
-    # ✅ Plan linkage
+    # ✅ FK + index; ondelete only enforced on Postgres
     membership_plan_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey('membership_plans.id', ondelete='SET NULL'),
@@ -42,7 +37,7 @@ class User(db.Model):
     membership_plan = db.relationship(
         "MembershipPlan",
         backref=db.backref("users", lazy="dynamic"),
-        lazy="joined",
+        lazy="joined",         # eager load to avoid N+1 in /me
     )
 
     # Workout plans
@@ -54,6 +49,7 @@ class User(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # helpers (optional)
     @property
     def plan_name(self) -> str:
         return self.membership_plan.name if self.membership_plan else "Free"
@@ -68,10 +64,8 @@ class User(db.Model):
             "phone_number": self.phone_number,
             "profile_image_url": self.profile_image_url,
             "membership_plan_id": str(self.membership_plan_id) if self.membership_plan_id else None,
+            # Helpful extras for the UI:
             "plan_name": self.membership_plan.name if self.membership_plan else "Free",
             "plan_price": self.membership_plan.price if self.membership_plan else 0.0,
             "plan_features": self.membership_plan.features if self.membership_plan else [],
-            # optional to expose:
-            # "stripe_customer_id": self.stripe_customer_id,
-            # "stripe_subscription_id": self.stripe_subscription_id,
         }

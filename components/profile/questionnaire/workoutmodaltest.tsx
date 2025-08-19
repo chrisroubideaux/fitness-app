@@ -1,5 +1,3 @@
-// questionnaire/WorkoutModal.tsx
-// questionnaire/WorkoutModal.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,30 +6,7 @@ import axios from 'axios';
 import QuestionCard from './QuestionCard';
 import confetti from 'canvas-confetti';
 
-// ---- Types ------------------------------------------------------
-type FieldName =
-  | 'goal'
-  | 'age'
-  | 'gender'
-  | 'weight'
-  | 'height_feet'
-  | 'height_inches'
-  | 'activity_level'
-  | 'experience_level';
-
-type FormDataShape = Record<FieldName, string>;
-
-type Step = {
-  name: FieldName;
-  question: string;
-  /** Present for numeric inputs */
-  type?: 'number';
-  /** Present for select-type questions */
-  options?: string[];
-};
-
-// ---- Steps ------------------------------------------------------
-const steps: Step[] = [
+const steps = [
   {
     name: 'goal',
     question: 'What are your fitness goals?',
@@ -48,11 +23,7 @@ const steps: Step[] = [
   { name: 'gender', question: 'What is your gender?', options: ['Male', 'Female'] },
   { name: 'weight', question: 'What is your weight (lbs)?', type: 'number' },
   { name: 'height_feet', question: 'Height (feet)', options: ['4', '5', '6', '7'] },
-  {
-    name: 'height_inches',
-    question: 'Height (inches)',
-    options: ['0','1','2','3','4','5','6','7','8','9','10','11'],
-  },
+  { name: 'height_inches', question: 'Height (inches)', options: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'] },
   {
     name: 'activity_level',
     question: 'Your activity level?',
@@ -67,7 +38,7 @@ const steps: Step[] = [
 
 export default function WorkoutModal({ onClose }: { onClose: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<FormDataShape>({
+  const [formData, setFormData] = useState({
     goal: '',
     age: '',
     gender: '',
@@ -83,30 +54,9 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
 
   const current = steps[currentStep];
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  function handleSkip() {
-    localStorage.setItem('hasCompletedQuestionnaire', 'true');
-    onClose();
-    // optional local reset
-    setShowPlan(false);
-    setCurrentStep(0);
-    setFormData({
-      goal: '',
-      age: '',
-      gender: '',
-      weight: '',
-      height_feet: '',
-      height_inches: '',
-      activity_level: '',
-      experience_level: '',
-    });
-    setPlan('');
-  }
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
@@ -127,22 +77,18 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
     setShowPlan(true);
 
     const totalHeight =
-      parseInt(formData.height_feet || '0', 10) * 12 +
-      parseInt(formData.height_inches || '0', 10);
+      parseInt(formData.height_feet || '0') * 12 +
+      parseInt(formData.height_inches || '0');
 
-    // ✅ Keep feet/inches in the payload AND add combined height
-    type Payload = FormDataShape & { height: string };
-    const payload: Payload = {
+    const payload: Omit<typeof formData, 'height_feet' | 'height_inches'> & { height: string } = {
       ...formData,
       height: totalHeight.toString(),
     };
 
     try {
-      const res = await axios.post(
-        'http://localhost:5000/api/ai/generate-workout',
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.post('http://localhost:5000/api/ai/generate-workout', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setPlan(res.data.workout_plan);
 
@@ -161,9 +107,13 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleClose = () => {
+    // ✅ Save completion flag
     localStorage.setItem('hasCompletedQuestionnaire', 'true');
+
+    // ✅ Call parent to close modal
     onClose();
-    // optional local reset
+
+    // Reset local state (optional)
     setShowPlan(false);
     setCurrentStep(0);
     setFormData({
@@ -239,8 +189,6 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      aria-modal="true"
-      role="dialog"
     >
       {/* Questionnaire Form */}
       <AnimatePresence>
@@ -259,29 +207,16 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
               question={current.question}
               type={current.type}
               options={current.options}
-              value={formData[current.name]}
+              value={formData[current.name as keyof typeof formData]}
               onChange={handleChange}
             />
-
-            <div className="d-flex gap-2 mt-3">
-              <button
-                onClick={nextStep}
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {currentStep === steps.length - 1 ? 'Submit' : 'Next'}
-              </button>
-
-              {/* Skip for now */}
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={handleSkip}
-                disabled={loading}
-              >
-                Skip for now
-              </button>
-            </div>
+            <button
+              onClick={nextStep}
+              className="btn btn-primary mt-3"
+              disabled={loading}
+            >
+              {currentStep === steps.length - 1 ? 'Submit' : 'Next'}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -305,15 +240,16 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
           >
             <div className="d-flex justify-content-between align-items-start">
               <h4 className="mb-3 text-center">Your Workout Plan</h4>
-              <button className="btn-close" onClick={handleClose} aria-label="Close" />
+              <button className="btn-close" onClick={handleClose} />
             </div>
 
             {loading ? (
-              <div
-                className="d-flex flex-column justify-content-center align-items-center"
-                style={{ height: '200px' }}
-              >
-                <motion.div className="d-flex gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: '200px' }}>
+                <motion.div
+                  className="d-flex gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
                   {[0, 1, 2].map((i) => (
                     <motion.span
                       key={i}
@@ -347,3 +283,4 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
     </motion.div>
   );
 }
+

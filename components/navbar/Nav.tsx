@@ -35,7 +35,7 @@ export default function Nav() {
         <Link className="nav-link" href="/contact">Contact</Link>
       </li>
       <li className="nav-item">
-        <Link className="btn btn-face-rec ms-lg-3" href="/">
+        <Link className="btn btn-face-rec ms-lg-3" href="/login">
           <i className="fas fa-user-circle me-2"></i> Sign In
         </Link>
       </li>

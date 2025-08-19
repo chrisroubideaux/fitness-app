@@ -13,7 +13,7 @@
     "@geist-ui/react": "^2.2.5",
     "@popperjs/core": "^2.11.8",
     "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.4.0",
+    "@stripe/stripe-js": "^7.8.0",
     "ajv": "^8.17.1",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.7",

@@ -1,6 +1,4 @@
-# models.py for membership plans
 # memberships/models.py
-
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -14,4 +12,6 @@ class MembershipPlan(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=False)
     features = db.Column(db.JSON, nullable=False)
+      # 🔑 Stripe integration
+    stripe_price_id = db.Column(db.String(255), nullable=True, unique=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

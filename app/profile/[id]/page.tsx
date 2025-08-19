@@ -34,7 +34,7 @@ type SidebarTab =
   | 'WorkoutPlan'
   | 'dashboard'
   | 'progress'
-  | 'memberships'   // ← replaced 'goals'
+  | 'memberships'
   | 'ai'
   | 'settings';
 
@@ -45,8 +45,8 @@ type PageUser = {
   email: string;
   bio?: string | null;
   address?: string | null;
-  phone?: string | null;         // sometimes API returns `phone`
-  phone_number?: string | null;  // sometimes API returns `phone_number`
+  phone?: string | null;
+  phone_number?: string | null;
   profile_image_url?: string | null;
   membership_plan_id?: string | null;
 };
@@ -89,7 +89,27 @@ export default function ProfilePage() {
         const data = await res.json();
         setUser(data as PageUser);
 
-        const hasCompleted = localStorage.getItem('hasCompletedQuestionnaire');
+        // --- Checkout-intent gate (skip questionnaire if user came from pricing) ---
+        const cameForCheckout =
+          (typeof window !== 'undefined' && localStorage.getItem('checkoutIntent') === '1') ||
+          searchParams.get('intent') === 'checkout';
+
+        if (cameForCheckout) {
+          const chosen =
+            searchParams.get('planId') ||
+            (typeof window !== 'undefined' ? localStorage.getItem('preselectedPlanId') : null);
+
+          if (chosen) {
+            // Jump straight to billing checkout
+            router.replace(`/billing/checkout?planId=${encodeURIComponent(chosen)}`);
+            return; // prevent questionnaire from opening
+          }
+        }
+
+        // --- Default behavior: show questionnaire if not completed ---
+        const hasCompleted = typeof window !== 'undefined'
+          ? localStorage.getItem('hasCompletedQuestionnaire')
+          : 'true';
         if (!hasCompleted) setShowModal(true);
       } catch (err) {
         console.error('❌ Failed to fetch user:', err);
@@ -100,7 +120,7 @@ export default function ProfilePage() {
     };
 
     fetchUser();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -141,7 +161,6 @@ export default function ProfilePage() {
                   ? {
                       ...u,
                       ...updated,
-                      // Ensure required fields are never null
                       full_name: updated.full_name ?? u.full_name,
                       email: updated.email ?? u.email,
                       id: updated.id ?? u.id,
@@ -204,7 +223,7 @@ export default function ProfilePage() {
       <div className="container-fluid">
         <div className="container-fluid py-3">
           <div className="row">
-            {/* Sidebar */}
+           
             <div className="col-lg-4 col-xxl-3 mb-4">
               <Sidebar
                 userId={user.id}
@@ -215,7 +234,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Main Content */}
+           
             <div className="col-lg-8 col-xxl-9">
               {showModal && (
                 <WorkoutModal
@@ -226,7 +245,7 @@ export default function ProfilePage() {
                 />
               )}
 
-              {/* Top tab buttons (keep as-is) */}
+            
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
                   <button
@@ -274,7 +293,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Animated Tab Content */}
+             
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -296,8 +315,11 @@ export default function ProfilePage() {
 }
 
 
+
+
 /*
 
+// app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -310,6 +332,7 @@ import MessagesPanel from '@/components/profile/messages/MessagesPanel';
 import NotificationsPanel from '@/components/profile/messages/NotificationsPanel';
 import WorkoutPlan from '@/components/profile/charts/WorkoutPlan';
 import WeeklyProgressChart from '@/components/profile/charts/WeeklyProgressChart';
+import MembershipsPanel from '@/components/profile/memberships/MembershipsPanel';
 
 // ✅ Bio card (and its strict User type)
 import BioCard, { type User as BioUser } from '@/components/profile/bio/BioCard';
@@ -331,7 +354,7 @@ type SidebarTab =
   | 'WorkoutPlan'
   | 'dashboard'
   | 'progress'
-  | 'goals'
+  | 'memberships'
   | 'ai'
   | 'settings';
 
@@ -342,8 +365,8 @@ type PageUser = {
   email: string;
   bio?: string | null;
   address?: string | null;
-  phone?: string | null;         // sometimes API returns `phone`
-  phone_number?: string | null;  // sometimes API returns `phone_number`
+  phone?: string | null;
+  phone_number?: string | null;
   profile_image_url?: string | null;
   membership_plan_id?: string | null;
 };
@@ -386,7 +409,27 @@ export default function ProfilePage() {
         const data = await res.json();
         setUser(data as PageUser);
 
-        const hasCompleted = localStorage.getItem('hasCompletedQuestionnaire');
+        // --- Checkout-intent gate (skip questionnaire if user came from pricing) ---
+        const cameForCheckout =
+          (typeof window !== 'undefined' && localStorage.getItem('checkoutIntent') === '1') ||
+          searchParams.get('intent') === 'checkout';
+
+        if (cameForCheckout) {
+          const chosen =
+            searchParams.get('planId') ||
+            (typeof window !== 'undefined' ? localStorage.getItem('preselectedPlanId') : null);
+
+          if (chosen) {
+            // Jump straight to billing checkout
+            router.replace(`/billing/checkout?planId=${encodeURIComponent(chosen)}`);
+            return; // prevent questionnaire from opening
+          }
+        }
+
+        // --- Default behavior: show questionnaire if not completed ---
+        const hasCompleted = typeof window !== 'undefined'
+          ? localStorage.getItem('hasCompletedQuestionnaire')
+          : 'true';
         if (!hasCompleted) setShowModal(true);
       } catch (err) {
         console.error('❌ Failed to fetch user:', err);
@@ -397,7 +440,7 @@ export default function ProfilePage() {
     };
 
     fetchUser();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -432,6 +475,21 @@ export default function ProfilePage() {
               membership_plan_id: user.membership_plan_id ?? null,
               bio: user.bio ?? null,
             } satisfies BioUser}
+            onSaved={(updated) =>
+              setUser((u) =>
+                u
+                  ? {
+                      ...u,
+                      ...updated,
+                      full_name: updated.full_name ?? u.full_name,
+                      email: updated.email ?? u.email,
+                      id: updated.id ?? u.id,
+                      phone_number: updated.phone_number ?? null,
+                    }
+                  : u
+              )
+            }
+            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
           />
         ) : null;
 
@@ -443,7 +501,18 @@ export default function ProfilePage() {
           />
         );
 
-      case 'goals':
+      case 'memberships':
+        return user ? (
+          <MembershipsPanel
+            userId={user.id}
+            currentPlanId={user.membership_plan_id ?? null}
+            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+            onPlanChanged={(planId) =>
+              setUser((u) => (u ? { ...u, membership_plan_id: planId ?? null } : u))
+            }
+          />
+        ) : null;
+
       case 'ai':
       case 'settings':
       default:
@@ -474,7 +543,7 @@ export default function ProfilePage() {
       <div className="container-fluid">
         <div className="container-fluid py-3">
           <div className="row">
-         
+           
             <div className="col-lg-4 col-xxl-3 mb-4">
               <Sidebar
                 userId={user.id}
@@ -485,7 +554,7 @@ export default function ProfilePage() {
               />
             </div>
 
-          
+           
             <div className="col-lg-8 col-xxl-9">
               {showModal && (
                 <WorkoutModal
@@ -496,7 +565,7 @@ export default function ProfilePage() {
                 />
               )}
 
-          
+            
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
                   <button
@@ -544,7 +613,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-           
+             
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -564,6 +633,8 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+
 
 
 */

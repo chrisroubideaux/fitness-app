@@ -1,3 +1,4 @@
+// components/profile/memberships/MembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';
@@ -212,7 +213,6 @@ export default function MembershipCard({
     </>
   );
 }
-
 
 /*
 'use client';
