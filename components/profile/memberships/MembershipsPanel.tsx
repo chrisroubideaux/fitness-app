@@ -1,4 +1,5 @@
 // components/profile/memberships/MembershipsPanel.tsx
+// components/profile/memberships/MembershipsPanel.tsx
 
 'use client';
 
@@ -231,6 +232,7 @@ export default function MembershipsPanel({
     </motion.div>
   );
 }
+
 
 
 

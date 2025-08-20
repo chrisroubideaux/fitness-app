@@ -1,5 +1,4 @@
 # memberships/routes.py
-
 from flask import Blueprint, request, jsonify
 from .models import MembershipPlan, db
 
@@ -106,6 +105,7 @@ def delete_membership(plan_id):
     print(f"Deleted membership plan: {plan.name}")
 
     return jsonify({"message": f"Membership plan '{plan.name}' deleted"}), 200
+    
 
 """""""""""""""
 from flask import Blueprint, request, jsonify

@@ -1,5 +1,4 @@
 // app/profile/[id]/page.tsx
-// app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
