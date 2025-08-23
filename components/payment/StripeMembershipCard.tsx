@@ -1,6 +1,5 @@
 // components/payment/StripeMembershipCard.tsx
 
-// components/payment/StripeMembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';

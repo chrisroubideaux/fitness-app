@@ -1,5 +1,4 @@
 # payments/routes.py
-# payments/routes.py
 
 import os
 import stripe
@@ -289,7 +288,7 @@ def cancel_subscription(current_user=None):
         return jsonify({"error": "No active subscription on file"}), 400
 
     data = request.get_json() or {}
-    at_period_end = bool(data.get("at_period_end", True))  # default: cancel at period end
+    at_period_end = bool(data.get("at_period_end", True)) 
 
     try:
         if at_period_end:
@@ -300,8 +299,6 @@ def cancel_subscription(current_user=None):
         else:
             stripe.Subscription.delete(current_user.stripe_subscription_id)
 
-        # Let webhook handle the actual downgrade on delete/ended.
-        # If cancelling at period end, user keeps access until end.
         return jsonify({"ok": True}), 200
     except stripe.error.StripeError as e:
         return jsonify({"error": str(e)}), 400
