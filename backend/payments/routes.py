@@ -1,9 +1,9 @@
 # payments/routes.py
 # payments/routes.py
+
 import os
 import stripe
 from flask import Blueprint, request, jsonify
-from flask_cors import cross_origin
 from sqlalchemy import func
 
 from utils.decorators import token_required_optional  # optional auth
@@ -15,26 +15,31 @@ stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
 
-ALLOWED_ORIGINS = [
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Toggle Automatic Tax via env (enable only if your test-mode origin address is set in Stripe)
+ENABLE_AUTO_TAX = os.getenv("STRIPE_AUTOMATIC_TAX", "0").lower() in ("1", "true", "yes")
 
 
 def _frontend_domain() -> str:
     return (os.environ.get("FRONTEND_URL", "http://localhost:3000") or "").rstrip("/")
 
 
+# --- helper: validate any saved Stripe customer id for this account ---
+def _validated_customer_id(current_user):
+    """Return a usable Stripe customer id for this account, or None if stale/invalid."""
+    if not current_user or not getattr(current_user, "stripe_customer_id", None):
+        return None
+    try:
+        cust = stripe.Customer.retrieve(current_user.stripe_customer_id)
+        return cust["id"]
+    except stripe.error.InvalidRequestError:
+        # Stale or wrong-account customer; ignore it so Checkout creates a fresh one
+        return None
+
+
 # ---------------------------
 # Create Stripe Checkout Session
 # ---------------------------
 @payments_bp.route("/checkout", methods=["POST", "OPTIONS"])
-@cross_origin(
-    origins=ALLOWED_ORIGINS,
-    methods=["POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
 @token_required_optional
 def create_checkout_session(current_user=None):
     if request.method == "OPTIONS":
@@ -42,7 +47,8 @@ def create_checkout_session(current_user=None):
 
     data = request.get_json() or {}
     raw_plan_id = data.get("plan_id")
-    success_path = data.get("success_path", "/welcome")
+    # default to your actual success page
+    success_path = data.get("success_path", "/billing/success")
     cancel_path = data.get("cancel_path", "/")
 
     domain = _frontend_domain()
@@ -55,48 +61,71 @@ def create_checkout_session(current_user=None):
     # Paid plan
     plan = MembershipPlan.query.get(plan_id_str)
     if not plan:
-        return jsonify({"error": f"Unknown plan_id: {plan_id_str}"}), 400
+        return jsonify({"error": f"Unknown plan_id '{plan_id_str}'"}), 400
+
     if not getattr(plan, "stripe_price_id", None):
-        return jsonify({"error": f"Plan '{plan.name}' has no stripe_price_id configured"}), 400
+        return jsonify({
+            "error": "MissingStripePriceId",
+            "message": f"Plan '{plan.name}' (id={plan.id}) has no stripe_price_id configured. "
+                       f"Please add a valid Stripe Price ID in your DB or when creating the plan."
+        }), 400
+
+    # Validate any saved customer id (avoid 400 if it's from a different account)
+    customer_id = _validated_customer_id(current_user)
+    customer_email = (current_user.email if current_user else None)
 
     try:
-        # NEW: prefer existing customer to avoid duplicates
-        customer_id = None  # NEW
-        if current_user and getattr(current_user, "stripe_customer_id", None):  # NEW
-            customer_id = current_user.stripe_customer_id  # NEW
-
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            line_items=[{"price": plan.stripe_price_id, "quantity": 1}],
-            success_url=f"{domain}{success_path}?planId={plan.id}&session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{domain}{cancel_path}",
-            allow_promotion_codes=True,
-            automatic_tax={"enabled": True},
-            # NEW: use customer if known, else fall back to email
-            customer=customer_id,  # NEW
-            customer_email=None if customer_id else (current_user.email if current_user else None),  # NEW
-            metadata={
+        session_args = {
+            "mode": "subscription",
+            "line_items": [{"price": plan.stripe_price_id, "quantity": 1}],
+            "success_url": f"{domain}{success_path}?planId={plan.id}&session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{domain}{cancel_path}",
+            "allow_promotion_codes": True,
+            "metadata": {
                 "plan_id": str(plan.id),
                 "user_id": str(current_user.id) if current_user else "",
             },
-        )
-        return jsonify({"sessionId": session["id"]}), 200
+        }
+
+        # Only pass one of these
+        if customer_id:
+            session_args["customer"] = customer_id
+        elif customer_email:
+            session_args["customer_email"] = customer_email
+
+        # Conditionally enable Automatic Tax if configured
+        if ENABLE_AUTO_TAX:
+            session_args["automatic_tax"] = {"enabled": True}
+            # Optional: require address so taxes can be calculated accurately
+            session_args["billing_address_collection"] = "required"
+
+        session = stripe.checkout.Session.create(**session_args)
+        # Return both so the client can prefer hosted URL (avoids pk/sk/account mismatch issues)
+        return jsonify({"sessionId": session["id"], "url": session.get("url")}), 200
 
     except stripe.error.StripeError as e:
-        return jsonify({"error": str(e)}), 400
+        # Better error reporting: show Stripe's friendly message
+        msg = getattr(e, "user_message", None) or str(e)
+        try:
+            err = e.json_body.get("error", {})  # type: ignore[attr-defined]
+            print("StripeError:", {
+                "message": err.get("message"),
+                "code": err.get("code"),
+                "param": err.get("param"),
+                "type": err.get("type"),
+            })
+        except Exception:
+            print("StripeError:", msg)
+        return jsonify({"error": "StripeError", "message": msg}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("ServerError:", repr(e))
+        return jsonify({"error": "ServerError", "message": str(e)}), 500
 
 
 # ---------------------------
 # Client calls this after Stripe success redirect to bind membership
 # ---------------------------
 @payments_bp.route("/confirm", methods=["GET", "OPTIONS"])
-@cross_origin(
-    origins=ALLOWED_ORIGINS,
-    methods=["GET", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
 @token_required_optional
 def confirm_checkout(current_user=None):
     if request.method == "OPTIONS":
@@ -180,11 +209,6 @@ def confirm_checkout(current_user=None):
 # Create Billing Portal session (manage/cancel)
 # ---------------------------
 @payments_bp.route("/portal", methods=["POST", "OPTIONS"])
-@cross_origin(
-    origins=ALLOWED_ORIGINS,
-    methods=["POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
 @token_required_optional
 def billing_portal(current_user=None):
     if request.method == "OPTIONS":
@@ -207,11 +231,6 @@ def billing_portal(current_user=None):
 # NEW: Change plan (1-click upgrade/downgrade)
 # ---------------------------
 @payments_bp.route("/change-plan", methods=["POST", "OPTIONS"])
-@cross_origin(
-    origins=ALLOWED_ORIGINS,
-    methods=["POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
 @token_required_optional
 def change_plan(current_user=None):
     if request.method == "OPTIONS":
@@ -261,11 +280,6 @@ def change_plan(current_user=None):
 # NEW: Cancel subscription (switch to Free)
 # ---------------------------
 @payments_bp.route("/cancel", methods=["POST", "OPTIONS"])
-@cross_origin(
-    origins=ALLOWED_ORIGINS,
-    methods=["POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
 @token_required_optional
 def cancel_subscription(current_user=None):
     if request.method == "OPTIONS":

@@ -13,5 +13,5 @@ class MembershipPlan(db.Model):
     description = db.Column(db.Text, nullable=False)
     features = db.Column(db.JSON, nullable=False)
       # 🔑 Stripe integration
-    stripe_price_id = db.Column(db.String(255), nullable=True, unique=True)
+    stripe_price_id = db.Column(db.String(255), nullable=True)  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

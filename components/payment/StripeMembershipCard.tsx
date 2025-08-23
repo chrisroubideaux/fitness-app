@@ -1,5 +1,6 @@
 // components/payment/StripeMembershipCard.tsx
 
+// components/payment/StripeMembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';
@@ -8,29 +9,25 @@ import { FiCheck, FiX, FiZap } from 'react-icons/fi';
 import { loadStripe } from '@stripe/stripe-js';
 
 export type UIMembershipPlan = {
-  id: string | null;          // your MembershipPlan UUID (null for Free)
+  id: string | null;          // MembershipPlan UUID (null for Free)
   name: string;
   price: string;              // "$9/mo" etc
   badge?: string | null;
   gradient?: string | null;
   description?: string | null;
   features?: string[];
+  stripe_price_id?: string | null; // 👈 NEW
 };
 
 type Props = {
   plan: UIMembershipPlan;
-  isCurrent: boolean;         // if the logged-in user already has this plan
+  isCurrent: boolean;
   saving?: boolean;
- 
   onBeforeRedirect?: () => void;
- 
   previewCount?: number;
- 
   apiBase?: string;
-  
-  successPath?: string;       // e.g. "/welcome" or "/profile/onboarding"
-
-  cancelPath?: string;        // e.g. "/"
+  successPath?: string;
+  cancelPath?: string;
 };
 
 export default function StripeMembershipCard({
@@ -50,7 +47,9 @@ export default function StripeMembershipCard({
 
   const hasFeatures = Array.isArray(plan.features) && plan.features.length > 0;
   const preview = hasFeatures ? plan.features!.slice(0, previewCount) : [];
-  const hiddenCount = hasFeatures ? Math.max(0, plan.features!.length - preview.length) : 0;
+  const hiddenCount = hasFeatures
+    ? Math.max(0, plan.features!.length - preview.length)
+    : 0;
 
   const token =
     typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -60,7 +59,6 @@ export default function StripeMembershipCard({
     setBusy(true);
 
     try {
-    
       const stripe = await loadStripe(
         process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
       );
@@ -68,7 +66,6 @@ export default function StripeMembershipCard({
         throw new Error('Stripe failed to initialize (check publishable key).');
       }
 
-    
       const base = apiBase.replace(/\/+$/, '');
       const res = await fetch(`${base}/api/payments/checkout`, {
         method: 'POST',
@@ -77,19 +74,20 @@ export default function StripeMembershipCard({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          plan_id: plan.id,                  // can be null (Free) – backend should handle that
-          success_path: successPath,         // e.g. "/welcome"
-          cancel_path: cancelPath,           // e.g. "/"
+          plan_id: plan.id,
+          stripe_price_id: plan.stripe_price_id, // 👈 send to backend
+          success_path: successPath,
+          cancel_path: cancelPath,
         }),
       });
 
       const json = await res.json().catch(() => null);
       if (!res.ok) {
-        const m = (json && (json.error || json.message)) || `Error ${res.status}`;
+        const m =
+          (json && (json.error || json.message)) || `Error ${res.status}`;
         throw new Error(m);
       }
 
-   
       if (json.sessionId) {
         onBeforeRedirect?.();
         const { error } = await stripe.redirectToCheckout({
@@ -98,7 +96,7 @@ export default function StripeMembershipCard({
         if (error) throw error;
       } else if (json.url) {
         onBeforeRedirect?.();
-        window.location.href = json.url; // fallback
+        window.location.href = json.url;
       } else {
         throw new Error('Checkout session missing url/sessionId.');
       }
@@ -135,7 +133,9 @@ export default function StripeMembershipCard({
           <div className="d-flex align-items-center justify-content-between">
             <div className="fw-semibold">{plan.name}</div>
             {plan.badge && (
-              <span className="badge bg-light text-dark border">{plan.badge}</span>
+              <span className="badge bg-light text-dark border">
+                {plan.badge}
+              </span>
             )}
           </div>
           <div className="fs-5 mt-1">{plan.price}</div>
@@ -146,11 +146,13 @@ export default function StripeMembershipCard({
             <p className="small text-muted mb-2">{plan.description}</p>
           )}
 
-        
           {hasFeatures && (
             <ul className="list-unstyled small m-0">
               {preview.map((label) => (
-                <li key={label} className="d-flex align-items-center gap-2 mb-2">
+                <li
+                  key={label}
+                  className="d-flex align-items-center gap-2 mb-2"
+                >
                   <span
                     className="d-inline-flex align-items-center justify-content-center"
                     style={{
@@ -170,7 +172,6 @@ export default function StripeMembershipCard({
             </ul>
           )}
 
-        
           {hiddenCount > 0 && (
             <div className="mt-2">
               <span className="pill-count" aria-hidden>
@@ -196,13 +197,15 @@ export default function StripeMembershipCard({
               ? 'Switch to Free'
               : 'Choose Plan'}
             {!isCurrent && (
-              <FiZap className="text-white" style={{ marginLeft: 6, marginTop: -2 }} />
+              <FiZap
+                className="text-white"
+                style={{ marginLeft: 6, marginTop: -2 }}
+              />
             )}
           </button>
         </div>
       </motion.div>
 
-   
       <AnimatePresence>
         {open && (
           <motion.div
@@ -251,7 +254,9 @@ export default function StripeMembershipCard({
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <div className="fs-5 fw-semibold">{plan.price}</div>
                   {plan.badge && (
-                    <span className="badge bg-light text-dark border">{plan.badge}</span>
+                    <span className="badge bg-light text-dark border">
+                      {plan.badge}
+                    </span>
                   )}
                 </div>
 
@@ -262,7 +267,10 @@ export default function StripeMembershipCard({
                 {hasFeatures && (
                   <ul className="list-unstyled small m-0">
                     {plan.features!.map((label) => (
-                      <li key={label} className="d-flex align-items-center gap-2 mb-2">
+                      <li
+                        key={label}
+                        className="d-flex align-items-center gap-2 mb-2"
+                      >
                         <span
                           className="d-inline-flex align-items-center justify-content-center"
                           style={{
@@ -311,9 +319,6 @@ export default function StripeMembershipCard({
     </>
   );
 }
-
-
-
 
 /*
 
