@@ -1,5 +1,4 @@
 // components/billing/ManageSubscriptionCard.tsx
-// components/payment/ManageSubscriptionCard.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -182,7 +181,7 @@ export default function ManageSubscriptionCard({
   const hasActiveSub = !!me?.stripe_subscription_id;
 
   return (
-    <div className="card shadow-sm" style={{ borderRadius: 16, maxWidth: 680 }}>
+    <div className="card bg-transparent shadow-sm" style={{ borderRadius: 16, maxWidth: 680 }}>
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start">
           <div>
@@ -227,7 +226,7 @@ export default function ManageSubscriptionCard({
           <div className="col-md-6 d-flex gap-2">
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-sm"
               onClick={changePlan}
               disabled={busy}
             >
