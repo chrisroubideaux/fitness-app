@@ -1,5 +1,5 @@
 // components/billing/ManageSubscriptionCard.tsx
-
+// components/billing/ManageSubscriptionCard.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -23,8 +23,7 @@ export default function ManageSubscriptionCard({
   onBackToPlans?: () => void;
 }) {
   const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
   const [me, setMe] = useState<Me | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -32,6 +31,19 @@ export default function ManageSubscriptionCard({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  async function refreshMe() {
+    try {
+      const res = await fetch(`${base}/api/users/me`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error || "Failed to refresh user.");
+      setMe(j);
+    } catch (e) {
+      console.debug("[refreshMe] failed", e);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -63,11 +75,7 @@ export default function ManageSubscriptionCard({
         setPlans(normalizedPlans);
         setSelectedPlanId(meJson?.membership_plan_id ?? "free");
       } catch (e: unknown) {
-        if (e instanceof Error) {
-          setErr(e.message || "Could not load subscription data.");
-        } else {
-          setErr("Could not load subscription data.");
-        }
+        setErr(e instanceof Error ? e.message : "Could not load subscription data.");
       }
     })();
   }, [base, token]);
@@ -107,11 +115,7 @@ export default function ManageSubscriptionCard({
       }
       throw new Error("No billing portal URL returned.");
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        setErr(e.message || "Unable to open billing portal.");
-      } else {
-        setErr("Unable to open billing portal.");
-      }
+      setErr(e instanceof Error ? e.message : "Unable to open billing portal.");
     } finally {
       setBusy(false);
     }
@@ -123,6 +127,7 @@ export default function ManageSubscriptionCard({
     if (!me) return;
 
     if (selectedPlanId === "free") {
+      // Send actual cancel-at-period-end (works regardless of current sub status)
       return cancelSubscription(true);
     }
 
@@ -140,13 +145,9 @@ export default function ManageSubscriptionCard({
       if (!res.ok) throw new Error(json?.error || json?.message || "Change plan failed.");
 
       setMsg("Plan updated! It may take a moment to reflect.");
-      setMe((m) => (m ? { ...m, membership_plan_id: selectedPlanId as string } : m));
+      await refreshMe();
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        setErr(e.message || "Unable to change plan.");
-      } else {
-        setErr("Unable to change plan.");
-      }
+      setErr(e instanceof Error ? e.message : "Unable to change plan.");
     } finally {
       setBusy(false);
     }
@@ -157,6 +158,7 @@ export default function ManageSubscriptionCard({
     setMsg(null);
     setBusy(true);
     try {
+      console.debug("[cancelSubscription] atPeriodEnd=", atPeriodEnd);
       const res = await fetch(`${base}/api/payments/cancel`, {
         method: "POST",
         headers: {
@@ -166,15 +168,18 @@ export default function ManageSubscriptionCard({
         body: JSON.stringify({ at_period_end: atPeriodEnd }),
       });
       const json = await res.json().catch(() => null);
+      console.debug("[cancelSubscription] response:", res.status, json);
+
       if (!res.ok) throw new Error(json?.error || json?.message || "Cancel failed.");
 
-      setMsg("Subscription cancelled! It may take a moment to reflect.");
+      setMsg(
+        atPeriodEnd
+          ? "Cancellation scheduled at period end."
+          : "Subscription cancelled immediately."
+      );
+      await refreshMe();
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        setErr(e.message || "Unable to cancel subscription.");
-      } else {
-        setErr("Unable to cancel subscription.");
-      }
+      setErr(e instanceof Error ? e.message : "Unable to cancel subscription.");
     } finally {
       setBusy(false);
     }
@@ -193,12 +198,8 @@ export default function ManageSubscriptionCard({
             </p>
           </div>
           {onBackToPlans && (
-            <button
-              type="button"
-              className="btn btn-sm "
-              onClick={onBackToPlans}
-            >
-              <FaArrowLeft className=" me-1" /> Back to plans
+            <button type="button" className="btn btn-sm btn-link text-white" onClick={onBackToPlans}>
+              <FaArrowLeft className="me-1" /> Back to plans
             </button>
           )}
         </div>
@@ -212,9 +213,7 @@ export default function ManageSubscriptionCard({
             <select
               className="form-select"
               value={selectedPlanId}
-              onChange={(e) =>
-                setSelectedPlanId((e.target.value || "free") as string | "free")
-              }
+              onChange={(e) => setSelectedPlanId((e.target.value || "free") as string | "free")}
               disabled={busy}
             >
               <option value="free">Free</option>
@@ -226,27 +225,18 @@ export default function ManageSubscriptionCard({
             </select>
           </div>
           <div className="col-md-6 d-flex gap-2">
-            <button
-              type="button"
-              className="btn btn-sm "
-              onClick={changePlan}
-              disabled={busy}
-            >
+            <button type="button" className="btn btn-sm btn-outline-light text-white" onClick={changePlan} disabled={busy}>
               <FaSync className="me-1" />
               {busy ? "Working…" : "Update Plan"}
             </button>
             <button
               type="button"
-              className="btn btn-sm text-white"
+              className="btn btn-sm btn-outline-light text-white"
               onClick={openBillingPortal}
-              disabled={busy || !hasActiveSub}
-              title={
-                hasActiveSub
-                  ? "Manage payment method & invoices"
-                  : "No active subscription"
-              }
+              disabled={busy} // ← only block while busy; allow click even without stripe sub
+              title={hasActiveSub ? "Manage payment method & invoices" : "No active subscription"}
             >
-              <FaCreditCard className=" me-1" /> Manage Billing
+              <FaCreditCard className="me-1" /> Manage Billing
             </button>
           </div>
         </div>
@@ -254,21 +244,23 @@ export default function ManageSubscriptionCard({
         <hr className="my-4" />
 
         <div className="d-flex flex-wrap gap-2">
+          {/* Always clickable (white text) */}
           <button
             type="button"
-            className="btn btn-sm text-white"
+            className="btn btn-sm border border-white text-white bg-transparent"
             onClick={() => cancelSubscription(true)}
-            disabled={busy || !hasActiveSub}
-            title={hasActiveSub ? "" : "No active subscription"}
+            disabled={busy} // ← only disable while busy
+            title="Cancel when current period ends"
           >
             <FaCalendarTimes className="me-1" /> Cancel at Period End
           </button>
+
           <button
             type="button"
-            className="btn btn-sm text-white "
+            className="btn btn-sm border border-white text-white bg-transparent"
             onClick={() => cancelSubscription(false)}
-            disabled={busy || !hasActiveSub}
-            title={hasActiveSub ? "" : "No active subscription"}
+            disabled={busy} // ← only disable while busy
+            title="Cancel immediately"
           >
             <FaTimesCircle className="me-1" /> Cancel Immediately
           </button>
