@@ -211,17 +211,43 @@ def billing_portal(current_user=None):
     if request.method == "OPTIONS":
         return "", 200
 
-    if not current_user or not getattr(current_user, "stripe_customer_id", None):
-        return jsonify({"error": "No Stripe customer on file"}), 400
+    if not current_user:
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
+        # Validate any existing customer id; returns None if stale/invalid
+        customer_id = _validated_customer_id(current_user)
+
+        # If missing or invalid, create a fresh Stripe Customer now
+        if not customer_id:
+            cust = stripe.Customer.create(
+                email=getattr(current_user, "email", None) or None,
+                name=getattr(current_user, "full_name", None) or None,
+                metadata={"user_id": str(current_user.id)},
+            )
+            customer_id = cust["id"]
+
+            # Best-effort persist so future calls don't recreate
+            try:
+                if hasattr(current_user, "stripe_customer_id"):
+                    current_user.stripe_customer_id = customer_id
+                    db.session.commit()
+            except Exception as persist_err:
+                # Don't block portal on a DB write issue
+                print("[/portal] warning: failed to persist stripe_customer_id:", repr(persist_err))
+
         portal = stripe.billing_portal.Session.create(
-            customer=current_user.stripe_customer_id,
+            customer=customer_id,
             return_url=f"{_frontend_domain()}/profile/{current_user.id}",
         )
         return jsonify({"url": portal.url}), 200
+
+    except stripe.error.StripeError as e:
+        msg = getattr(e, "user_message", None) or str(e)
+        return jsonify({"error": "StripeError", "message": msg}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "ServerError", "message": str(e)}), 500
+
 
 
 # ---------------------------
@@ -496,7 +522,6 @@ def stripe_webhook():
 
     return jsonify({"ok": True})
 
-# --- Subscription summary (next bill date & amount) ---
 # --- Subscription summary (next bill date & amount) ---
 @payments_bp.route("/summary", methods=["GET", "OPTIONS"])
 @token_required_optional

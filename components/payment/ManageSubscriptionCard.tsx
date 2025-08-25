@@ -1,5 +1,5 @@
-// components/billing/ManageSubscriptionCard.tsx
-// components/billing/ManageSubscriptionCard.tsx
+// components/payment/ManageSubscriptionCard.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
