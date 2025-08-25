@@ -4,11 +4,13 @@ import os
 import stripe
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
-
 from utils.decorators import token_required_optional  # optional auth
 from memberships.models import MembershipPlan
 from users.models import User
 from extensions import db
+from datetime import datetime, timezone
+
+
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
@@ -106,7 +108,7 @@ def create_checkout_session(current_user=None):
         # Better error reporting: show Stripe's friendly message
         msg = getattr(e, "user_message", None) or str(e)
         try:
-            err = e.json_body.get("error", {})  # type: ignore[attr-defined]
+            err = e.json_body.get("error", {})  
             print("StripeError:", {
                 "message": err.get("message"),
                 "code": err.get("code"),
@@ -426,3 +428,113 @@ def stripe_webhook():
         return jsonify({"ok": True})
 
     return jsonify({"ok": True})
+
+# --- Subscription summary (next bill date & amount) ---
+# --- Subscription summary (next bill date & amount) ---
+@payments_bp.route("/summary", methods=["GET", "OPTIONS"])
+@token_required_optional
+def subscription_summary(current_user=None):
+    if request.method == "OPTIONS":
+        return "", 200
+
+    if not current_user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        # Resolve plan name from DB (fallback to "Free")
+        plan_id = getattr(current_user, "membership_plan_id", None)
+        plan_name = "Free"
+        try:
+            if plan_id:
+                p = MembershipPlan.query.get(plan_id)
+                if p and p.name:
+                    plan_name = p.name
+        except Exception as db_e:
+            print("[/summary] DB plan lookup failed:", repr(db_e))
+
+        sub_id = getattr(current_user, "stripe_subscription_id", None)
+        if not sub_id:
+            return jsonify({
+                "has_subscription": False,
+                "plan": {"id": plan_id, "name": plan_name},
+                "next_bill": None
+            }), 200
+
+        # Retrieve subscription; handle "no such subscription" gracefully
+        try:
+            sub = stripe.Subscription.retrieve(
+                sub_id,
+                expand=["items.data.price.product"]
+            )
+        except stripe.error.InvalidRequestError as e:
+            print("[/summary] subscription retrieve error:", getattr(e, "user_message", str(e)))
+            return jsonify({
+                "has_subscription": False,
+                "plan": {"id": plan_id, "name": plan_name},
+                "next_bill": None
+            }), 200
+
+        status = sub.get("status")
+        period_end_unix = sub.get("current_period_end")
+        cancel_at_period_end = bool(sub.get("cancel_at_period_end"))
+
+        # If DB didn't give a name, derive from Stripe product/nickname
+        if plan_name == "Free":
+            items = (sub.get("items") or {}).get("data") or []
+            if items:
+                price = items[0].get("price") or {}
+                product = price.get("product")
+                nickname = price.get("nickname")
+                if isinstance(product, dict) and product.get("name"):
+                    plan_name = product["name"]
+                elif nickname:
+                    plan_name = nickname
+
+        # Figure next amount
+        amount = None
+        currency = None
+        if status in ("active", "trialing", "past_due"):
+            try:
+                upcoming = stripe.Invoice.upcoming(subscription=sub_id)
+                amount = upcoming.get("total") or upcoming.get("amount_due")
+                currency = (upcoming.get("currency") or "usd").lower()
+            except stripe.error.StripeError as inv_e:
+                print("[/summary] invoice.upcoming fallback:", getattr(inv_e, "user_message", str(inv_e)))
+                items = (sub.get("items") or {}).get("data") or []
+                if items:
+                    price = items[0].get("price") or {}
+                    unit = price.get("unit_amount")
+                    qty = items[0].get("quantity") or 1
+                    if unit is not None:
+                        amount = unit * qty
+                        currency = (price.get("currency") or "usd").lower()
+
+        date_iso = None
+        if isinstance(period_end_unix, int):
+            date_iso = datetime.fromtimestamp(period_end_unix, tz=timezone.utc).isoformat()
+
+        return jsonify({
+            "has_subscription": status in ("active", "trialing", "past_due"),
+            "plan": {"id": plan_id, "name": plan_name},
+            "next_bill": {
+                "amount": amount,
+                "currency": currency,
+                "date_unix": period_end_unix,
+                "date_iso": date_iso,
+            },
+            "status": status,
+            "cancel_at_period_end": cancel_at_period_end,
+        }), 200
+
+    except stripe.error.StripeError as e:
+        msg = getattr(e, "user_message", None) or str(e)
+        print("[/summary] StripeError:", msg)
+        return jsonify({"error": "StripeError", "message": msg}), 400
+    except Exception as e:
+        # Final safety: never 500 the UI
+        print("[/summary] ServerError:", repr(e))
+        return jsonify({
+            "has_subscription": False,
+            "plan": {"id": getattr(current_user, "membership_plan_id", None), "name": "Free"},
+            "next_bill": None
+        }), 200

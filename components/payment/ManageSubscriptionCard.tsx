@@ -1,7 +1,9 @@
 // components/billing/ManageSubscriptionCard.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FaSync, FaCreditCard, FaCalendarTimes, FaTimesCircle, FaArrowLeft } from "react-icons/fa";
 
 type Me = {
   id: string;
@@ -181,7 +183,7 @@ export default function ManageSubscriptionCard({
   const hasActiveSub = !!me?.stripe_subscription_id;
 
   return (
-    <div className="card bg-transparent shadow-sm" style={{ borderRadius: 16, maxWidth: 680 }}>
+    <div className="subscription-card shadow-sm" style={{ borderRadius: 16, maxWidth: 680 }}>
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start">
           <div>
@@ -193,10 +195,10 @@ export default function ManageSubscriptionCard({
           {onBackToPlans && (
             <button
               type="button"
-              className="btn btn-link text-decoration-none"
+              className="btn btn-sm "
               onClick={onBackToPlans}
             >
-              ← Back to plans
+              <FaArrowLeft className=" me-1" /> Back to plans
             </button>
           )}
         </div>
@@ -226,15 +228,16 @@ export default function ManageSubscriptionCard({
           <div className="col-md-6 d-flex gap-2">
             <button
               type="button"
-              className="btn btn-sm"
+              className="btn btn-sm "
               onClick={changePlan}
               disabled={busy}
             >
+              <FaSync className="me-1" />
               {busy ? "Working…" : "Update Plan"}
             </button>
             <button
               type="button"
-              className="btn btn-outline-secondary"
+              className="btn btn-sm text-white"
               onClick={openBillingPortal}
               disabled={busy || !hasActiveSub}
               title={
@@ -243,7 +246,7 @@ export default function ManageSubscriptionCard({
                   : "No active subscription"
               }
             >
-              Manage Billing
+              <FaCreditCard className=" me-1" /> Manage Billing
             </button>
           </div>
         </div>
@@ -253,21 +256,21 @@ export default function ManageSubscriptionCard({
         <div className="d-flex flex-wrap gap-2">
           <button
             type="button"
-            className="btn btn-outline-danger"
+            className="btn btn-sm text-white"
             onClick={() => cancelSubscription(true)}
             disabled={busy || !hasActiveSub}
             title={hasActiveSub ? "" : "No active subscription"}
           >
-            Cancel at Period End
+            <FaCalendarTimes className="me-1" /> Cancel at Period End
           </button>
           <button
             type="button"
-            className="btn btn-outline-danger"
+            className="btn btn-sm text-white "
             onClick={() => cancelSubscription(false)}
             disabled={busy || !hasActiveSub}
             title={hasActiveSub ? "" : "No active subscription"}
           >
-            Cancel Immediately
+            <FaTimesCircle className="me-1" /> Cancel Immediately
           </button>
         </div>
 

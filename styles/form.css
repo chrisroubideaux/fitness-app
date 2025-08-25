@@ -191,10 +191,9 @@
   background: linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.02));
 }
 
-/* (legacy) generic icon rule if needed elsewhere */
 .bio-icon { color: #7E8EF1; }
 
-/* layout helpers you already had */
+/* */
 .form {
   width: 100%;
   max-width: 330px;

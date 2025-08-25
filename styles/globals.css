@@ -5,6 +5,12 @@
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+
 html {
   height: 100%;
 }
