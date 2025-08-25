@@ -85,7 +85,7 @@ export default function ManageSubscriptionCard({
     const t = setTimeout(() => {
       setMsg(null);
       setErr(null);
-    }, 2200);
+    }, 2400);
     return () => clearTimeout(t);
   }, [msg, err]);
 
@@ -127,7 +127,7 @@ export default function ManageSubscriptionCard({
     if (!me) return;
 
     if (selectedPlanId === "free") {
-      // Send actual cancel-at-period-end (works regardless of current sub status)
+      // Treat "free" as cancel-at-period-end by default; backend may be idempotent.
       return cancelSubscription(true);
     }
 
@@ -142,9 +142,19 @@ export default function ManageSubscriptionCard({
         body: JSON.stringify({ plan_id: selectedPlanId }),
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(json?.error || json?.message || "Change plan failed.");
+      if (!res.ok) throw new Error(json?.message || json?.error || "Change plan failed.");
 
-      setMsg("Plan updated! It may take a moment to reflect.");
+      // If backend created a Checkout Session (no active Stripe sub), redirect there
+      if (json?.url) {
+        window.location.href = json.url;
+        return;
+      }
+
+      if (json?.noop) {
+        setMsg("Already on that plan.");
+      } else {
+        setMsg("Plan updated! It may take a moment to reflect.");
+      }
       await refreshMe();
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Unable to change plan.");
@@ -158,25 +168,33 @@ export default function ManageSubscriptionCard({
     setMsg(null);
     setBusy(true);
     try {
-      console.debug("[cancelSubscription] atPeriodEnd=", atPeriodEnd);
       const res = await fetch(`${base}/api/payments/cancel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ at_period_end: atPeriodEnd }),
+        body: JSON.stringify({ at_period_end: atPeriodEnd }), // matches backend
       });
       const json = await res.json().catch(() => null);
-      console.debug("[cancelSubscription] response:", res.status, json);
 
-      if (!res.ok) throw new Error(json?.error || json?.message || "Cancel failed.");
+      if (!res.ok) {
+        throw new Error(json?.message || json?.error || "Cancel failed.");
+      }
 
-      setMsg(
-        atPeriodEnd
-          ? "Cancellation scheduled at period end."
-          : "Subscription cancelled immediately."
-      );
+      if (json?.noop) {
+        setMsg("Nothing to cancel — you’re already on Free.");
+      } else if (json?.reconciled) {
+        setMsg("Subscription not found on Stripe; your account was reset to Free.");
+      } else {
+        setMsg(atPeriodEnd ? "Cancellation scheduled at period end." : "Subscription cancelled immediately.");
+      }
+
+      // Optimistic UI on immediate cancel / reconciled / noop
+      if (!atPeriodEnd || json?.reconciled || json?.noop) {
+        setMe((m) => (m ? { ...m, stripe_subscription_id: null, membership_plan_id: null } : m));
+      }
+
       await refreshMe();
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Unable to cancel subscription.");
@@ -224,16 +242,23 @@ export default function ManageSubscriptionCard({
               ))}
             </select>
           </div>
+
           <div className="col-md-6 d-flex gap-2">
-            <button type="button" className="btn btn-sm btn-outline-light text-white" onClick={changePlan} disabled={busy}>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-light text-white"
+              onClick={changePlan}
+              disabled={busy}
+            >
               <FaSync className="me-1" />
               {busy ? "Working…" : "Update Plan"}
             </button>
+
             <button
               type="button"
               className="btn btn-sm btn-outline-light text-white"
               onClick={openBillingPortal}
-              disabled={busy} // ← only block while busy; allow click even without stripe sub
+              disabled={busy}
               title={hasActiveSub ? "Manage payment method & invoices" : "No active subscription"}
             >
               <FaCreditCard className="me-1" /> Manage Billing
@@ -244,12 +269,12 @@ export default function ManageSubscriptionCard({
         <hr className="my-4" />
 
         <div className="d-flex flex-wrap gap-2">
-          {/* Always clickable (white text) */}
+          {/* Always clickable; white text */}
           <button
             type="button"
             className="btn btn-sm border border-white text-white bg-transparent"
             onClick={() => cancelSubscription(true)}
-            disabled={busy} // ← only disable while busy
+            disabled={busy}
             title="Cancel when current period ends"
           >
             <FaCalendarTimes className="me-1" /> Cancel at Period End
@@ -259,7 +284,7 @@ export default function ManageSubscriptionCard({
             type="button"
             className="btn btn-sm border border-white text-white bg-transparent"
             onClick={() => cancelSubscription(false)}
-            disabled={busy} // ← only disable while busy
+            disabled={busy}
             title="Cancel immediately"
           >
             <FaTimesCircle className="me-1" /> Cancel Immediately

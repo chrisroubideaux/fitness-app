@@ -1,5 +1,4 @@
 # payments/routes.py
-
 import os
 import stripe
 from flask import Blueprint, request, jsonify
@@ -9,9 +8,6 @@ from memberships.models import MembershipPlan
 from users.models import User
 from extensions import db
 from datetime import datetime, timezone
-
-
-
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
@@ -237,44 +233,88 @@ def change_plan(current_user=None):
     if request.method == "OPTIONS":
         return "", 200
 
-    if not current_user or not getattr(current_user, "stripe_subscription_id", None):
-        return jsonify({"error": "No active subscription on file"}), 400
+    if not current_user:
+        return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json() or {}
-    plan_id = (data.get("plan_id") or "").strip()
+    raw_plan_id = data.get("plan_id")
+    plan_id = ("" if raw_plan_id is None else str(raw_plan_id)).strip()
     if not plan_id:
         return jsonify({"error": "Missing plan_id"}), 422
 
+    # Handle “free” as downgrade
+    if plan_id.lower() in {"free", "basic", "null", "none"}:
+        # schedule cancel at period end by default (can override with payload)
+        at_period_end = bool(data.get("at_period_end", True))
+        # Reuse cancel logic by calling Stripe if sub exists; otherwise downgrade locally
+        sub_id = getattr(current_user, "stripe_subscription_id", None)
+        if not sub_id:
+            try:
+                current_user.membership_plan_id = None
+                db.session.commit()
+            except Exception:
+                pass
+            return jsonify({"ok": True, "noop": True, "message": "No active subscription on file"}), 200
+        try:
+            if at_period_end:
+                stripe.Subscription.modify(sub_id, cancel_at_period_end=True)
+                return jsonify({"ok": True, "at_period_end": True}), 200
+            else:
+                stripe.Subscription.delete(sub_id)
+                try:
+                    current_user.stripe_subscription_id = None
+                    current_user.membership_plan_id = None
+                    db.session.commit()
+                except Exception:
+                    pass
+                return jsonify({"ok": True, "at_period_end": False}), 200
+        except stripe.error.StripeError as e:
+            return jsonify({"error": "StripeError", "message": getattr(e, "user_message", None) or str(e)}), 400
+
+    # Paid plan path
     plan = MembershipPlan.query.get(plan_id)
     if not plan or not plan.stripe_price_id:
         return jsonify({"error": "Target plan invalid or not billable"}), 400
 
+    # If there is an active subscription: do a price swap
+    if getattr(current_user, "stripe_subscription_id", None):
+        try:
+            sub = stripe.Subscription.retrieve(current_user.stripe_subscription_id, expand=["items.data"])
+            items = (sub.get("items") or {}).get("data") or []
+            if not items:
+                return jsonify({"error": "Subscription has no items"}), 400
+            item_id = items[0]["id"]
+            current_price = (items[0].get("price") or {}).get("id")
+            if current_price == plan.stripe_price_id:
+                return jsonify({"ok": True, "subscription_id": sub["id"], "noop": True}), 200
+
+            updated = stripe.Subscription.modify(
+                sub["id"],
+                items=[{"id": item_id, "price": plan.stripe_price_id}],
+                proration_behavior="create_prorations",
+            )
+            return jsonify({"ok": True, "subscription_id": updated["id"]}), 200
+        except stripe.error.StripeError as e:
+            return jsonify({"error": "StripeError", "message": getattr(e, "user_message", None) or str(e)}), 400
+
+    # No active subscription: create Checkout and return URL
+    domain = _frontend_domain()
     try:
-        sub = stripe.Subscription.retrieve(
-            current_user.stripe_subscription_id, expand=["items.data"]
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": plan.stripe_price_id, "quantity": 1}],
+            success_url=f"{domain}/billing/success?planId={plan.id}&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{domain}/",
+            allow_promotion_codes=True,
+            metadata={"plan_id": str(plan.id), "user_id": str(current_user.id)},
+            **({"automatic_tax": {"enabled": True}, "billing_address_collection": "required"} if ENABLE_AUTO_TAX else {}),
+            **({"customer": _validated_customer_id(current_user)} if _validated_customer_id(current_user) else {"customer_email": current_user.email}),
         )
-        items = (sub.get("items") or {}).get("data") or []
-        if not items:
-            return jsonify({"error": "Subscription has no items"}), 400
-
-        item_id = items[0]["id"]
-        # If already on this price, do nothing
-        current_price = (items[0].get("price") or {}).get("id")
-        if current_price == plan.stripe_price_id:
-            return jsonify({"ok": True, "subscription_id": sub["id"], "noop": True}), 200
-
-        updated = stripe.Subscription.modify(
-            sub["id"],
-            items=[{"id": item_id, "price": plan.stripe_price_id}],
-            proration_behavior="create_prorations",
-        )
-        # Webhook will update user.membership_plan_id
-        return jsonify({"ok": True, "subscription_id": updated["id"]}), 200
-
+        return jsonify({"created_checkout": True, "sessionId": session["id"], "url": session.get("url")}), 200
     except stripe.error.StripeError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "StripeError", "message": getattr(e, "user_message", None) or str(e)}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "ServerError", "message": str(e)}), 500
 
 
 # ---------------------------
@@ -286,27 +326,54 @@ def cancel_subscription(current_user=None):
     if request.method == "OPTIONS":
         return "", 200
 
-    if not current_user or not getattr(current_user, "stripe_subscription_id", None):
-        return jsonify({"error": "No active subscription on file"}), 400
+    if not current_user:
+        return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json() or {}
-    at_period_end = bool(data.get("at_period_end", True)) 
+    at_period_end = bool(data.get("at_period_end", True))
+
+    sub_id = getattr(current_user, "stripe_subscription_id", None)
+    if not sub_id:
+        # Idempotent success: nothing to cancel on Stripe, but we can optionally
+        # downgrade the account so UI becomes consistent.
+        try:
+            current_user.membership_plan_id = None
+            db.session.commit()
+        except Exception:
+            pass
+        return jsonify({"ok": True, "noop": True, "message": "No active subscription on file"}), 200
 
     try:
         if at_period_end:
-            stripe.Subscription.modify(
-                current_user.stripe_subscription_id,
-                cancel_at_period_end=True,
-            )
+            stripe.Subscription.modify(sub_id, cancel_at_period_end=True)
+            return jsonify({"ok": True, "at_period_end": True}), 200
         else:
-            stripe.Subscription.delete(current_user.stripe_subscription_id)
+            stripe.Subscription.delete(sub_id)
+            # Optional: clear locally, webhook will also do it
+            try:
+                current_user.stripe_subscription_id = None
+                current_user.membership_plan_id = None
+                db.session.commit()
+            except Exception:
+                pass
+            return jsonify({"ok": True, "at_period_end": False}), 200
 
-        return jsonify({"ok": True}), 200
+    except stripe.error.InvalidRequestError as e:
+        # “No such subscription” => reconcile locally so UI isn’t stuck
+        msg = getattr(e, "user_message", None) or str(e)
+        try:
+            current_user.stripe_subscription_id = None
+            current_user.membership_plan_id = None
+            db.session.commit()
+        except Exception:
+            pass
+        return jsonify({"ok": True, "reconciled": True, "message": msg}), 200
+
     except stripe.error.StripeError as e:
-        return jsonify({"error": str(e)}), 400
+        msg = getattr(e, "user_message", None) or str(e)
+        return jsonify({"error": "StripeError", "message": msg}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        return jsonify({"error": "ServerError", "message": str(e)}), 500
 
 # ---------------------------
 # Stripe Webhook – source of truth

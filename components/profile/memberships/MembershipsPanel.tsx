@@ -6,16 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiFrown, FiSettings, FiGrid } from "react-icons/fi";
 import Tabs from "@/components/payment/Tab";
-import StripeMembershipCard, {
-  type UIMembershipPlan,
-} from "@/components/payment/StripeMembershipCard";
+import StripeMembershipCard, { type UIMembershipPlan } from "@/components/payment/StripeMembershipCard";
 import ManageSubscriptionCard from "@/components/payment/ManageSubscriptionCard";
 
-type TabItem = {
-  key: "plans" | "manage";
-  label: string;
-  icon: React.ReactNode;
-};
+type TabItem = { key: "plans" | "manage"; label: string; icon: React.ReactNode; };
 
 type Props = {
   currentPlanId: string | null;
@@ -32,18 +26,14 @@ type BackendPlan = {
   stripe_price_id?: string | null;
 };
 
-const formatPrice = (n: number) =>
-  n === 0 ? "$0" : `$${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(2)}/mo`;
-
+const formatPrice = (n: number) => (n === 0 ? "$0" : `$${Number.isInteger(n) ? n.toFixed(0) : n.toFixed(2)}/mo`);
 const gradientFor = (name: string) => {
   const lower = name.toLowerCase();
   if (lower.includes("elite")) return "linear-gradient(135deg, #FF9770, #FFD670)";
   if (lower.includes("pro")) return "linear-gradient(135deg, #7E8EF1, #5BD1D7)";
-  if (lower.includes("free"))
-    return "linear-gradient(135deg, rgba(126,142,241,.2), rgba(91,209,215,.2))";
+  if (lower.includes("free")) return "linear-gradient(135deg, rgba(126,142,241,.2), rgba(91,209,215,.2))";
   return "linear-gradient(135deg, rgba(126,142,241,.2), rgba(91,209,215,.2))";
 };
-
 const badgeFor = (name: string) => {
   const lower = name.toLowerCase();
   if (lower.includes("elite")) return "Best Value";
@@ -111,8 +101,7 @@ export default function MembershipsPanel({
               features: ["Workout library", "AI generator", "Analytics"],
               gradient: gradientFor("pro"),
               badge: "Most Popular",
-              stripe_price_id:
-                process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? null,
+              stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? null,
             },
             {
               id: "elite_2025",
@@ -122,8 +111,7 @@ export default function MembershipsPanel({
               features: ["Priority support", "Form feedback"],
               gradient: gradientFor("elite"),
               badge: "Best Value",
-              stripe_price_id:
-                process.env.NEXT_PUBLIC_STRIPE_PRICE_ELITE ?? null,
+              stripe_price_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ELITE ?? null,
             },
           ]);
           setErr("Using fallback plans (API unavailable).");
@@ -147,16 +135,12 @@ export default function MembershipsPanel({
     return () => clearTimeout(t);
   }, [msg, err]);
 
-  const successPath = "/profile";
+  // ✅ Send users to your handler page (fixes /profile 404 when no id)
+  const successPath = "/billing/success";
   const cancelPath = "/profile";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="p-3"
-    >
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="p-3">
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
         <h5 className="mb-0 d-flex align-items-center gap-2">
           <FiFrown /> Memberships
@@ -172,25 +156,14 @@ export default function MembershipsPanel({
         />
       </div>
 
-
       <AnimatePresence>
         {msg && (
-          <motion.div
-            className="bio-alert bio-alert--success"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-          >
+          <motion.div className="bio-alert bio-alert--success" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             {msg}
           </motion.div>
         )}
         {err && (
-          <motion.div
-            className="bio-alert bio-alert--error"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-          >
+          <motion.div className="bio-alert bio-alert--error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             {err}
           </motion.div>
         )}
@@ -205,20 +178,18 @@ export default function MembershipsPanel({
               {plans.map((plan) => {
                 const isCurrent = selected === plan.id;
                 return (
-                  <div
-                    className="col-12 col-sm-6 col-lg-4"
-                    key={`${plan.id ?? "free"}`}
-                  >
+                  <div className="col-12 col-sm-6 col-lg-4" key={`${plan.id ?? "free"}`}>
                     <StripeMembershipCard
                       plan={plan}
                       isCurrent={isCurrent}
                       saving={saving}
                       apiBase={base}
-                      successPath={successPath}
+                      successPath={successPath}   // ✅ here
                       cancelPath={cancelPath}
                       onBeforeRedirect={() => {
                         try {
                           localStorage.setItem("checkoutIntent", "1");
+                          localStorage.setItem("preselectedPlanId", plan.id ?? "free"); // optional helper for success page
                         } catch {}
                       }}
                     />
@@ -228,10 +199,7 @@ export default function MembershipsPanel({
             </div>
 
             <div className="d-flex justify-content-end mt-3">
-              <button
-                className="btn btn-outline-secondary btn-sm"
-                onClick={() => setActiveTab("manage")}
-              >
+              <button className="btn btn-outline-secondary btn-sm" onClick={() => setActiveTab("manage")}>
                 Manage subscription →
               </button>
             </div>
@@ -239,16 +207,12 @@ export default function MembershipsPanel({
         )
       ) : (
         <div id="panel-manage" role="tabpanel" aria-labelledby="tab-manage">
-          <ManageSubscriptionCard
-            apiBase={base}
-            onBackToPlans={() => setActiveTab("plans")}
-          />
+          <ManageSubscriptionCard apiBase={base} onBackToPlans={() => setActiveTab("plans")} />
         </div>
       )}
     </motion.div>
   );
 }
-
 
 
 /*
