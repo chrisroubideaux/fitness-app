@@ -528,6 +528,199 @@ def stripe_webhook():
 def subscription_summary(current_user=None):
     if request.method == "OPTIONS":
         return "", 200
+    if not current_user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    from datetime import datetime, timezone
+
+    def to_seconds(v):
+        """Accept int, float, '1695600000', or ISO '2025-09-25T00:00:00Z'."""
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return int(v)
+        if isinstance(v, str):
+            s = v.strip()
+            if s.isdigit():
+                return int(s)
+            try:
+                if s.endswith("Z"):
+                    s = s[:-1] + "+00:00"
+                return int(datetime.fromisoformat(s).timestamp())
+            except Exception:
+                return None
+        return None
+
+    def cents_from_items(items):
+        items = (items or {}).get("data") or []
+        if not items:
+            return None, None
+        price = (items[0] or {}).get("price") or {}
+        unit  = price.get("unit_amount")
+        qty   = (items[0] or {}).get("quantity") or 1
+        if unit is None:
+            return None, None
+        return unit * qty, (price.get("currency") or "usd").lower()
+
+    try:
+        # --- Plan label from DB (fallback) ---
+        plan_id = getattr(current_user, "membership_plan_id", None)
+        plan_name = "Free"
+        try:
+            if plan_id:
+                p = MembershipPlan.query.get(plan_id)
+                if p and p.name:
+                    plan_name = p.name
+        except Exception as e:
+            print("[/summary] plan lookup failed:", repr(e))
+
+        cust_id = getattr(current_user, "stripe_customer_id", None)
+        sub_id  = getattr(current_user, "stripe_subscription_id", None)
+
+        # --- Find a subscription for this customer ---
+        sub = None
+        if sub_id:
+            try:
+                sub = stripe.Subscription.retrieve(
+                    sub_id,
+                    expand=["items.data.price.product", "latest_invoice"]
+                )
+            except Exception as e:
+                print("[/summary] retrieve sub by id failed:", str(e))
+
+        if not sub and cust_id:
+            subs = stripe.Subscription.list(customer=cust_id, status="all", limit=20)
+            preferred = [s for s in subs.data if s.get("status") in ("active", "trialing", "past_due")]
+            chosen = preferred[0] if preferred else (subs.data[0] if subs.data else None)
+            if chosen:
+                sub = stripe.Subscription.retrieve(
+                    chosen["id"],
+                    expand=["items.data.price.product", "latest_invoice"]
+                )
+                # best-effort persist sub id
+                try:
+                    if hasattr(current_user, "stripe_subscription_id") and not current_user.stripe_subscription_id:
+                        current_user.stripe_subscription_id = sub["id"]
+                        db.session.commit()
+                except Exception as e:
+                    print("[/summary] warn persist sub id:", str(e))
+
+        if not sub:
+            return jsonify({
+                "has_subscription": False,
+                "plan": {"id": plan_id, "name": plan_name},
+                "next_bill": None,
+                "status": None,
+                "cancel_at_period_end": False
+            }), 200
+
+        # --- Build summary from subscription ---
+        status = sub.get("status")
+        cancel_at_period_end = bool(sub.get("cancel_at_period_end"))
+        items = (sub.get("items") or {})
+
+        # Amount/currency: prefer upcoming invoice, else derive from price*qty
+        amount, currency = None, None
+        try:
+            upcoming = stripe.Invoice.upcoming(subscription=sub["id"])
+        except Exception:
+            upcoming = None
+
+        # Collect all possible period_end sources
+        inv_end_raw = None
+        if upcoming:
+            amount = upcoming.get("total") or upcoming.get("amount_due")
+            currency = (upcoming.get("currency") or "usd").lower()
+            inv_end_raw = upcoming.get("period_end")
+            if not inv_end_raw:
+                lines = (upcoming.get("lines") or {}).get("data") or []
+                if lines and (lines[0].get("period") or {}).get("end"):
+                    inv_end_raw = lines[0]["period"]["end"]
+        else:
+            amount, currency = cents_from_items(items)
+
+        # Subscription current period end (may be int or ISO under newer API)
+        cpe_raw = sub.get("current_period_end")
+
+        # Latest invoice period end (lines)
+        li_end_raw = None
+        li = sub.get("latest_invoice")
+        try:
+            if isinstance(li, str):
+                li_obj = stripe.Invoice.retrieve(li, expand=["lines.data"])
+                lines = (li_obj.get("lines") or {}).get("data") or []
+                if lines and (lines[0].get("period") or {}).get("end"):
+                    li_end_raw = lines[0]["period"]["end"]
+            elif isinstance(li, dict):
+                lines = (li.get("lines") or {}).get("data") or []
+                if lines and (lines[0].get("period") or {}).get("end"):
+                    li_end_raw = lines[0]["period"]["end"]
+        except Exception as e:
+            print("[/summary] latest_invoice fetch failed:", str(e))
+
+        # If still nothing, try most recent invoice
+        if not li_end_raw:
+            try:
+                inv_list = stripe.Invoice.list(subscription=sub["id"], limit=1)
+                if inv_list.data:
+                    llines = (inv_list.data[0].get("lines") or {}).get("data") or []
+                    if llines and (llines[0].get("period") or {}).get("end"):
+                        li_end_raw = llines[0]["period"]["end"]
+            except Exception as e:
+                print("[/summary] invoice.list failed:", str(e))
+
+        # Pick the first available timestamp (convert anything to seconds)
+        period_end_sec = (
+            to_seconds(inv_end_raw) or
+            to_seconds(cpe_raw) or
+            to_seconds(li_end_raw)
+        )
+
+        # Improve plan label from Stripe
+        price = (items.get("data", [{}])[0] or {}).get("price") or {}
+        product = price.get("product") if isinstance(price.get("product"), dict) else None
+        nickname = price.get("nickname")
+        if plan_name == "Free":
+            if product and product.get("name"):
+                plan_name = product["name"]
+            elif nickname:
+                plan_name = nickname
+
+        date_iso = datetime.fromtimestamp(period_end_sec, tz=timezone.utc).isoformat() if period_end_sec else None
+        has_sub = status in ("active", "trialing", "past_due")
+
+        return jsonify({
+            "has_subscription": bool(has_sub),
+            "plan": {"id": plan_id, "name": plan_name},
+            "next_bill": {
+                "amount": amount,
+                "currency": currency,
+                "date_unix": period_end_sec,
+                "date_iso": date_iso
+            },
+            "status": status,
+            "cancel_at_period_end": cancel_at_period_end
+        }), 200
+
+    except stripe.error.StripeError as e:
+        msg = getattr(e, "user_message", None) or str(e)
+        return jsonify({"error": "StripeError", "message": msg}), 400
+    except Exception as e:
+        print("[/summary] ServerError:", repr(e))
+        return jsonify({
+            "has_subscription": False,
+            "plan": {"id": getattr(current_user, "membership_plan_id", None), "name": "Free"},
+            "next_bill": None
+        }), 200
+
+
+
+"""""""""
+@payments_bp.route("/summary", methods=["GET", "OPTIONS"])
+@token_required_optional
+def subscription_summary(current_user=None):
+    if request.method == "OPTIONS":
+        return "", 200
 
     if not current_user:
         return jsonify({"error": "Unauthorized"}), 401
@@ -630,3 +823,4 @@ def subscription_summary(current_user=None):
             "plan": {"id": getattr(current_user, "membership_plan_id", None), "name": "Free"},
             "next_bill": None
         }), 200
+"""""
