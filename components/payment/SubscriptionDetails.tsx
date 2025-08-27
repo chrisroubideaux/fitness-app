@@ -10,6 +10,7 @@ import {
   FiSettings,
   FiChevronDown,
   FiChevronUp,
+  FiBarChart,
 } from "react-icons/fi";
 
 type Summary = {
@@ -211,9 +212,7 @@ export default function SubscriptionDetails({
   return (
     <div id="panel-details" role="tabpanel" aria-labelledby="tab-details">
       <div className="d-flex align-items-center justify-content-between mb-3">
-        <h6 className="mb-0 d-flex align-items-center gap-2">
-          <FiInfo /> Subscription Details
-        </h6>
+        
         <div className="d-flex gap-2">
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={load} disabled={loading} title="Refresh">
             <FiRefreshCw className="me-1" />
@@ -241,11 +240,11 @@ export default function SubscriptionDetails({
           <div className="card-body">
             <div className="row g-3">
               <div className="col-sm-6">
-                <div className="text-uppercase text-muted small">
-                    <h1 className="fw-bold  me-1" style={{ fontSize: "1.25rem", lineHeight: 1 }}>
-                      <FiInfo />   
-                      Plan 
-                    </h1>
+                <div className=" small">
+                    <h4 className="fw-normal  me-1" >
+                      <FiBarChart className="bio-icon me-1" />   
+                      Current Plan
+                    </h4>
                     </div>
                 <div className="fw-semibold pt-3">
                   <h1 style={{ fontSize: "1.5rem", lineHeight: 1 }}>
@@ -315,7 +314,7 @@ export default function SubscriptionDetails({
               </div>
 
               <div className="col-sm-6">
-                <div className="text-uppercase text-muted small">
+                <div className="text-uppercase text-grey small">
                   <FiCalendar className=" bio-icon me-1" />
                   Next due date
                 </div>
