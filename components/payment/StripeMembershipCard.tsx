@@ -109,7 +109,7 @@ export default function StripeMembershipCard({
     <>
       <motion.div
         whileHover={{ y: -3 }}
-        className="card h-100 shadow-sm membership-card"
+        className="card h-100 shadow-lg membership-card"
         style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,.06)' }}
       >
         <div

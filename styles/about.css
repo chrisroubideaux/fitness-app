@@ -1,3 +1,5 @@
+/* about.css */
+
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -10,9 +12,7 @@
   }
 }
 
-
 /* about-intro */
-
 .about-intro {
   position: relative;
   padding: 8rem 1rem;
@@ -24,7 +24,7 @@
     url("/images/admin/image6.png");
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* 👈 This enables parallax */
+  background-attachment: fixed;
   background-repeat: no-repeat;
   color: white;
   text-align: center;
@@ -143,10 +143,4 @@
   border-radius: 50%;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
-
-
-
-
-
-
 */

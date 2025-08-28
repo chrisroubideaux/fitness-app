@@ -1,4 +1,4 @@
-// Calendar component
+
 // components/profile/calendar/CalendarComponent.tsx
 'use client';
 

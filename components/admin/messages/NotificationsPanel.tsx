@@ -1,4 +1,4 @@
-// components/profile/messages/NotificationsPanel.tsx
+// components/admin/messages/NotificationsPanel.tsx
 'use client';
 
 import { useState } from 'react';

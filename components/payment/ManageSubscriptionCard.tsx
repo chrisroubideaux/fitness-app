@@ -206,7 +206,7 @@ export default function ManageSubscriptionCard({
   const hasActiveSub = !!me?.stripe_subscription_id;
 
   return (
-    <div className="subscription-card shadow-sm" style={{ borderRadius: 16, maxWidth: 680 }}>
+    <div className="subscription-card shadow-lg" style={{ borderRadius: 16, maxWidth: 680 }}>
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start">
           <div>

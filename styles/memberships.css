@@ -28,7 +28,7 @@
   color: #6b7cff;
 }
 
-/* slimmer buttons (reuses your existing pattern) */
+/* slimmer buttons */
 .btn-thin {
   padding: .35rem .7rem !important;
   border-radius: 8px !important;
@@ -83,7 +83,7 @@
   border-top: 1px solid rgba(0,0,0,.06);
 }
 
-/* small pill for “+N more” */
+/* Small pill for “+N more” */
 .pill-count {
   display: inline-block;
   font-size: 0.75rem;

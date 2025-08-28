@@ -1,3 +1,5 @@
+/* global styles */
+
 
 /* buttons */
 @keyframes gradientShift {
@@ -10,7 +12,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 
-
+/* html */
 html {
   height: 100%;
 }
@@ -63,6 +65,8 @@ h1 {
 
 h4 {
   color: #706f6f;
+  font-size: 2px;
+
 }
 
 h5 {
@@ -70,7 +74,7 @@ h5 {
 }
 
 h6 {
-  color: hsl(0, 1%, 27%);
+  color: #464444;
 }
 
 
