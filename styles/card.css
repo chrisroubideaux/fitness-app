@@ -260,3 +260,142 @@
   border-radius: 30px;
   
 }
+/* =========================
+   Admin Plans Panel Styles
+   ========================= */
+
+:root{
+  --admin-pad: 1.25rem;
+  --admin-radius: 18px;
+  --admin-shadow-sm: 0 6px 20px rgba(0,0,0,.06);
+  --admin-shadow-md: 0 12px 30px rgba(0,0,0,.12);
+  --admin-accent: #787afc;              /* ties into your purple tones */
+  --admin-accent-2: #a1c4fd;            /* matches your gradient accents */
+  --admin-surface: rgba(255,255,255,0.75);
+  --admin-surface-2: rgba(255,255,255,0.55);
+}
+
+/* Wrapper card with subtle gradient + shadow */
+.admin-plans {
+  background: linear-gradient(
+    135deg,
+    rgba(248, 249, 255, 0.95),
+    rgba(240, 243, 255, 0.95)
+  );
+  border-radius: var(--admin-radius);
+  padding: var(--admin-pad);
+  box-shadow: var(--admin-shadow-sm);
+  border: 1px solid rgba(120, 122, 252, 0.10);
+}
+
+/* Header bar with soft highlight */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  background: linear-gradient(180deg, rgba(120,122,252,.10), rgba(120,122,252,.02) 80%);
+  border: 1px solid rgba(120,122,252,.15);
+  border-radius: 14px;
+  padding: .85rem 1rem;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+/* Round “pill” buttons to match your UI */
+.btn-pill {
+  border-radius: 999px !important;
+  padding-inline: .95rem !important;
+}
+
+/* Table: glassy surface, sticky header, gentle hover */
+.table-glass {
+  background: var(--admin-surface);
+  border-radius: 14px;
+  overflow: hidden;                   /* rounds the table edges */
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.table-glass thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(120,122,252,.12), rgba(120,122,252,.04));
+  font-weight: 600;
+  color: #333;
+  border-bottom-color: rgba(0,0,0,0.06) !important;
+}
+
+.table-glass tbody tr:hover {
+  background: var(--admin-surface-2);
+  transition: background .2s ease;
+}
+
+/* Feature list inside table cell */
+.admin-feature-list {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.admin-feature-list li {
+  margin-bottom: .25rem;
+}
+
+/* Code pill for IDs (e.g., Stripe IDs if you show them later) */
+.code-pill {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: .85rem;
+  background: rgba(0,0,0,0.06);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+/* Modal polish using your existing overlay styles */
+.modal-overlay--plans {
+  /* Reuse your modal-overlay, but allow stacking with Bootstrap if present */
+  z-index: 1080; /* above .modal if both appear */
+}
+
+.modal-content--plans {
+  border-radius: 16px;
+  box-shadow: var(--admin-shadow-md);
+  overflow: hidden;
+}
+
+/* Inputs & labels inside modal */
+.admin-form .form-label {
+  font-weight: 600;
+  color: #343458;
+}
+
+.admin-form .form-control,
+.admin-form .form-select {
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.admin-form .form-control:focus,
+.admin-form .form-select:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 .2rem rgba(120,122,252, .15);
+}
+
+/* Divider spacing tweaks */
+.admin-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.06);
+  margin: .5rem 0 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .5rem;
+  }
+}
+
