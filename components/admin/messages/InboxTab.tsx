@@ -1,5 +1,4 @@
 // components/admin/messages/InboxTab.tsx
-    
 'use client';
 
 type Message = {

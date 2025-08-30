@@ -16,13 +16,14 @@
 }
 
 */
+
 .services-section {
   background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
-  padding: 80px 40px; /* increased top/bottom and added horizontal padding */
+  padding: 80px 40px; 
   border-radius: 20px;
   max-width: 1100px;
-  margin: 0 auto; /* centers the section */
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05); /* optional: subtle outer shadow */
+  margin: 0 auto; 
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
 }
 
 .service-card {
@@ -54,6 +55,7 @@
 }
 
 /* modal styles */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -101,7 +103,6 @@
 }
 
 
-/* Input styles */
 .question-input {
   width: 100%;
   padding: 0.75rem;
@@ -112,7 +113,7 @@
   margin-bottom: 1rem;
 }
 
-/* Question title */
+
 .question-title {
   font-size: 1.25rem;
   font-weight: 600;
@@ -120,7 +121,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* Next button */
 .next-button {
   width: 100%;
   padding: 0.75rem;
@@ -137,7 +137,6 @@
   background-color: #4338ca;
 }
 
-/* Plan output card */
 .plan-output {
   width: 400px;
   height: 500px;
@@ -153,7 +152,6 @@
   z-index: 1060;
 }
 
-/* Close button for plan */
 .plan-output .close-btn {
   position: absolute;
   top: 0.5rem;
@@ -169,7 +167,6 @@
   color: #c82333;
 }
 
-/* Optional custom scrollbar */
 .plan-output::-webkit-scrollbar {
   width: 6px;
 }
@@ -180,7 +177,6 @@
 
 /* card */
 
-/* Workout Plan Viewer */
 .workout-plan-viewer {
  /* background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff); */
   background: linear-gradient(
@@ -226,6 +222,7 @@
 }
 
 /* Scrollbar styling */
+
 .workout-plan-viewer .text-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -260,89 +257,122 @@
   border-radius: 30px;
   
 }
-/* =========================
-   Admin Plans Panel Styles
-   ========================= */
 
-:root{
-  --admin-pad: 1.25rem;
-  --admin-radius: 18px;
-  --admin-shadow-sm: 0 6px 20px rgba(0,0,0,.06);
-  --admin-shadow-md: 0 12px 30px rgba(0,0,0,.12);
-  --admin-accent: #787afc;              /* ties into your purple tones */
-  --admin-accent-2: #a1c4fd;            /* matches your gradient accents */
-  --admin-surface: rgba(255,255,255,0.75);
-  --admin-surface-2: rgba(255,255,255,0.55);
-}
+/*Admin Plans Panel  */
 
-/* Wrapper card with subtle gradient + shadow */
 .admin-plans {
-  background: linear-gradient(
-    135deg,
-    rgba(248, 249, 255, 0.95),
-    rgba(240, 243, 255, 0.95)
-  );
-  border-radius: var(--admin-radius);
-  padding: var(--admin-pad);
-  box-shadow: var(--admin-shadow-sm);
-  border: 1px solid rgba(120, 122, 252, 0.10);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.05);
+}
+@media (min-width: 768px) {
+  .admin-plans { padding: 24px; }
 }
 
-/* Header bar with soft highlight */
+/* Header bar */
+
 .admin-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: .75rem;
-  background: linear-gradient(180deg, rgba(120,122,252,.10), rgba(120,122,252,.02) 80%);
-  border: 1px solid rgba(120,122,252,.15);
-  border-radius: 14px;
-  padding: .85rem 1rem;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 12px;
+  padding: .75rem 1rem;
   margin-bottom: 1rem;
-  backdrop-filter: blur(6px);
 }
 
-/* Round “pill” buttons to match your UI */
-.btn-pill {
-  border-radius: 999px !important;
-  padding-inline: .95rem !important;
-}
+/* Table */
 
-/* Table: glassy surface, sticky header, gentle hover */
 .table-glass {
-  background: var(--admin-surface);
-  border-radius: 14px;
-  overflow: hidden;                   /* rounds the table edges */
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: var(--admin-shadow-sm);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,.04);
 }
 
 .table-glass thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(120,122,252,.12), rgba(120,122,252,.04));
+  background: #f7f7f9 !important;
   font-weight: 600;
   color: #333;
   border-bottom-color: rgba(0,0,0,0.06) !important;
 }
 
 .table-glass tbody tr:hover {
-  background: var(--admin-surface-2);
-  transition: background .2s ease;
+  background: #fafafa;
+  transition: background .15s ease;
 }
 
-/* Feature list inside table cell */
+
 .admin-feature-list {
   margin: 0;
-  padding-left: 1.15rem;
+  padding-left: 1.1rem;
+}
+.admin-feature-list li { margin-bottom: .25rem; }
+
+.btn-slim {
+  border-radius: 4px !important;
+  padding: .3rem .55rem !important;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
-.admin-feature-list li {
-  margin-bottom: .25rem;
+/* Icon buttons */
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 4px;
+  padding: .22rem .35rem;
+  transition: transform .12s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  background: #9fa0fb;
+}
+.btn-ghost-neutral { color: #787afc; border-color: rgba(0,0,0,.18); }
+.btn-ghost-neutral:hover { background:#acadfd;; }
+.btn-ghost-danger { color: #9698fc; border-color: #787afc; }
+.btn-ghost-danger:hover { background: #b5b7fe;; }
+.icon-btn-slim {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 !important;
 }
 
-/* Code pill for IDs (e.g., Stripe IDs if you show them later) */
+/* Modal */
+.modal-overlay--plans {
+  position: fixed;
+  inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;                
+  background: rgba(0,0,0,0.35); 
+  backdrop-filter: blur(4px);
+  z-index: 1080;
+}
+.modal-content--plans {
+  width: 100%;
+  max-width: 780px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  overflow: hidden;
+}
+.modal-content--plans .modal-body {
+  padding: 20px 22px;          
+}
+@media (min-width: 768px) {
+  .modal-content--plans .modal-body { padding: 32px 36px; }
+}
+
 .code-pill {
   display: inline-block;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -352,50 +382,3 @@
   border-radius: 999px;
   border: 1px solid rgba(0,0,0,0.08);
 }
-
-/* Modal polish using your existing overlay styles */
-.modal-overlay--plans {
-  /* Reuse your modal-overlay, but allow stacking with Bootstrap if present */
-  z-index: 1080; /* above .modal if both appear */
-}
-
-.modal-content--plans {
-  border-radius: 16px;
-  box-shadow: var(--admin-shadow-md);
-  overflow: hidden;
-}
-
-/* Inputs & labels inside modal */
-.admin-form .form-label {
-  font-weight: 600;
-  color: #343458;
-}
-
-.admin-form .form-control,
-.admin-form .form-select {
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.12);
-}
-
-.admin-form .form-control:focus,
-.admin-form .form-select:focus {
-  border-color: var(--admin-accent);
-  box-shadow: 0 0 0 .2rem rgba(120,122,252, .15);
-}
-
-/* Divider spacing tweaks */
-.admin-divider {
-  height: 1px;
-  background: rgba(0,0,0,0.06);
-  margin: .5rem 0 1rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .admin-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: .5rem;
-  }
-}
-
