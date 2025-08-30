@@ -1,6 +1,5 @@
 /* global styles */
 
-
 /* buttons */
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
@@ -77,6 +76,10 @@ h6 {
   color: #464444;
 }
 
+.label {
+  color: #7E8EF1;
+  font-weight: 600;
+}
 
 /* buttons */
 

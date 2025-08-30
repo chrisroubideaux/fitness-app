@@ -1,5 +1,4 @@
 // components/admin/plans/PlansPanel.tsx
-// components/admin/plans/PlansPanel.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -11,7 +10,40 @@ import {
   FaTags,
   FaSave,
   FaTimes,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaDumbbell,
+  FaAppleAlt,
+  FaEnvelope,
+  FaHeadphones,
+  FaSpa,
+  FaPen,
+  FaSyncAlt,
+  FaVideo,
+  FaStopwatch,
+  FaLink,
+  FaTrophy,
+  FaUsers,
+  FaChartLine,
+  FaBell,
+  FaRedoAlt,
+  FaPhone,
+  FaBullseye,
+  FaRobot,
+  FaBox,
+  FaChalkboardTeacher,
+  FaBandAid,
+  FaChartBar,
+  FaBrain,
+  FaBolt,
+  FaPuzzlePiece,
+  FaLock,
+  FaGlobe,
+  FaRegCircle,
+  FaCalendarAlt, 
+  FaComments,    
 } from 'react-icons/fa';
+import type { IconType } from 'react-icons';
 
 export type Plan = {
   id: string;
@@ -26,39 +58,94 @@ function toMoney(n: number | null | undefined) {
   return Number(n).toFixed(2);
 }
 
-type Page = 0 | 1; // 0 = list, 1 = editor
+type Page = 0 | 1;
+
+const featureIconMap: Record<string, IconType> = {
+  '✅': FaCheckCircle,
+  '❌': FaTimesCircle,
+  '🏋️‍♀️': FaDumbbell,
+  '🏋️': FaDumbbell,
+  '🍎': FaAppleAlt,
+  '📩': FaEnvelope,
+  '📧': FaEnvelope,
+  '✉️': FaEnvelope,
+  '🎧': FaHeadphones,
+  '🧘‍♂️': FaSpa,
+  '🧘': FaSpa,
+  '📝': FaPen,
+  '🔁': FaSyncAlt,
+  '🎥': FaVideo,
+  '⏱️': FaStopwatch,
+  '🔗': FaLink,
+  '🏆': FaTrophy,
+  '👥': FaUsers,
+  '📈': FaChartLine,
+  '📊': FaChartBar,
+  '🛎️': FaBell,
+  '🔄': FaRedoAlt,
+  '📞': FaPhone,
+  '🎯': FaBullseye,
+  '🤖': FaRobot,
+  '📦': FaBox,
+  '🧑‍🏫': FaChalkboardTeacher,
+  '🩹': FaBandAid,
+  '🧠': FaBrain,
+  '⚡': FaBolt,
+  '🧩': FaPuzzlePiece,
+  '🔒': FaLock,
+  '🌐': FaGlobe,
+  '📅': FaCalendarAlt,
+  '📆': FaCalendarAlt,
+  '🗓️': FaCalendarAlt,
+  '💬': FaComments,
+  '🗨️': FaComments,
+  '💭': FaComments,
+};
+
+function parseFeature(feature: string): { Icon: IconType; text: string } {
+  if (!feature) return { Icon: FaRegCircle, text: '' };
+  for (const emoji of Object.keys(featureIconMap)) {
+    if (feature.startsWith(emoji)) {
+      const Icon = featureIconMap[emoji] || FaRegCircle;
+      const text = feature.slice(emoji.length).trim();
+      return { Icon, text };
+    }
+  }
+  return { Icon: FaRegCircle, text: feature.trim() };
+}
 
 export default function PlansPanel() {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
 
-  // data
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // pager
   const [page, setPage] = useState<Page>(0);
   const [editing, setEditing] = useState<Plan | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // promo section
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showPromo, setShowPromo] = useState(false);
 
-  const token = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('adminToken');
-  }, []);
+  const token = useMemo(() => (typeof window === 'undefined' ? null : localStorage.getItem('adminToken')), []);
 
-  // LIST (keep trailing slash)
+  const validation = useMemo(() => {
+    if (!editing) return { valid: true, errors: {} as { name?: string; price?: string } };
+    const errors: { name?: string; price?: string } = {};
+    const name = (editing.name ?? '').trim();
+    const price = Number.isFinite(editing.price) ? Number(editing.price) : NaN;
+    if (!name) errors.name = 'Name is required.';
+    if (!Number.isFinite(price) || price < 0) errors.price = 'Price must be 0 or greater.';
+    return { valid: Object.keys(errors).length === 0, errors };
+  }, [editing]);
+
   useEffect(() => {
     const run = async () => {
       try {
         const res = await fetch(`${apiBase}/api/memberships/`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: token ? `Bearer ${token}` : '',
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
         });
         if (!res.ok) throw new Error(`GET /memberships/ -> ${res.status}`);
         const data = await res.json();
@@ -73,7 +160,6 @@ export default function PlansPanel() {
     run();
   }, [apiBase, token]);
 
-  // actions
   const openCreate = () => {
     setEditing({ id: '', name: '', description: '', price: 0, features: [] });
     setPage(1);
@@ -92,54 +178,55 @@ export default function PlansPanel() {
 
   const savePlan = async () => {
     if (!editing) return;
+    if (!validation.valid) return;
     setIsSaving(true);
     const isNew = !editing.id;
 
     const body = {
-      name: editing.name?.trim(),
-      description: editing.description ?? '',
+      name: editing.name.trim(),
+      description: (editing.description ?? '').trim(),
       price: Number(editing.price) || 0,
-      features: editing.features ?? [],
+      features: (editing.features ?? []).map((f) => (f ?? '').trim()).filter(Boolean),
     };
 
-    // CREATE keeps trailing slash; UPDATE removes it on the item route
-    const url = isNew
-      ? `${apiBase}/api/memberships/`
-      : `${apiBase}/api/memberships/${editing.id}`;
+    const url = isNew ? `${apiBase}/api/memberships/` : `${apiBase}/api/memberships/${editing.id}`;
     const method = isNew ? 'POST' : 'PATCH';
 
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token ? `Bearer ${token}` : '',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`${method} ${url} -> ${res.status}`);
+      const saved = (await res.json()) as Plan;
+      setPlans((prev) => (isNew ? [saved, ...prev] : prev.map((p) => (p.id === saved.id ? saved : p))));
+      cancelEdit();
+    } catch (e) {
+      console.error(e);
+      alert('Failed to save plan. Please try again.');
       setIsSaving(false);
-      throw new Error(`${method} ${url} -> ${res.status}`);
     }
-
-    const saved = (await res.json()) as Plan;
-
-    setPlans((prev) => (isNew ? [saved, ...prev] : prev.map((p) => (p.id === saved.id ? saved : p))));
-    cancelEdit();
   };
 
   const deletePlan = async (id: string) => {
     if (!confirm('Delete this plan?')) return;
-    // DELETE: no trailing slash on item route
-    const res = await fetch(`${apiBase}/api/memberships/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: token ? `Bearer ${token}` : '' },
-    });
-    if (!res.ok) throw new Error(`DELETE /memberships/${id} -> ${res.status}`);
-    setPlans((prev) => prev.filter((p) => p.id !== id));
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${apiBase}/api/memberships/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: token ? `Bearer ${token}` : '' },
+      });
+      if (!res.ok) throw new Error(`DELETE /memberships/${id} -> ${res.status}`);
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete plan.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  // renderers
   const renderList = () => (
     <>
       <div className="admin-header">
@@ -148,10 +235,7 @@ export default function PlansPanel() {
           <button className="btn btn-md btn-slim" onClick={openCreate}>
             <FaPlus className="me-1" aria-hidden /> New Plan
           </button>
-          <button
-            className="btn btn-md btn-slim"
-            onClick={() => setShowPromo((s) => !s)}
-          >
+          <button className="btn btn-md btn-slim" onClick={() => setShowPromo((s) => !s)}>
             {showPromo ? (
               <>
                 <FaTimes className="me-1" aria-hidden /> Hide
@@ -169,11 +253,11 @@ export default function PlansPanel() {
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
       {!loading && !error && (
-        <div className="table-responsive bg-transparent">
+        <div className="table-responsive ">
           <table className="table table-sm align-middle table-glass bg-transparent">
             <thead>
               <tr>
-                <th>Name</th>
+                <th className=''>Name</th>
                 <th>Price (USD)</th>
                 <th>Features</th>
                 <th style={{ width: 120 }}>Actions</th>
@@ -183,23 +267,25 @@ export default function PlansPanel() {
               {plans.map((p) => (
                 <tr key={p.id}>
                   <td className="list">
-                    <div className="fw-semibold">{p.name}</div>
-                    {p.description && (
-                      <div className="text-muted small" style={{ maxWidth: 420 }}>
-                        {p.description}
-                      </div>
-                    )}
+                    <div className="">
+                        <h5 className='fw-bold'>{p.name}</h5>
+                    </div>
+                    {p.description && <div className="text-muted small" style={{ maxWidth: 420 }}>{p.description}</div>}
                   </td>
                   <td>${toMoney(p.price)}</td>
                   <td>
                     {p.features?.length ? (
                       <ul className="mb-0 small admin-feature-list">
-                        {p.features.slice(0, 3).map((f, i) => (
-                          <li key={`${p.id}-f-${i}`}>{f}</li>
-                        ))}
-                        {p.features.length > 3 && (
-                          <li className="text-muted">…and {p.features.length - 3} more</li>
-                        )}
+                        {p.features.slice(0, 3).map((f, i) => {
+                          const { Icon, text } = parseFeature(f);
+                          return (
+                            <li key={`${p.id}-f-${i}`} className="d-flex align-items-start gap-2">
+                              <Icon className="mt-1 bio-icon" aria-hidden />
+                              <span>{text}</span>
+                            </li>
+                          );
+                        })}
+                        {p.features.length > 3 && <li className="text-muted">…and {p.features.length - 3} more</li>}
                       </ul>
                     ) : (
                       <span className="text-muted small">No features</span>
@@ -216,12 +302,17 @@ export default function PlansPanel() {
                         <FaEdit aria-hidden />
                       </button>
                       <button
-                        className="btn btn-ghost icon-btn-slim"
+                        className="btn btn-ghost btn-ghost-danger icon-btn-slim"
                         title="Delete plan"
                         aria-label="Delete plan"
                         onClick={() => deletePlan(p.id)}
+                        disabled={deletingId === p.id}
                       >
-                        <FaTrashAlt aria-hidden />
+                        {deletingId === p.id ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                        ) : (
+                          <FaTrashAlt aria-hidden />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -264,26 +355,32 @@ export default function PlansPanel() {
         <div className="card">
           <div className="card-body">
             <div className="row g-3">
+              {/* Name */}
               <div className="col-md-6">
                 <label className="form-label">Name</label>
                 <input
-                  className="form-control"
+                  className={`form-control ${validation.errors.name ? 'is-invalid' : ''}`}
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 />
+                {validation.errors.name && <div className="invalid-feedback">{validation.errors.name}</div>}
               </div>
+
+              {/* Price */}
               <div className="col-md-6">
                 <label className="form-label">Price (USD)</label>
                 <input
-                  className="form-control"
+                  className={`form-control ${validation.errors.price ? 'is-invalid' : ''}`}
                   type="number"
                   step="0.01"
                   min="0"
                   value={toMoney(editing.price)}
                   onChange={(e) => setEditing({ ...editing, price: Number(e.target.value || 0) })}
                 />
+                {validation.errors.price && <div className="invalid-feedback">{validation.errors.price}</div>}
               </div>
 
+              {/* Description */}
               <div className="col-12">
                 <label className="form-label">Description</label>
                 <textarea
@@ -317,7 +414,7 @@ export default function PlansPanel() {
               <button className="btn btn-md btn-slim" onClick={cancelEdit}>
                 <FaTimes className="me-1" aria-hidden /> Cancel
               </button>
-              <button className="btn btn-md btn-slim" onClick={savePlan} disabled={isSaving}>
+              <button className="btn btn-md btn-slim" onClick={savePlan} disabled={isSaving || !validation.valid}>
                 <FaSave className="me-1" aria-hidden />
                 {isSaving ? 'Saving…' : editing.id ? 'Save Changes' : 'Create Plan'}
               </button>
@@ -327,11 +424,7 @@ export default function PlansPanel() {
       </>
     );
 
-  return (
-    <div className="admin-plans">
-      {page === 0 ? renderList() : renderEditor()}
-    </div>
-  );
+  return <div className="admin-plans">{page === 0 ? renderList() : renderEditor()}</div>;
 }
 
 function FeatureEditor({
@@ -374,17 +467,20 @@ function FeatureEditor({
 
       {features.length > 0 ? (
         <ul className="list-group bg-transparent mb-0">
-          {features.map((f, i) => (
-            <li
-              key={`${f}-${i}`}
-              className="list-group-item d-flex justify-content-between align-items-center"
-            >
-              <span>{f}</span>
-              <button className="btn btn-outline-danger btn-slim" onClick={() => onRemove(i)}>
-                <FaTimes className="me-1" aria-hidden /> Remove
-              </button>
-            </li>
-          ))}
+          {features.map((f, i) => {
+            const { Icon, text } = parseFeature(f);
+            return (
+              <li key={`${f}-${i}`} className=" nav-link list-group-item d-flex justify-content-between align-items-center">
+                <span className="d-flex align-items-start gap-2">
+                  <Icon className="mt-1 bio-icon" aria-hidden />
+                  <span>{text}</span>
+                </span>
+                <button className="btn btn-outline-danger btn-slim" onClick={() => onRemove(i)}>
+                  <FaTimes className="me-1" aria-hidden /> Remove
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <div className="text-muted small">No features added yet.</div>
