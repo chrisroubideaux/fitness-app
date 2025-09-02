@@ -1,4 +1,5 @@
 # admin/models.py
+# admin/models.py
 
 import uuid
 from datetime import datetime
@@ -64,6 +65,7 @@ class AdminIdentity(db.Model):
         UniqueConstraint("provider", "provider_user_id", name="uq_admin_identity_provider_uid"),
         Index("ix_admin_identity_email_provider", "email_at_auth_time", "provider"),
     )
+
 
 """"""""""
 import uuid

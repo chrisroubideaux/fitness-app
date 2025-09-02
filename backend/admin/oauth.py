@@ -1,4 +1,5 @@
 # admin/oauth.py
+# admin/oauth.py
 from flask import request, jsonify, Blueprint, redirect, url_for
 import os, requests
 from urllib.parse import urlencode
@@ -105,6 +106,8 @@ def facebook_callback():
 
     token = generate_admin_jwt_token(str(admin.id), admin.email)
     return redirect(f"http://localhost:3000/admin/{admin.id}?token={token}&name={admin.full_name}")
+
+
 
 
 

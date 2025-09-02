@@ -317,9 +317,9 @@ export default function ProfilePage() {
 
 
 
+
 /*
 
-// app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -504,7 +504,7 @@ export default function ProfilePage() {
       case 'memberships':
         return user ? (
           <MembershipsPanel
-            userId={user.id}
+           // userId={user.id}
             currentPlanId={user.membership_plan_id ?? null}
             apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
             onPlanChanged={(planId) =>
@@ -633,8 +633,6 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
 
 
 

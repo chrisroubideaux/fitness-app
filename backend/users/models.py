@@ -1,5 +1,4 @@
 # users/models.py
-# users/models.py
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID

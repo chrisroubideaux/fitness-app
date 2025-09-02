@@ -62,7 +62,6 @@ export default Login;
 
 // Previous version without Next.js navigation
 /*
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -121,4 +120,8 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+
+
+
+
 */

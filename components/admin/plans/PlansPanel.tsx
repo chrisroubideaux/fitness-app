@@ -1,4 +1,5 @@
 // components/admin/plans/PlansPanel.tsx
+// components/admin/plans/PlansPanel.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -40,8 +41,8 @@ import {
   FaLock,
   FaGlobe,
   FaRegCircle,
-  FaCalendarAlt, 
-  FaComments,    
+  FaCalendarAlt,
+  FaComments,
 } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 
@@ -58,8 +59,25 @@ function toMoney(n: number | null | undefined) {
   return Number(n).toFixed(2);
 }
 
-type Page = 0 | 1;
+type Page = 0 | 1; // 0 = list, 1 = editor
 
+// ---- Robust tier order (trim + lowercase) -------------------------------
+const ORDER_NAMES = ['Basic', 'Pro', 'Elite', 'Custom Coaching'];
+const ORDER_MAP = new Map(ORDER_NAMES.map((t, i) => [t.trim().toLowerCase(), i]));
+const norm = (s?: string | null) => (s ?? '').trim().toLowerCase();
+
+function sortPlans(list: Plan[]): Plan[] {
+  const BIG = 1e9;
+  return [...list].sort((a, b) => {
+    const aw = ORDER_MAP.get(norm(a.name)) ?? BIG;
+    const bw = ORDER_MAP.get(norm(b.name)) ?? BIG;
+    if (aw !== bw) return aw - bw; // known tiers first, in desired order
+    // both unknown or same weight: alphabetical by trimmed name
+    return a.name.trim().localeCompare(b.name.trim());
+  });
+}
+
+// ---- Emoji → Icon mapping (includes calendar + message) -----------------
 const featureIconMap: Record<string, IconType> = {
   '✅': FaCheckCircle,
   '❌': FaTimesCircle,
@@ -140,6 +158,7 @@ export default function PlansPanel() {
     return { valid: Object.keys(errors).length === 0, errors };
   }, [editing]);
 
+  // Fetch + sort
   useEffect(() => {
     const run = async () => {
       try {
@@ -149,7 +168,7 @@ export default function PlansPanel() {
         });
         if (!res.ok) throw new Error(`GET /memberships/ -> ${res.status}`);
         const data = await res.json();
-        setPlans(Array.isArray(data) ? (data as Plan[]) : []);
+        setPlans(sortPlans(Array.isArray(data) ? (data as Plan[]) : []));
       } catch (err: unknown) {
         console.error(err);
         setError(err instanceof Error ? err.message : 'Failed to load plans');
@@ -160,6 +179,7 @@ export default function PlansPanel() {
     run();
   }, [apiBase, token]);
 
+  // Actions
   const openCreate = () => {
     setEditing({ id: '', name: '', description: '', price: 0, features: [] });
     setPage(1);
@@ -199,8 +219,11 @@ export default function PlansPanel() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`${method} ${url} -> ${res.status}`);
+
       const saved = (await res.json()) as Plan;
-      setPlans((prev) => (isNew ? [saved, ...prev] : prev.map((p) => (p.id === saved.id ? saved : p))));
+      setPlans((prev) =>
+        sortPlans(isNew ? [saved, ...prev] : prev.map((p) => (p.id === saved.id ? saved : p))),
+      );
       cancelEdit();
     } catch (e) {
       console.error(e);
@@ -218,7 +241,7 @@ export default function PlansPanel() {
         headers: { Authorization: token ? `Bearer ${token}` : '' },
       });
       if (!res.ok) throw new Error(`DELETE /memberships/${id} -> ${res.status}`);
-      setPlans((prev) => prev.filter((p) => p.id !== id));
+      setPlans((prev) => sortPlans(prev.filter((p) => p.id !== id)));
     } catch (e) {
       console.error(e);
       alert('Failed to delete plan.');
@@ -227,6 +250,7 @@ export default function PlansPanel() {
     }
   };
 
+  // UI
   const renderList = () => (
     <>
       <div className="admin-header">
@@ -253,11 +277,11 @@ export default function PlansPanel() {
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
       {!loading && !error && (
-        <div className="table-responsive ">
+        <div className="table-responsive bg-transparent">
           <table className="table table-sm align-middle table-glass bg-transparent">
             <thead>
               <tr>
-                <th className=''>Name</th>
+                <th>Name</th>
                 <th>Price (USD)</th>
                 <th>Features</th>
                 <th style={{ width: 120 }}>Actions</th>
@@ -268,9 +292,13 @@ export default function PlansPanel() {
                 <tr key={p.id}>
                   <td className="list">
                     <div className="">
-                        <h5 className='fw-bold'>{p.name}</h5>
+                        <h5 className='fw-bold fs-6'>{p.name}</h5>
                     </div>
-                    {p.description && <div className="text-muted small" style={{ maxWidth: 420 }}>{p.description}</div>}
+                    {p.description && (
+                      <div className="text-muted small" style={{ maxWidth: 420 }}>
+                        <p className='par fs-6'>{p.description}</p>
+                      </div>
+                    )}
                   </td>
                   <td>${toMoney(p.price)}</td>
                   <td>
@@ -280,12 +308,14 @@ export default function PlansPanel() {
                           const { Icon, text } = parseFeature(f);
                           return (
                             <li key={`${p.id}-f-${i}`} className="d-flex align-items-start gap-2">
-                              <Icon className="mt-1 bio-icon" aria-hidden />
+                              <Icon className=" fs-6 bio-icon mt-1" aria-hidden />
                               <span>{text}</span>
                             </li>
                           );
                         })}
-                        {p.features.length > 3 && <li className="text-muted">…and {p.features.length - 3} more</li>}
+                        {p.features.length > 3 && (
+                          <li className="text-muted">…and {p.features.length - 3} more</li>
+                        )}
                       </ul>
                     ) : (
                       <span className="text-muted small">No features</span>
@@ -352,8 +382,8 @@ export default function PlansPanel() {
           <h4 className="mb-0">{editing.id ? 'Edit Plan' : 'Create Plan'}</h4>
         </div>
 
-        <div className="card">
-          <div className="card-body">
+        <div className="card bg-transparent">
+          <div className="card-body ">
             <div className="row g-3">
               {/* Name */}
               <div className="col-md-6">
@@ -466,14 +496,17 @@ function FeatureEditor({
       </div>
 
       {features.length > 0 ? (
-        <ul className="list-group bg-transparent mb-0">
+        <ul className="list-group bg-transparent mb-0 pt-3">
           {features.map((f, i) => {
             const { Icon, text } = parseFeature(f);
             return (
-              <li key={`${f}-${i}`} className=" nav-link list-group-item d-flex justify-content-between align-items-center">
+              <li
+                key={`${f}-${i}`}
+                className="bg-transparent list-group-item d-flex justify-content-between align-items-center"
+              >
                 <span className="d-flex align-items-start gap-2">
-                  <Icon className="mt-1 bio-icon" aria-hidden />
-                  <span>{text}</span>
+                  <Icon aria-hidden className="mt-1 bio-icon" />
+                  <span className='fs-6 text-gray'> {text}</span>
                 </span>
                 <button className="btn btn-outline-danger btn-slim" onClick={() => onRemove(i)}>
                   <FaTimes className="me-1" aria-hidden /> Remove

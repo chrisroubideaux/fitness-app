@@ -1,4 +1,3 @@
-#admin/decorators.py
 # admin/decorators.py
 import os
 import jwt
