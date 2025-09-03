@@ -320,6 +320,7 @@ export default function ProfilePage() {
 
 /*
 
+/ app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -633,7 +634,6 @@ export default function ProfilePage() {
     </div>
   );
 }
-
 
 
 

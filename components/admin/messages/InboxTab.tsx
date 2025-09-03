@@ -1,6 +1,105 @@
 // components/admin/messages/InboxTab.tsx
 'use client';
 
+import { useEffect, useState } from 'react';
+import { MessageThread, UIMessage } from './types';
+
+type ApiConversation = {
+  id: string;
+  user_id: string;
+  admin_id: string;
+  unread_count: number;
+  last_message_at: string | null;
+  created_at: string | null;
+};
+
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(init.headers || {}),
+  };
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
+  }
+  return res.json();
+}
+
+type InboxProps = {
+  onMessageClick: (thread: MessageThread) => void;
+};
+
+export default function InboxTab({ onMessageClick }: InboxProps) {
+  const [threads, setThreads] = useState<MessageThread[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let abort = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const convos = await api<ApiConversation[]>(`/api/messages/conversations?limit=20`);
+        if (abort) return;
+
+        const mapped: MessageThread[] = convos.map((c) => ({
+          id: c.id,
+          user_id: c.user_id,
+          sender: c.user_id ?? 'User',
+          subject: 'Conversation',
+          messages: [] as UIMessage[], // load later in ChatWindow
+        }));
+
+        setThreads(mapped);
+      } catch (err) {
+        console.error('❌ Failed to load admin conversations', err);
+      } finally {
+        if (!abort) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      abort = true;
+    };
+  }, []);
+
+  return (
+    <div className="inbox-wrapper bg-transparent">
+      <h6 className="mb-3">Inbox</h6>
+      {loading && <div className="text-muted small">Loading conversations…</div>}
+      <ul className="list-group">
+        {threads.map((thread) => (
+          <li
+            key={thread.id}
+            className="list-group-item list-group-item-action bg-transparent"
+            onClick={() => onMessageClick(thread)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="d-flex justify-content-between">
+              <div>
+                <strong>{thread.sender}</strong> — {thread.subject}
+              </div>
+              <small className="text-muted">
+                {thread.id ? new Date(thread.id).toLocaleDateString() : '—'}
+              </small>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+
+/*
+'use client';
+
 type Message = {
   id: number;
   sender: 'admin' | 'user';
@@ -68,3 +167,5 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
     </div>
   );
 }
+
+*/

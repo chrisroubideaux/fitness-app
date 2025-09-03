@@ -1,4 +1,120 @@
 // components/profile/messages/InboxTab.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { UIMessage } from './types';
+
+type MessageThread = {
+  id: string;
+  admin_id: string;
+  sender: string;
+  subject: string;
+  preview: string;
+  timestamp: string;
+  messages: UIMessage[];
+};
+
+type ApiConversation = {
+  id: string;
+  user_id: string;
+  admin_id: string;
+  unread_count: number;
+  last_message_at: string | null;
+  created_at: string | null;
+};
+
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(init.headers || {}),
+  };
+  const res = await fetch(`${BASE}${path}`, { ...init, headers });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
+  }
+  return res.json();
+}
+
+type InboxProps = {
+  onMessageClick: (thread: MessageThread) => void;
+};
+
+export default function InboxTab({ onMessageClick }: InboxProps) {
+  const [threads, setThreads] = useState<MessageThread[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let abort = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        // Fetch conversations for this user
+        const convos = await api<ApiConversation[]>(`/api/messages/conversations?limit=20`);
+        if (abort) return;
+
+        const mapped: MessageThread[] = convos.map((c) => ({
+          id: c.id,
+          admin_id: c.admin_id,
+          sender: 'Coach/Admin', // TODO: resolve actual admin name later
+          subject: 'Conversation',
+          preview: '', // TODO: fetch last message if needed
+          timestamp: c.last_message_at
+            ? new Date(c.last_message_at).toLocaleString()
+            : '—',
+          messages: [] as UIMessage[],
+        }));
+        setThreads(mapped);
+      } catch (err) {
+        console.error('❌ Failed to load user conversations', err);
+      } finally {
+        if (!abort) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { abort = true; };
+  }, []);
+
+  return (
+    <div className="inbox-wrapper bg-transparent">
+      <h6 className="mb-3">Inbox</h6>
+      {loading && <div className="text-muted small">Loading conversations…</div>}
+      <ul className="list-group">
+        {threads.map((thread) => (
+          <li
+            key={thread.id}
+            className="list-group-item list-group-item-action bg-transparent"
+            onClick={() => onMessageClick(thread)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="d-flex justify-content-between">
+              <div>
+                <strong>{thread.sender}</strong> — {thread.subject}
+                {thread.preview && (
+                  <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>
+                    {thread.preview}
+                  </p>
+                )}
+              </div>
+              <small className="text-muted">{thread.timestamp}</small>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+
+/*
+
+// components/profile/messages/InboxTab.tsx
 
 'use client';
 
@@ -66,88 +182,6 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-
-
-
-/*
-'use client';
-
-import { useState } from 'react';
-
-type Message = {
-  id: string;
-  sender: string;
-  subject: string;
-  preview: string;
-  timestamp: string;
-};
-
-const mockMessages: Message[] = Array.from({ length: 20 }, (_, i) => ({
-  id: `${i + 1}`,
-  sender: i % 2 === 0 ? 'Coach Lena' : 'Admin Team',
-  subject: `Message Subject ${i + 1}`,
-  preview: `This is a short preview of message #${i + 1}.`,
-  timestamp: new Date(Date.now() - i * 3600000).toLocaleString(),
-}));
-
-const MESSAGES_PER_PAGE = 5;
-
-export default function InboxTab() {
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const totalPages = Math.ceil(mockMessages.length / MESSAGES_PER_PAGE);
-  const currentMessages = mockMessages.slice(
-    (currentPage - 1) * MESSAGES_PER_PAGE,
-    currentPage * MESSAGES_PER_PAGE
-  );
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  return (
-    <div className="inbox-wrapper">
-      <h5 className="mb-3">Inbox</h5>
-
-      <ul className="list-group mb-4">
-        {currentMessages.map((msg) => (
-          <li key={msg.id} className="list-group-item">
-            <div className="d-flex justify-content-between">
-              <div>
-                <strong>{msg.sender}</strong> — <span>{msg.subject}</span>
-                <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>
-                  {msg.preview}
-                </p>
-              </div>
-              <small className="text-muted text-end">{msg.timestamp}</small>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      <div className="d-flex justify-content-center">
-        <nav>
-          <ul className="pagination pagination-sm mb-0">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <li
-                key={i}
-                className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}
-              >
-                <button
-                  className="page-link"
-                  onClick={() => handlePageChange(i + 1)}
-                >
-                  {i + 1}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
     </div>
   );
 }
