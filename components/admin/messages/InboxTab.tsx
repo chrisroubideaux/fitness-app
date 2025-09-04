@@ -1,4 +1,5 @@
 // components/admin/messages/InboxTab.tsx
+// components/admin/messages/InboxTab.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,14 +16,37 @@ type ApiConversation = {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
+/** Get a valid admin token, storing it from ?token=... if present (first load) */
+function getAdminToken(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  // If a token is in the URL (after OAuth), persist it as adminToken
+  const params = new URLSearchParams(window.location.search);
+  const tokenFromURL = params.get('token');
+  if (tokenFromURL) {
+    localStorage.setItem('adminToken', tokenFromURL);
+    // (Optional) clean it from the URL without reload
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+  }
+
+  return localStorage.getItem('adminToken');
+}
+
+// ✅ Always use adminToken
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const token = getAdminToken();
+  // Debug line to verify we actually have a token
+  console.log('[Admin InboxTab] sending adminToken?', Boolean(token), 'first20=', token?.slice(0, 20));
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init.headers || {}),
   };
+
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
+
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
@@ -37,12 +61,22 @@ type InboxProps = {
 export default function InboxTab({ onMessageClick }: InboxProps) {
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     let abort = false;
 
     async function load() {
       setLoading(true);
+      setErr(null);
+
+      const token = getAdminToken();
+      if (!token) {
+        setLoading(false);
+        setErr('No admin token found. Please log in as admin.');
+        return;
+      }
+
       try {
         const convos = await api<ApiConversation[]>(`/api/messages/conversations?limit=20`);
         if (abort) return;
@@ -50,14 +84,18 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
         const mapped: MessageThread[] = convos.map((c) => ({
           id: c.id,
           user_id: c.user_id,
-          sender: c.user_id ?? 'User',
+          sender: 'User', // you can replace with a display name if you fetch it elsewhere
           subject: 'Conversation',
-          messages: [] as UIMessage[], // load later in ChatWindow
+          messages: [] as UIMessage[], // ChatWindow will fetch the actual messages
+          timestamp: c.last_message_at ? new Date(c.last_message_at).toLocaleString() : '—',
+          preview: '',
         }));
 
         setThreads(mapped);
-      } catch (err) {
-        console.error('❌ Failed to load admin conversations', err);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Failed to load conversations';
+        console.error('❌ Failed to load admin conversations', e);
+        setErr(msg);
       } finally {
         if (!abort) setLoading(false);
       }
@@ -72,26 +110,38 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
   return (
     <div className="inbox-wrapper bg-transparent">
       <h6 className="mb-3">Inbox</h6>
+
       {loading && <div className="text-muted small">Loading conversations…</div>}
-      <ul className="list-group">
-        {threads.map((thread) => (
-          <li
-            key={thread.id}
-            className="list-group-item list-group-item-action bg-transparent"
-            onClick={() => onMessageClick(thread)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="d-flex justify-content-between">
-              <div>
-                <strong>{thread.sender}</strong> — {thread.subject}
+      {err && !loading && (
+        <div className="alert alert-danger p-2" role="alert">
+          {err}
+        </div>
+      )}
+
+      {!loading && !err && (
+        <ul className="list-group">
+          {threads.map((thread) => (
+            <li
+              key={thread.id}
+              className="list-group-item list-group-item-action bg-transparent"
+              onClick={() => onMessageClick(thread)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="d-flex justify-content-between">
+                <div>
+                  <strong>{thread.sender}</strong> — {thread.subject}
+                </div>
+                <small className="text-muted">{thread.timestamp ?? '—'}</small>
               </div>
-              <small className="text-muted">
-                {thread.id ? new Date(thread.id).toLocaleDateString() : '—'}
-              </small>
-            </div>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+          {threads.length === 0 && (
+            <li className="list-group-item bg-transparent text-muted small">
+              No conversations yet.
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

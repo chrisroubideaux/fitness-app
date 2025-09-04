@@ -3,14 +3,16 @@ import jwt
 import os
 from datetime import datetime, timedelta
 
-def generate_admin_jwt_token(admin_id, email):
+SECRET = os.getenv("DB_SECRET_KEY", "dev-secret")
+
+def generate_admin_jwt_token(admin_id, email, expires_in=3600*24):
     payload = {
-        "user_id": admin_id,
+        "admin_id": admin_id,    
         "email": email,
-        "exp": datetime.utcnow() + timedelta(minutes=20)
+        "role": "admin",
+        "exp": datetime.utcnow() + timedelta(seconds=expires_in)
     }
-    token = jwt.encode(payload, os.getenv("DB_SECRET_KEY"), algorithm="HS256")
-    return token
+    return jwt.encode(payload, SECRET, algorithm="HS256")
 
 
 """"""""""
@@ -26,4 +28,7 @@ def generate_admin_jwt_token(admin_id, email):
     }
     token = jwt.encode(payload, os.getenv("DB_SECRET_KEY"), algorithm="HS256")
     return token
+
+
+
 """""

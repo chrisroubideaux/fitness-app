@@ -1,17 +1,18 @@
+// components/admin/messages/NewMessageTab.tsx
 'use client';
 
 import { useState } from 'react';
 
 type Props = {
-  // Optional: notify parent to open the new chat after send
   onStart?: (userId: string, label?: string, subject?: string) => void;
 };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
-// inline API helper
+// ✅ admin API helper (use adminToken)
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -20,7 +21,9 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
+    throw new Error(
+      `${res.status} ${res.statusText}: ${text || 'Request failed'}`
+    );
   }
   return res.json();
 }
@@ -65,11 +68,10 @@ export default function NewMessageTab({ onStart }: Props) {
 
       setSuccess(true);
 
-      // notify parent panel
-      const label = USER_DIRECTORY.find((u) => u.value === userId)?.label || 'User';
+      const label =
+        USER_DIRECTORY.find((u) => u.value === userId)?.label || 'User';
       onStart?.(userId, label, subject);
 
-      // reset
       setTimeout(() => {
         setRecipient('');
         setSubject('');
@@ -77,7 +79,9 @@ export default function NewMessageTab({ onStart }: Props) {
         setSuccess(false);
       }, 1500);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to send message');
+      setError(
+        e instanceof Error ? e.message : 'Failed to send message'
+      );
     } finally {
       setSending(false);
     }
@@ -141,13 +145,18 @@ export default function NewMessageTab({ onStart }: Props) {
           />
         </div>
 
-        <button type="submit" className="btn btn-sm btn-success" disabled={sending}>
+        <button
+          type="submit"
+          className="btn btn-sm btn-success"
+          disabled={sending}
+        >
           {sending ? 'Sending…' : 'Send Message'}
         </button>
       </form>
     </div>
   );
 }
+
 
 
 
