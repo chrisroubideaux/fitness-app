@@ -1,5 +1,4 @@
 // components/admin/messages/InboxTab.tsx
-// components/admin/messages/InboxTab.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
