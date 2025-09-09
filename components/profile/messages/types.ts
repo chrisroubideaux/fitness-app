@@ -1,5 +1,4 @@
 // components/profile/messages/types.ts
-// components/profile/messages/types.ts
 
 export type UIMessage = {
   id: string;                 // uuid from API

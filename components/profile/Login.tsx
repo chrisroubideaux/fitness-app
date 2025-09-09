@@ -1,4 +1,3 @@
-//components/profile/Login.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -17,16 +16,22 @@ const Login: React.FC = () => {
     window.location.href = 'http://localhost:5000/auth/facebook/login';
   };
 
-  // Optional: Handle token in URL on mount (for redirect-based flow)
   useEffect(() => {
     const url = new URL(window.location.href);
+
     const token = url.searchParams.get('token');
-    const userId = url.pathname.split('/').pop(); // Assumes /profile/:id route
+    // ✅ Handle both possible keys from backend (?id=... or ?user_id=...)
+    const userId = url.searchParams.get('id') || url.searchParams.get('user_id');
 
     if (token) {
+      // Save token for authenticated requests
       localStorage.setItem('authToken', token);
+
+      // Redirect to profile page with ID if available
       if (userId) {
         window.location.href = `/profile/${userId}`;
+      } else {
+        window.location.href = '/profile'; // fallback if no ID
       }
     }
   }, []);
@@ -57,11 +62,16 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+
+
 
 
 
 // Previous version without Next.js navigation
 /*
+
+//components/profile/Login.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -70,26 +80,28 @@ import { FaFacebookSquare, FaGoogle } from 'react-icons/fa';
 const Login: React.FC = () => {
   const [error] = useState<string | null>(null);
 
-  // Redirect to Google OAuth
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:5000/auth/google/login';
   };
 
-  // Redirect to Facebook OAuth
   const handleFacebookLogin = () => {
     window.location.href = 'http://localhost:5000/auth/facebook/login';
   };
 
-  // Optional: Handle token in URL on mount (for redirect-based flow)
   useEffect(() => {
     const url = new URL(window.location.href);
     const token = url.searchParams.get('token');
-    const userId = url.pathname.split('/').pop(); // Assumes /profile/:id route
+    const userId = url.searchParams.get('id'); // ✅ backend should send ?id=<userId>
 
     if (token) {
+      // ✅ Save token for profile pages and messaging
       localStorage.setItem('authToken', token);
+
+      // Redirect to profile page if ID is provided
       if (userId) {
         window.location.href = `/profile/${userId}`;
+      } else {
+        window.location.href = '/profile'; // fallback
       }
     }
   }, []);
@@ -120,7 +132,6 @@ const Login: React.FC = () => {
 };
 
 export default Login;
-
 
 
 

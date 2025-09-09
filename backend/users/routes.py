@@ -1,7 +1,8 @@
-# routes.py
+# backend/users/routes.py
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from uuid import uuid4
+from admin.models import Admin
 
 from .models import User, db
 from utils.jwt_token import generate_jwt_token
@@ -202,3 +203,19 @@ def get_current_user(current_user):
         return '', 200
     # With relationship eager-loaded (lazy="joined") you’ll also get plan_* here
     return jsonify(_norm_user_dict(current_user)), 200
+
+@user_bp.route('/admins', methods=['GET'])
+def list_admins_for_users():
+    """Allow users to fetch a directory of admins to start messaging."""
+    limit = request.args.get("limit", type=int)
+    q = Admin.query
+    if limit:
+        q = q.limit(limit)
+
+    admins = q.all()
+    return jsonify([{
+        "id": str(a.id),
+        "full_name": a.full_name,
+        "email": a.email,
+        "profile_image_url": getattr(a, "profile_image_url", None)
+    } for a in admins]), 200

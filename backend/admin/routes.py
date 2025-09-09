@@ -8,8 +8,12 @@ from .models import Admin
 from users.models import User
 from .jwt_token import generate_admin_jwt_token
 from .decorators import admin_token_required  # ✅ uses the new decorator
+from utils.decorators import token_required_optional
+
 
 admin_bp = Blueprint('admins', __name__, url_prefix='/api/admins')
+
+# REGISTER a new admin
 
 @admin_bp.route('/register', methods=['POST'])
 def register_admin():
@@ -45,6 +49,8 @@ def register_admin():
     db.session.commit()
     return jsonify({'message': 'Admin registered successfully', 'admin_id': str(admin.id)}), 201
 
+# LOGIN admin
+
 @admin_bp.route('/login', methods=['POST'])
 def login_admin():
     data = request.get_json() or {}
@@ -54,6 +60,8 @@ def login_admin():
 
     token = generate_admin_jwt_token(str(admin.id), admin.email)
     return jsonify({'message': 'Login successful', 'admin_id': str(admin.id), 'token': token}), 200
+
+# GET all admins
 
 @admin_bp.route('/', methods=['GET'])
 @admin_token_required
@@ -69,6 +77,8 @@ def get_all_admins(current_admin):
         'profile_image_url': a.profile_image_url,
         'membership_plan_id': str(a.membership_plan_id) if a.membership_plan_id else None
     } for a in admins]), 200
+
+# GET single admin by ID
 
 @admin_bp.route('/<string:admin_id>', methods=['GET'])
 @admin_token_required
@@ -86,6 +96,8 @@ def get_admin(current_admin, admin_id):
         'profile_image_url': admin.profile_image_url,
         'membership_plan_id': str(admin.membership_plan_id) if admin.membership_plan_id else None
     }), 200
+
+# UPDATE admin
 
 @admin_bp.route('/<string:admin_id>', methods=['PUT'])
 @admin_token_required
@@ -111,6 +123,8 @@ def update_admin(current_admin, admin_id):
     db.session.commit()
     return jsonify({'message': 'Admin updated successfully'}), 200
 
+# DELETE admin
+
 @admin_bp.route('/<string:admin_id>', methods=['DELETE'])
 @admin_token_required
 def delete_admin(current_admin, admin_id):
@@ -120,6 +134,8 @@ def delete_admin(current_admin, admin_id):
     db.session.delete(admin)
     db.session.commit()
     return jsonify({'message': f"Admin '{current_admin.full_name}' deleted"}), 200
+
+# GET current admin profile
 
 @admin_bp.route('/me', methods=['GET'])
 @admin_token_required
@@ -135,20 +151,30 @@ def get_admin_profile(current_admin):
         'membership_plan_id': str(current_admin.membership_plan_id) if current_admin.membership_plan_id else None
     }), 200
 
+# GET all users (admin only)
+
 @admin_bp.route('/users', methods=['GET'])
 @admin_token_required
 def get_all_users_as_admin(current_admin):
-    users = User.query.all()
+    limit = request.args.get("limit", type=int)  # support ?limit=4
+    q = User.query
+    if limit:
+        q = q.limit(limit)
+
+    users = q.all()
     return jsonify([{
         'id': str(u.id),
         'full_name': u.full_name,
         'email': u.email,
         'bio': u.bio,
         'address': u.address,
-        'phone': u.phone,
+        'phone_number': u.phone_number,   # ✅ FIXED
         'profile_image_url': u.profile_image_url,
         'membership_plan_id': str(u.membership_plan_id) if u.membership_plan_id else None
     } for u in users]), 200
+   
+
+# DELETE any user (admin only)
 
 @admin_bp.route('/delete_user/<string:user_id>', methods=['DELETE'])
 @admin_token_required

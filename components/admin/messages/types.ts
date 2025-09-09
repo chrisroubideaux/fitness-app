@@ -1,5 +1,4 @@
 // components/admin/messages/types.ts
-// components/admin/messages/types.ts
 
 export type UIMessage = {
   id: string;
@@ -19,6 +18,7 @@ export type MessageThread = {
   unread_count?: number; // <-- add this for the red badge
   messages?: UIMessage[];
 };
+
 
 
 

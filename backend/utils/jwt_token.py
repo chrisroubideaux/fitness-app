@@ -5,23 +5,14 @@ from datetime import datetime, timedelta
 
 SECRET = os.getenv("DB_SECRET_KEY", "dev-secret")
 
-def generate_jwt_token(user_id, email, expires_in: int = 20*60):
-    """
-    Generate a USER jwt with a role field.
-    - id: UUID of the user
-    - email: user's email
-    - role: "user"
-    - exp: expiration (default 20 minutes)
-    """
+def generate_jwt_token(user_id, email, expires_in=3600*24):
     payload = {
-        "id": user_id,      
+        "id": user_id,          # ✅ Keep id
         "email": email,
-        "role": "user",     
+        "role": "user",         # ✅ NEW: explicit role
         "exp": datetime.utcnow() + timedelta(seconds=expires_in)
     }
     return jwt.encode(payload, SECRET, algorithm="HS256")
-
-
 
 
 """"

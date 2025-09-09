@@ -1,7 +1,7 @@
 // app/profile/[id]/page.tsx
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
@@ -12,8 +12,6 @@ import NotificationsPanel from '@/components/profile/messages/NotificationsPanel
 import WorkoutPlan from '@/components/profile/charts/WorkoutPlan';
 import WeeklyProgressChart from '@/components/profile/charts/WeeklyProgressChart';
 import MembershipsPanel from '@/components/profile/memberships/MembershipsPanel';
-
-// ✅ Bio card (and its strict User type)
 import BioCard, { type User as BioUser } from '@/components/profile/bio/BioCard';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +23,6 @@ const WorkoutModal = dynamic<{ onClose: () => void }>(
   { ssr: false }
 );
 
-// Tabs
 type SidebarTab =
   | 'calendar'
   | 'notifications'
@@ -37,7 +34,6 @@ type SidebarTab =
   | 'ai'
   | 'settings';
 
-// Local page user shape (can be loose/nullable from API)
 type PageUser = {
   id: string;
   full_name: string;
@@ -53,6 +49,8 @@ type PageUser = {
 export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const routeId = params?.id as string | undefined;
 
   const [user, setUser] = useState<PageUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,11 +58,13 @@ export default function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState<SidebarTab>('calendar');
-  const notificationCount = 3; // static for now
+  const notificationCount = 3;
 
   useEffect(() => {
     const tokenFromURL = searchParams.get('token');
-    if (tokenFromURL) localStorage.setItem('authToken', tokenFromURL);
+    if (tokenFromURL) {
+      localStorage.setItem('authToken', tokenFromURL);
+    }
 
     const token = tokenFromURL || localStorage.getItem('authToken');
     if (!token) {
@@ -73,7 +73,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const fetchUser = async () => {
+    (async () => {
       try {
         const res = await fetch('http://localhost:5000/api/users/me', {
           method: 'GET',
@@ -84,11 +84,17 @@ export default function ProfilePage() {
         });
 
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-
         const data = await res.json();
         setUser(data as PageUser);
 
-        // --- Checkout-intent gate (skip questionnaire if user came from pricing) ---
+        // ✅ Consistency check: if URL id !== token user id, redirect
+        if (routeId && data.id && routeId !== data.id) {
+          console.warn('⚠️ URL id and token user id mismatch. Redirecting.');
+          router.replace(`/profile/${data.id}`);
+          return;
+        }
+
+        // Checkout redirect logic
         const cameForCheckout =
           (typeof window !== 'undefined' && localStorage.getItem('checkoutIntent') === '1') ||
           searchParams.get('intent') === 'checkout';
@@ -99,16 +105,14 @@ export default function ProfilePage() {
             (typeof window !== 'undefined' ? localStorage.getItem('preselectedPlanId') : null);
 
           if (chosen) {
-            // Jump straight to billing checkout
             router.replace(`/billing/checkout?planId=${encodeURIComponent(chosen)}`);
-            return; // prevent questionnaire from opening
+            return;
           }
         }
 
-        // --- Default behavior: show questionnaire if not completed ---
-        const hasCompleted = typeof window !== 'undefined'
-          ? localStorage.getItem('hasCompletedQuestionnaire')
-          : 'true';
+        // Questionnaire check
+        const hasCompleted =
+          typeof window !== 'undefined' ? localStorage.getItem('hasCompletedQuestionnaire') : 'true';
         if (!hasCompleted) setShowModal(true);
       } catch (err) {
         console.error('❌ Failed to fetch user:', err);
@@ -116,10 +120,8 @@ export default function ProfilePage() {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchUser();
-  }, [searchParams, router]);
+    })();
+  }, [searchParams, router, routeId]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -130,18 +132,13 @@ export default function ProfilePage() {
     switch (activeTab) {
       case 'calendar':
         return <CalendarComponent />;
-
       case 'notifications':
         return <NotificationsPanel />;
-
       case 'messages':
         return <MessagesPanel />;
-
       case 'WorkoutPlan':
         return <WorkoutPlan />;
-
       case 'dashboard':
-        // Map PageUser -> BioUser for BioCard
         return user ? (
           <BioCard
             user={{
@@ -171,7 +168,6 @@ export default function ProfilePage() {
             apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
           />
         ) : null;
-
       case 'progress':
         return (
           <WeeklyProgressChart
@@ -179,11 +175,9 @@ export default function ProfilePage() {
             tz="America/Chicago"
           />
         );
-
       case 'memberships':
         return user ? (
           <MembershipsPanel
-           // userId={user.id}
             currentPlanId={user.membership_plan_id ?? null}
             apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
             onPlanChanged={(planId) =>
@@ -191,9 +185,6 @@ export default function ProfilePage() {
             }
           />
         ) : null;
-
-      case 'ai':
-      case 'settings':
       default:
         return null;
     }
@@ -208,13 +199,8 @@ export default function ProfilePage() {
   }
 
   if (error || !user) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <h2>Error loading profile</h2>
-        <p>{error || 'User not found.'}</p>
-        <button onClick={handleLogout}>Back to Login</button>
-      </div>
-    );
+    router.push('/login');
+    return null;
   }
 
   return (
@@ -222,7 +208,6 @@ export default function ProfilePage() {
       <div className="container-fluid">
         <div className="container-fluid py-3">
           <div className="row">
-           
             <div className="col-lg-4 col-xxl-3 mb-4">
               <Sidebar
                 userId={user.id}
@@ -233,7 +218,6 @@ export default function ProfilePage() {
               />
             </div>
 
-           
             <div className="col-lg-8 col-xxl-9">
               {showModal && (
                 <WorkoutModal
@@ -244,47 +228,34 @@ export default function ProfilePage() {
                 />
               )}
 
-            
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
                   <button
                     className={`btn btn-sm btn-${activeTab === 'calendar' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('calendar')}
                   >
-                    <FaCalendarAlt className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Calendar
+                    <FaCalendarAlt className="me-2" /> Calendar
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'notifications' ? 'primary' : 'outline-primary'} position-relative`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('notifications')}
                   >
-                    <IoNotificationsOutline className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Notifications
+                    <IoNotificationsOutline className="me-2" /> Notifications
                     {notificationCount > 0 && (
-                      <span
-                        className="badge bg-danger ms-2"
-                        style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}
-                      >
-                        {notificationCount}
-                      </span>
+                      <span className="badge bg-danger ms-2">{notificationCount}</span>
                     )}
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'messages' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('messages')}
                   >
-                    <FaComments className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Messages
+                    <FaComments className="me-2" /> Messages
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'WorkoutPlan' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('WorkoutPlan')}
                   >
                     🏋️ Workout Plan
@@ -292,7 +263,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-             
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -300,7 +270,6 @@ export default function ProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.3 }}
-                  className="calendarContainer"
                 >
                   {renderTabContent()}
                 </motion.div>
@@ -316,11 +285,9 @@ export default function ProfilePage() {
 
 
 
-
-
 /*
 
-/ app/profile/[id]/page.tsx
+// app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -335,7 +302,6 @@ import WorkoutPlan from '@/components/profile/charts/WorkoutPlan';
 import WeeklyProgressChart from '@/components/profile/charts/WeeklyProgressChart';
 import MembershipsPanel from '@/components/profile/memberships/MembershipsPanel';
 
-// ✅ Bio card (and its strict User type)
 import BioCard, { type User as BioUser } from '@/components/profile/bio/BioCard';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -347,7 +313,6 @@ const WorkoutModal = dynamic<{ onClose: () => void }>(
   { ssr: false }
 );
 
-// Tabs
 type SidebarTab =
   | 'calendar'
   | 'notifications'
@@ -359,7 +324,6 @@ type SidebarTab =
   | 'ai'
   | 'settings';
 
-// Local page user shape (can be loose/nullable from API)
 type PageUser = {
   id: string;
   full_name: string;
@@ -382,11 +346,13 @@ export default function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState<SidebarTab>('calendar');
-  const notificationCount = 3; // static for now
+  const notificationCount = 3;
 
   useEffect(() => {
     const tokenFromURL = searchParams.get('token');
-    if (tokenFromURL) localStorage.setItem('authToken', tokenFromURL);
+    if (tokenFromURL) {
+      localStorage.setItem('authToken', tokenFromURL);
+    }
 
     const token = tokenFromURL || localStorage.getItem('authToken');
     if (!token) {
@@ -395,7 +361,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const fetchUser = async () => {
+    (async () => {
       try {
         const res = await fetch('http://localhost:5000/api/users/me', {
           method: 'GET',
@@ -406,11 +372,9 @@ export default function ProfilePage() {
         });
 
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-
         const data = await res.json();
         setUser(data as PageUser);
 
-        // --- Checkout-intent gate (skip questionnaire if user came from pricing) ---
         const cameForCheckout =
           (typeof window !== 'undefined' && localStorage.getItem('checkoutIntent') === '1') ||
           searchParams.get('intent') === 'checkout';
@@ -421,16 +385,13 @@ export default function ProfilePage() {
             (typeof window !== 'undefined' ? localStorage.getItem('preselectedPlanId') : null);
 
           if (chosen) {
-            // Jump straight to billing checkout
             router.replace(`/billing/checkout?planId=${encodeURIComponent(chosen)}`);
-            return; // prevent questionnaire from opening
+            return;
           }
         }
 
-        // --- Default behavior: show questionnaire if not completed ---
-        const hasCompleted = typeof window !== 'undefined'
-          ? localStorage.getItem('hasCompletedQuestionnaire')
-          : 'true';
+        const hasCompleted =
+          typeof window !== 'undefined' ? localStorage.getItem('hasCompletedQuestionnaire') : 'true';
         if (!hasCompleted) setShowModal(true);
       } catch (err) {
         console.error('❌ Failed to fetch user:', err);
@@ -438,9 +399,7 @@ export default function ProfilePage() {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchUser();
+    })();
   }, [searchParams, router]);
 
   const handleLogout = () => {
@@ -452,18 +411,13 @@ export default function ProfilePage() {
     switch (activeTab) {
       case 'calendar':
         return <CalendarComponent />;
-
       case 'notifications':
         return <NotificationsPanel />;
-
       case 'messages':
         return <MessagesPanel />;
-
       case 'WorkoutPlan':
         return <WorkoutPlan />;
-
       case 'dashboard':
-        // Map PageUser -> BioUser for BioCard
         return user ? (
           <BioCard
             user={{
@@ -493,7 +447,6 @@ export default function ProfilePage() {
             apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
           />
         ) : null;
-
       case 'progress':
         return (
           <WeeklyProgressChart
@@ -501,11 +454,9 @@ export default function ProfilePage() {
             tz="America/Chicago"
           />
         );
-
       case 'memberships':
         return user ? (
           <MembershipsPanel
-           // userId={user.id}
             currentPlanId={user.membership_plan_id ?? null}
             apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
             onPlanChanged={(planId) =>
@@ -513,7 +464,6 @@ export default function ProfilePage() {
             }
           />
         ) : null;
-
       case 'ai':
       case 'settings':
       default:
@@ -544,7 +494,6 @@ export default function ProfilePage() {
       <div className="container-fluid">
         <div className="container-fluid py-3">
           <div className="row">
-           
             <div className="col-lg-4 col-xxl-3 mb-4">
               <Sidebar
                 userId={user.id}
@@ -555,7 +504,6 @@ export default function ProfilePage() {
               />
             </div>
 
-           
             <div className="col-lg-8 col-xxl-9">
               {showModal && (
                 <WorkoutModal
@@ -566,47 +514,34 @@ export default function ProfilePage() {
                 />
               )}
 
-            
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
                   <button
                     className={`btn btn-sm btn-${activeTab === 'calendar' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('calendar')}
                   >
-                    <FaCalendarAlt className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Calendar
+                    <FaCalendarAlt className="me-2" /> Calendar
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'notifications' ? 'primary' : 'outline-primary'} position-relative`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('notifications')}
                   >
-                    <IoNotificationsOutline className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Notifications
+                    <IoNotificationsOutline className="me-2" /> Notifications
                     {notificationCount > 0 && (
-                      <span
-                        className="badge bg-danger ms-2"
-                        style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px' }}
-                      >
-                        {notificationCount}
-                      </span>
+                      <span className="badge bg-danger ms-2">{notificationCount}</span>
                     )}
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'messages' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('messages')}
                   >
-                    <FaComments className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Messages
+                    <FaComments className="me-2" /> Messages
                   </button>
 
                   <button
                     className={`btn btn-sm btn-${activeTab === 'WorkoutPlan' ? 'primary' : 'outline-primary'}`}
-                    style={{ padding: '4px 10px', fontSize: '0.8rem', lineHeight: '1.2', display: 'flex', alignItems: 'center' }}
                     onClick={() => setActiveTab('WorkoutPlan')}
                   >
                     🏋️ Workout Plan
@@ -614,7 +549,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-             
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
@@ -622,7 +556,6 @@ export default function ProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.3 }}
-                  className="calendarContainer"
                 >
                   {renderTabContent()}
                 </motion.div>
