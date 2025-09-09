@@ -1,3 +1,5 @@
+# admin/decorators.py
+
 import os
 import jwt
 from functools import wraps

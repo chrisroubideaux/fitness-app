@@ -1,6 +1,5 @@
 // components/admin/messages/NewMessageTab.tsx
 'use client';
-
 import { useEffect, useState } from 'react';
 
 type Props = {

@@ -151,12 +151,12 @@ def get_admin_profile(current_admin):
         'membership_plan_id': str(current_admin.membership_plan_id) if current_admin.membership_plan_id else None
     }), 200
 
-# GET all users (admin only)
-
+ # GET all users (admin only)
+ # GET all users (admin only)
 @admin_bp.route('/users', methods=['GET'])
 @admin_token_required
 def get_all_users_as_admin(current_admin):
-    limit = request.args.get("limit", type=int)  # support ?limit=4
+    limit = request.args.get("limit", type=int)  # support ?limit=5
     q = User.query
     if limit:
         q = q.limit(limit)
@@ -168,10 +168,36 @@ def get_all_users_as_admin(current_admin):
         'email': u.email,
         'bio': u.bio,
         'address': u.address,
-        'phone_number': u.phone_number,   # ✅ FIXED
+        'phone_number': u.phone_number,
         'profile_image_url': u.profile_image_url,
-        'membership_plan_id': str(u.membership_plan_id) if u.membership_plan_id else None
+        'membership_plan_id': str(u.membership_plan_id) if u.membership_plan_id else None,
+        # ✅ Include plan details for Admin panel
+        'plan_name': u.membership_plan.name if getattr(u, "membership_plan", None) else "Free",
+        'plan_price': u.membership_plan.price if getattr(u, "membership_plan", None) else 0.0,
+        'plan_features': u.membership_plan.features if getattr(u, "membership_plan", None) else []
     } for u in users]), 200
+
+
+#@admin_bp.route('/users', methods=['GET'])
+#@admin_token_required
+#def get_all_users_as_admin(current_admin):
+#    limit = request.args.get("limit", type=int)  # support ?limit=4
+#    q = User.query
+#    if limit:
+#        q = q.limit(limit)
+
+#    users = q.all()
+#    return jsonify([{
+#        'id': str(u.id),
+#        'full_name': u.full_name,
+#        'email': u.email,
+#        'bio': u.bio,
+#        'address': u.address,
+#        'phone_number': u.phone_number,   # ✅ FIXED
+#        'profile_image_url': u.profile_image_url,
+#        'membership_plan_id': str(u.membership_plan_id) if u.membership_plan_id else None
+
+#    } for u in users]), 200
    
 
 # DELETE any user (admin only)
@@ -227,7 +253,7 @@ def register_admin():
         id=str(uuid4()),
         full_name=data['full_name'],
         email=data['email'],
-        password_hash=hashed_password,
+        password_has#h=hashed_password,
         bio=data.get('bio'),
         address=data.get('address'),
         phone_number=data.get('phone'),
