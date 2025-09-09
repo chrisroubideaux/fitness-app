@@ -1,9 +1,9 @@
+// components/admin/users/UsersPanel.tsx
 // components/admin/messages/MessagesPanel.tsx
 
-// components/admin/messages/MessagesPanel.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import InboxTab from './InboxTab';
@@ -11,26 +11,9 @@ import NewMessageTab from './NewMessageTab';
 import ChatWindow from './ChatWindow';
 import { MessageThread, UIMessage } from './types';
 
-type MessagesPanelProps = {
-  // optional: jump straight into a chat
-  initialThread?: MessageThread | null;
-  initialTab?: 'inbox' | 'new' | 'chat';
-};
-
-export default function MessagesPanel({
-  initialThread = null,
-  initialTab = 'inbox',
-}: MessagesPanelProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'inbox' | 'new' | 'chat'>(initialTab);
-  const [selectedThread, setSelectedThread] = useState<MessageThread | null>(initialThread);
-
-  // if parent changes initialThread, sync it
-  useEffect(() => {
-    if (initialThread) {
-      setSelectedThread(initialThread);
-      setActiveSubTab('chat');
-    }
-  }, [initialThread]);
+export default function MessagesPanel() {
+  const [activeSubTab, setActiveSubTab] = useState<'inbox' | 'new' | 'chat'>('inbox');
+  const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
 
   // Open an existing conversation (from Inbox)
   const handleOpenThread = (thread: MessageThread) => {
@@ -45,7 +28,7 @@ export default function MessagesPanel({
     subject = 'New conversation'
   ) => {
     setSelectedThread({
-      admin_id: adminId,
+      admin_id: adminId, // use admin_id instead of id
       sender: label,
       subject,
       messages: [] as UIMessage[],
@@ -55,7 +38,7 @@ export default function MessagesPanel({
 
   return (
     <div className="panel-wrapper">
-      {/* tab buttons */}
+     
       <div className="d-flex justify-content-start gap-2 mb-3">
         <button
           className={`btn btn-sm btn-${activeSubTab === 'chat' ? 'primary' : 'outline-primary'}`}
@@ -78,7 +61,7 @@ export default function MessagesPanel({
         </button>
       </div>
 
-      {/* animated tab content */}
+      
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSubTab}
@@ -103,6 +86,9 @@ export default function MessagesPanel({
     </div>
   );
 }
+
+
+
 
 /*
 

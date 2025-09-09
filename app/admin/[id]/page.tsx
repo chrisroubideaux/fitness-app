@@ -1,4 +1,6 @@
 // app/admin/[id]/page.tsx
+
+// app/admin/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -295,6 +297,7 @@ export default function AdminPage() {
 
 
 
+
 /*
 
 // app/admin/[id]/page.tsx
@@ -345,8 +348,7 @@ export default function AdminPage() {
     const tokenFromURL = url.searchParams.get('token');
 
     if (tokenFromURL) {
-      // ✅ Always save under the same key
-      localStorage.setItem('adminToken', tokenFromURL);
+      localStorage.setItem('adminToken', tokenFromURL); // ✅ Always same key
     }
 
     const token = tokenFromURL || localStorage.getItem('adminToken');
@@ -379,8 +381,50 @@ export default function AdminPage() {
   }, [searchParams]);
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken'); // ✅ same key
+    localStorage.removeItem('adminToken');
     router.push('/admin');
+  };
+
+  // ✅ Handle "Message" button from UsersPanel
+  const handleMessageUser = async (user: { id: string; full_name: string }) => {
+    setActiveTab('messages'); // switch to messages tab
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
+
+    try {
+      const res = await fetch(`${apiBase}/api/messages/conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error(`Failed to fetch conversations: ${res.status}`);
+
+      type Conversation = {
+        id: string;
+        user_id: string;
+        // add other relevant properties if needed
+      };
+      const conversations: Conversation[] = await res.json();
+      const convo = conversations.find((c) => c.user_id === user.id);
+
+      if (convo) {
+        // ✅ If convo exists, dispatch event to open chat
+        window.dispatchEvent(
+          new CustomEvent('openAdminChat', { detail: { conversation: convo } })
+        );
+      } else {
+        // ✅ If no convo, dispatch event to start a new one
+        window.dispatchEvent(
+          new CustomEvent('startAdminNewMessage', {
+            detail: { userId: user.id, userName: user.full_name },
+          })
+        );
+      }
+    } catch (err) {
+      console.error('❌ Failed to check conversations', err);
+    }
   };
 
   const renderTabContent = () => {
@@ -394,7 +438,7 @@ export default function AdminPage() {
       case 'plans':
         return <PlansPanel />;
       case 'users':
-        return <UsersPanel />;
+        return <UsersPanel onMessageUser={handleMessageUser} />; // ✅ Pass prop
       case 'dashboard':
         return admin ? (
           <AdminBioCard
@@ -466,7 +510,9 @@ export default function AdminPage() {
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
                   <button
-                    className={`btn btn-sm btn-${activeTab === 'calendar' ? 'primary' : 'outline-primary'}`}
+                    className={`btn btn-sm btn-${
+                      activeTab === 'calendar' ? 'primary' : 'outline-primary'
+                    }`}
                     style={{
                       padding: '4px 10px',
                       fontSize: '0.8rem',
@@ -481,7 +527,9 @@ export default function AdminPage() {
                   </button>
 
                   <button
-                    className={`btn btn-sm btn-${activeTab === 'notifications' ? 'primary' : 'outline-primary'} position-relative`}
+                    className={`btn btn-sm btn-${
+                      activeTab === 'notifications' ? 'primary' : 'outline-primary'
+                    } position-relative`}
                     style={{
                       padding: '4px 10px',
                       fontSize: '0.8rem',
@@ -508,7 +556,9 @@ export default function AdminPage() {
                   </button>
 
                   <button
-                    className={`btn btn-sm btn-${activeTab === 'messages' ? 'primary' : 'outline-primary'}`}
+                    className={`btn btn-sm btn-${
+                      activeTab === 'messages' ? 'primary' : 'outline-primary'
+                    }`}
                     style={{
                       padding: '4px 10px',
                       fontSize: '0.8rem',
@@ -543,6 +593,8 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
 
 
 

@@ -19,7 +19,7 @@ type User = {
 };
 
 type AdminUsersPanelProps = {
-  onMessageUser: (user: User) => void; // ✅ callback to parent
+  onMessageUser: (user: User) => void;
 };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
@@ -50,6 +50,8 @@ export default function AdminUsersPanel({ onMessageUser }: AdminUsersPanelProps)
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -108,11 +110,16 @@ export default function AdminUsersPanel({ onMessageUser }: AdminUsersPanelProps)
                 <div className="d-flex gap-2 mt-2">
                   <button
                     className="btn btn-sm btn-primary"
-                    onClick={() => onMessageUser(u)} // ✅ tell parent
+                    onClick={() => onMessageUser(u)}
                   >
                     📩 Message
                   </button>
-                  <button className="btn btn-sm btn-outline-secondary">View Profile</button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectedUser(u)}
+                  >
+                    View Profile
+                  </button>
                 </div>
               </div>
             </div>
@@ -123,12 +130,81 @@ export default function AdminUsersPanel({ onMessageUser }: AdminUsersPanelProps)
       {!loading && users.length === 0 && (
         <p className="text-muted">No users found.</p>
       )}
+
+      {/* Profile Modal */}
+      {selectedUser && (
+        <div
+          className="modal fade show"
+          style={{ display: 'block', background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">{selectedUser.full_name}</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setSelectedUser(null)}
+                />
+              </div>
+              <div className="modal-body">
+                <div className="d-flex align-items-center mb-3">
+                  <Image
+                    src="/"
+                    alt={selectedUser.full_name}
+                    width={100}
+                    height={100}
+                    className="rounded-circle me-3"
+                  />
+                  <div>
+                    <p className="mb-1"><strong>Email:</strong> {selectedUser.email}</p>
+                    <p className="mb-1"><strong>Phone:</strong> {selectedUser.phone_number || 'N/A'}</p>
+                    <p className="mb-1"><strong>Address:</strong> {selectedUser.address || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <p><strong>Plan:</strong> {selectedUser.plan_name || 'Free'} {selectedUser.plan_price ? `($${selectedUser.plan_price}/mo)` : ''}</p>
+
+                {selectedUser.plan_features && (
+                  <>
+                    <h6>Plan Features:</h6>
+                    <ul>
+                      {selectedUser.plan_features.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {selectedUser.bio && (
+                  <p className="mt-3"><strong>Bio:</strong> {selectedUser.bio}</p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>
+                  Close
+                </button>
+                <button className="btn btn-primary" onClick={() => onMessageUser(selectedUser)}>
+                  📩 Message User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 
+
+
 /*
+// components/admin/users/UsersPanel.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -146,6 +222,10 @@ type User = {
   plan_name?: string;
   plan_price?: number;
   plan_features?: string[];
+};
+
+type AdminUsersPanelProps = {
+  onMessageUser: (user: User) => void;
 };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
@@ -172,10 +252,12 @@ async function fetchUsers(): Promise<User[]> {
   return res.json();
 }
 
-export default function AdminUsersPanel() {
+export default function AdminUsersPanel({ onMessageUser }: AdminUsersPanelProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -210,7 +292,7 @@ export default function AdminUsersPanel() {
           <div className="row g-0">
             <div className="col-4 d-flex align-items-center justify-content-center bg-light">
               <Image
-                src="/"
+                src={u.profile_image_url || '/default-avatar.png'}
                 alt={u.full_name}
                 width={120}
                 height={120}
@@ -232,8 +314,18 @@ export default function AdminUsersPanel() {
                 </p>
 
                 <div className="d-flex gap-2 mt-2">
-                  <button className="btn btn-sm btn-primary">📩 Message</button>
-                  <button className="btn btn-sm btn-outline-secondary">View Profile</button>
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() => onMessageUser(u)}
+                  >
+                    📩 Message
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectedUser(u)}
+                  >
+                    View Profile
+                  </button>
                 </div>
               </div>
             </div>
@@ -244,8 +336,77 @@ export default function AdminUsersPanel() {
       {!loading && users.length === 0 && (
         <p className="text-muted">No users found.</p>
       )}
+
+    
+      {selectedUser && (
+        <div
+          className="modal fade show"
+          style={{ display: 'block', background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">{selectedUser.full_name}</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setSelectedUser(null)}
+                />
+              </div>
+              <div className="modal-body">
+                <div className="d-flex align-items-center mb-3">
+                  <Image
+                    src={selectedUser.profile_image_url || '/default-avatar.png'}
+                    alt={selectedUser.full_name}
+                    width={100}
+                    height={100}
+                    className="rounded-circle me-3"
+                  />
+                  <div>
+                    <p className="mb-1"><strong>Email:</strong> {selectedUser.email}</p>
+                    <p className="mb-1"><strong>Phone:</strong> {selectedUser.phone_number || 'N/A'}</p>
+                    <p className="mb-1"><strong>Address:</strong> {selectedUser.address || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <p><strong>Plan:</strong> {selectedUser.plan_name || 'Free'} {selectedUser.plan_price ? `($${selectedUser.plan_price}/mo)` : ''}</p>
+
+                {selectedUser.plan_features && (
+                  <>
+                    <h6>Plan Features:</h6>
+                    <ul>
+                      {selectedUser.plan_features.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {selectedUser.bio && (
+                  <p className="mt-3"><strong>Bio:</strong> {selectedUser.bio}</p>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>
+                  Close
+                </button>
+                <button className="btn btn-primary" onClick={() => onMessageUser(selectedUser)}>
+                  📩 Message User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
+
 
 */
