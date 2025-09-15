@@ -56,6 +56,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<SidebarTab>('calendar');
   const notificationCount = 3;
@@ -67,6 +68,8 @@ export default function ProfilePage() {
     }
 
     const token = tokenFromURL || localStorage.getItem('authToken');
+    setAuthToken(token);
+
     if (!token) {
       setError('No token found. Please log in again.');
       setLoading(false);
@@ -87,7 +90,7 @@ export default function ProfilePage() {
         const data = await res.json();
         setUser(data as PageUser);
 
-        // ✅ Consistency check: if URL id !== token user id, redirect
+        // ✅ Ensure URL id matches token user id
         if (routeId && data.id && routeId !== data.id) {
           console.warn('⚠️ URL id and token user id mismatch. Redirecting.');
           router.replace(`/profile/${data.id}`);
@@ -125,13 +128,14 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    setAuthToken(null);
     router.push('/login');
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'calendar':
-        return <CalendarComponent />;
+        return authToken ? <CalendarComponent token={authToken} /> : <p>Please log in to see calendar</p>;
       case 'notifications':
         return <NotificationsPanel />;
       case 'messages':
@@ -281,8 +285,6 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-
 
 
 /*

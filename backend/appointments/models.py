@@ -5,7 +5,6 @@ from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from extensions import db
 
-
 class CalendarEvent(db.Model):
     __tablename__ = "calendar_events"
 
@@ -31,6 +30,9 @@ class CalendarEvent(db.Model):
     end_time = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # ✅ New status column
+    status = db.Column(db.String(50), nullable=False, default="pending")
+
     # Relationships
     user = db.relationship("User", backref="calendar_events", lazy=True)
     admin = db.relationship("Admin", backref="calendar_events", lazy=True)
@@ -41,19 +43,18 @@ class CalendarEvent(db.Model):
             "title": self.title,
             "description": self.description,
             "event_type": self.event_type,
+            "status": self.status,
             "user_id": str(self.user_id) if self.user_id else None,
             "admin_id": str(self.admin_id) if self.admin_id else None,
             "guest_name": self.guest_name,
             "guest_email": self.guest_email,
             "guest_phone": self.guest_phone,
-
-            # Times
             "start_time": self.start_time.isoformat(),
-            "start_time_display": self.start_time.strftime("%b %d, %Y %I:%M %p"),
+            "start_time_display": self.start_time.strftime("%b %d, %Y %I:%M %p") if self.start_time else None,
             "end_time": self.end_time.isoformat(),
-            "end_time_display": self.end_time.strftime("%b %d, %Y %I:%M %p"),
+            "end_time_display": self.end_time.strftime("%b %d, %Y %I:%M %p") if self.end_time else None,
             "created_at": self.created_at.isoformat(),
-            "created_at_display": self.created_at.strftime("%b %d, %Y %I:%M %p"),
+            "created_at_display": self.created_at.strftime("%b %d, %Y %I:%M %p") if self.created_at else None,
         }
 
 
@@ -64,7 +65,7 @@ class EmailLog(db.Model):
     recipient = db.Column(db.String(255), nullable=False)
     subject = db.Column(db.String(255), nullable=False)
     body = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), nullable=False)  # sent or failed
+    status = db.Column(db.String(50), nullable=False)  
     error_message = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -75,8 +76,7 @@ class EmailLog(db.Model):
             "subject": self.subject,
             "status": self.status,
             "error_message": self.error_message,
-
-            # Times
             "created_at": self.created_at.isoformat(),
-            "created_at_display": self.created_at.strftime("%b %d, %Y %I:%M %p"),
+            "created_at_display": self.created_at.strftime("%b %d, %Y %I:%M %p") if self.created_at else None,
         }
+

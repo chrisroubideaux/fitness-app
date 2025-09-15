@@ -1,12 +1,12 @@
 # backend/appointments/routes.py
 
 from flask import Blueprint, request, jsonify
-from datetime import datetime
 from extensions import db
 from appointments.models import CalendarEvent, EmailLog
 from utils.decorators import token_required
 from admin.decorators import admin_token_required
 from appointments.email_utils import send_email
+from dateutil import parser  # ✅ robust ISO8601 parsing
 
 appointments_bp = Blueprint("appointments", __name__, url_prefix="/api/appointments")
 
@@ -34,11 +34,13 @@ def book_event(current_user):
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
     if data["event_type"] not in VALID_EVENT_TYPES:
-        return jsonify({"error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"}), 400
+        return jsonify({
+            "error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"
+        }), 400
 
     try:
-        start_time = datetime.fromisoformat(data["start_time"])
-        end_time = datetime.fromisoformat(data["end_time"])
+        start_time = parser.isoparse(data["start_time"])
+        end_time = parser.isoparse(data["end_time"])
     except Exception:
         return jsonify({"error": "Invalid datetime format. Use ISO8601."}), 400
 
@@ -64,17 +66,22 @@ def book_event(current_user):
 @appointments_bp.route("/guest/book", methods=["POST"])
 def guest_book_event():
     data = request.get_json()
-    required_fields = ["title", "event_type", "start_time", "end_time", "guest_name", "guest_email", "guest_phone"]
+    required_fields = [
+        "title", "event_type", "start_time", "end_time",
+        "guest_name", "guest_email", "guest_phone"
+    ]
     missing = [f for f in required_fields if f not in data]
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
     if data["event_type"] not in VALID_EVENT_TYPES:
-        return jsonify({"error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"}), 400
+        return jsonify({
+            "error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"
+        }), 400
 
     try:
-        start_time = datetime.fromisoformat(data["start_time"])
-        end_time = datetime.fromisoformat(data["end_time"])
+        start_time = parser.isoparse(data["start_time"])
+        end_time = parser.isoparse(data["end_time"])
     except Exception:
         return jsonify({"error": "Invalid datetime format. Use ISO8601."}), 400
 
@@ -146,18 +153,20 @@ def update_event(current_user, event_id):
         event.description = data["description"]
     if "event_type" in data:
         if data["event_type"] not in VALID_EVENT_TYPES:
-            return jsonify({"error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"}), 400
+            return jsonify({
+                "error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"
+            }), 400
         event.event_type = data["event_type"]
 
     if "start_time" in data:
         try:
-            event.start_time = datetime.fromisoformat(data["start_time"])
+            event.start_time = parser.isoparse(data["start_time"])
         except Exception:
             return jsonify({"error": "Invalid start_time format. Use ISO8601."}), 400
 
     if "end_time" in data:
         try:
-            event.end_time = datetime.fromisoformat(data["end_time"])
+            event.end_time = parser.isoparse(data["end_time"])
         except Exception:
             return jsonify({"error": "Invalid end_time format. Use ISO8601."}), 400
 
@@ -198,18 +207,20 @@ def admin_update_event(current_admin, event_id):
         event.description = data["description"]
     if "event_type" in data:
         if data["event_type"] not in VALID_EVENT_TYPES:
-            return jsonify({"error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"}), 400
+            return jsonify({
+                "error": f"Invalid event_type. Must be one of {', '.join(VALID_EVENT_TYPES)}"
+            }), 400
         event.event_type = data["event_type"]
 
     if "start_time" in data:
         try:
-            event.start_time = datetime.fromisoformat(data["start_time"])
+            event.start_time = parser.isoparse(data["start_time"])
         except Exception:
             return jsonify({"error": "Invalid start_time format. Use ISO8601."}), 400
 
     if "end_time" in data:
         try:
-            event.end_time = datetime.fromisoformat(data["end_time"])
+            event.end_time = parser.isoparse(data["end_time"])
         except Exception:
             return jsonify({"error": "Invalid end_time format. Use ISO8601."}), 400
 
@@ -287,8 +298,8 @@ def admin_respond_to_event(current_admin, event_id):
         event.status = "rescheduled"
         if "start_time" in data and "end_time" in data:
             try:
-                event.start_time = datetime.fromisoformat(data["start_time"])
-                event.end_time = datetime.fromisoformat(data["end_time"])
+                event.start_time = parser.isoparse(data["start_time"])
+                event.end_time = parser.isoparse(data["end_time"])
             except Exception:
                 return jsonify({"error": "Invalid datetime format. Use ISO8601."}), 400
 
