@@ -49,6 +49,7 @@ export default function CalendarComponent({ token }: Props) {
 
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+  const [currentDate, setCurrentDate] = useState(new Date()); // ✅ controls pagination
 
   // Loading states
   const [loadingBook, setLoadingBook] = useState(false);
@@ -304,6 +305,8 @@ export default function CalendarComponent({ token }: Props) {
         views={['month', 'week', 'day']}
         defaultView={Views.MONTH}
         view={currentView}
+        date={currentDate}                     // ✅ controlled date
+        onNavigate={(date) => setCurrentDate(date)} // ✅ pagination
         onView={(view) => setCurrentView(view)}
         selectable
         onSelectEvent={handleSelectEvent}
@@ -315,7 +318,6 @@ export default function CalendarComponent({ token }: Props) {
           eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
             `${formatTime(start)} – ${formatTime(end)}`,
         }}
-        // ✅ Limit visible time range to 10 AM – 7 PM
         min={new Date(2025, 0, 1, 10, 0)}
         max={new Date(2025, 0, 1, 19, 0)}
       />
@@ -410,7 +412,7 @@ export default function CalendarComponent({ token }: Props) {
               <div className="modal-body">
                 <div className="d-flex flex-wrap gap-2">
                   {Array.from({ length: 9 }, (_, i) => {
-                    const hour = 10 + i; // 10 AM → 6 PM
+                    const hour = 10 + i;
                     const timeString = formatTime(new Date(0, 0, 0, hour));
                     return (
                       <button
@@ -443,6 +445,7 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
+
 
 
 /*

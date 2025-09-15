@@ -52,6 +52,7 @@ export default function AdminCalendarComponent({ token }: Props) {
 
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+  const [currentDate, setCurrentDate] = useState(new Date()); // ✅ controls navigation
 
   // Loading states
   const [loadingRespond, setLoadingRespond] = useState(false);
@@ -94,10 +95,10 @@ export default function AdminCalendarComponent({ token }: Props) {
   // Initial load → current month
   useEffect(() => {
     if (!token) return;
-    const start = moment().startOf('month').toDate();
-    const end = moment().endOf('month').toDate();
+    const start = moment(currentDate).startOf('month').toDate();
+    const end = moment(currentDate).endOf('month').toDate();
     fetchEvents(start, end);
-  }, [token]);
+  }, [token, currentDate]);
 
   // ---------------------
   // Approve / Decline
@@ -280,6 +281,8 @@ export default function AdminCalendarComponent({ token }: Props) {
         views={['month', 'week', 'day']}
         defaultView={Views.MONTH}
         view={currentView}
+        date={currentDate}                          // ✅ controlled date
+        onNavigate={(date) => setCurrentDate(date)} // ✅ pagination
         onView={(view) => setCurrentView(view)}
         onRangeChange={(range: DateRange | Date[] | { start: Date; end: Date }) => {
           if (Array.isArray(range)) {
@@ -298,17 +301,13 @@ export default function AdminCalendarComponent({ token }: Props) {
           eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
             `${formatTime(start)} – ${formatTime(end)}`,
         }}
-        // ✅ Limit visible time range to 10 AM – 7 PM
         min={new Date(2025, 0, 1, 10, 0)}
         max={new Date(2025, 0, 1, 19, 0)}
       />
 
       {/* Event Modal */}
       {showEventModal && selectedEvent && (
-        <div
-          className="modal fade show d-block"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -316,22 +315,11 @@ export default function AdminCalendarComponent({ token }: Props) {
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <p>
-                  <strong>User:</strong> {selectedEvent.userName ?? 'Unknown'}
-                </p>
-                <p>
-                  <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Time:</strong>{' '}
-                  {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}
-                </p>
-                <p>
-                  <strong>Description:</strong> {selectedEvent.description}
-                </p>
-                <p>
-                  <strong>Status:</strong> {selectedEvent.status}
-                </p>
+                <p><strong>User:</strong> {selectedEvent.userName ?? 'Unknown'}</p>
+                <p><strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
+                <p><strong>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}</p>
+                <p><strong>Description:</strong> {selectedEvent.description}</p>
+                <p><strong>Status:</strong> {selectedEvent.status}</p>
               </div>
               <div className="modal-footer">
                 <button
@@ -339,22 +327,14 @@ export default function AdminCalendarComponent({ token }: Props) {
                   disabled={loadingRespond}
                   onClick={() => handleRespond(selectedEvent.id, 'approve')}
                 >
-                  {loadingRespond ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Approve'
-                  )}
+                  {loadingRespond ? <span className="spinner-border spinner-border-sm" /> : 'Approve'}
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
                   disabled={loadingRespond}
                   onClick={() => handleRespond(selectedEvent.id, 'decline')}
                 >
-                  {loadingRespond ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Decline'
-                  )}
+                  {loadingRespond ? <span className="spinner-border spinner-border-sm" /> : 'Decline'}
                 </button>
                 <button
                   className="btn btn-warning btn-sm"
@@ -371,16 +351,9 @@ export default function AdminCalendarComponent({ token }: Props) {
                   disabled={loadingCancel}
                   onClick={() => handleCancelEvent(selectedEvent.id)}
                 >
-                  {loadingCancel ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Cancel'
-                  )}
+                  {loadingCancel ? <span className="spinner-border spinner-border-sm" /> : 'Cancel'}
                 </button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleCloseModals}
-                >
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
                   Close
                 </button>
               </div>
@@ -391,10 +364,7 @@ export default function AdminCalendarComponent({ token }: Props) {
 
       {/* Reschedule Calendar Modal */}
       {showRescheduleCalendar && (
-        <div
-          className="modal fade show d-block"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -425,10 +395,7 @@ export default function AdminCalendarComponent({ token }: Props) {
 
       {/* Time Picker Modal */}
       {showTimeModal && selectedSlot && (
-        <div
-          className="modal fade show d-block"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        >
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -462,10 +429,7 @@ export default function AdminCalendarComponent({ token }: Props) {
                 </div>
               </div>
               <div className="modal-footer">
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleCloseModals}
-                >
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
                   Cancel
                 </button>
               </div>
