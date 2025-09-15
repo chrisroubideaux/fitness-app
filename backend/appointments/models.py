@@ -1,5 +1,3 @@
-# backend/appointments/models.py
-
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
@@ -50,3 +48,24 @@ class CalendarEvent(db.Model):
             "created_at": self.created_at.isoformat(),
         }
 
+
+class EmailLog(db.Model):
+    __tablename__ = "email_logs"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recipient = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), nullable=False)  # sent or failed
+    error_message = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def serialize(self):
+        return {
+            "id": str(self.id),
+            "recipient": self.recipient,
+            "subject": self.subject,
+            "status": self.status,
+            "error_message": self.error_message,
+            "created_at": self.created_at.isoformat(),
+        }
