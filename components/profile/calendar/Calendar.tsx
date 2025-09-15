@@ -44,13 +44,13 @@ export default function CalendarComponent({ token }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
 
   const [showEventModal, setShowEventModal] = useState(false);
-  const [showDateModal, setShowDateModal] = useState(false); // new modal for reschedule date
+  const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
 
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
 
-  // 🔄 Loading flags
+  // Loading states
   const [loadingBook, setLoadingBook] = useState(false);
   const [loadingCancel, setLoadingCancel] = useState(false);
   const [loadingReschedule, setLoadingReschedule] = useState(false);
@@ -58,7 +58,9 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ✅ Fetch events
+  // ---------------------
+  // Fetch events
+  // ---------------------
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -86,7 +88,9 @@ export default function CalendarComponent({ token }: Props) {
     })();
   }, [token]);
 
-  // ✅ Book
+  // ---------------------
+  // Book
+  // ---------------------
   const handleBookEvent = async (date: Date, hour: number) => {
     if (!token) return;
     setLoadingBook(true);
@@ -136,7 +140,9 @@ export default function CalendarComponent({ token }: Props) {
     }
   };
 
-  // ✅ Cancel
+  // ---------------------
+  // Cancel
+  // ---------------------
   const handleCancelEvent = async (eventId: string) => {
     if (!token) return;
     setLoadingCancel(true);
@@ -161,7 +167,9 @@ export default function CalendarComponent({ token }: Props) {
     }
   };
 
-  // ✅ Reschedule
+  // ---------------------
+  // Reschedule
+  // ---------------------
   const handleReschedule = async (date: Date, hour: number) => {
     if (!token || !selectedEvent) return;
     setLoadingReschedule(true);
@@ -171,17 +179,20 @@ export default function CalendarComponent({ token }: Props) {
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/appointments/update/${selectedEvent.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-        }),
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/appointments/update/${selectedEvent.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            start_time: start.toISOString(),
+            end_time: end.toISOString(),
+          }),
+        }
+      );
 
       if (!res.ok) throw new Error(`Reschedule failed: ${res.status}`);
       const { event }: { event: ApiEvent } = await res.json();
@@ -201,7 +212,7 @@ export default function CalendarComponent({ token }: Props) {
 
       toast.success('✅ Appointment rescheduled!');
       setShowTimeModal(false);
-      setShowDateModal(false);
+      setShowRescheduleCalendar(false);
       setRescheduleMode(false);
       setSelectedEvent(null);
     } catch (err) {
@@ -212,6 +223,9 @@ export default function CalendarComponent({ token }: Props) {
     }
   };
 
+  // ---------------------
+  // Handlers
+  // ---------------------
   const handleSelectEvent = (event: EventType) => {
     setSelectedEvent(event);
     setShowEventModal(true);
@@ -226,13 +240,16 @@ export default function CalendarComponent({ token }: Props) {
 
   const handleCloseModals = () => {
     setShowEventModal(false);
-    setShowDateModal(false);
+    setShowRescheduleCalendar(false);
     setShowTimeModal(false);
     setRescheduleMode(false);
     setSelectedEvent(null);
     setSelectedSlot(null);
   };
 
+  // ---------------------
+  // Event Styles
+  // ---------------------
   const eventStyleGetter = (event: EventType) => {
     let background = 'linear-gradient(135deg, #cfd9df, #e2ebf0)';
     let color = '#333';
@@ -255,10 +272,14 @@ export default function CalendarComponent({ token }: Props) {
     return { style: { background, color, borderRadius: '6px', padding: '2px 4px' } };
   };
 
+  // ---------------------
+  // Render
+  // ---------------------
   return (
     <div className="box p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
+      {/* Main Calendar */}
       <Calendar
         localizer={localizer}
         events={events}
@@ -283,7 +304,7 @@ export default function CalendarComponent({ token }: Props) {
       {/* Event Modal */}
       {showEventModal && selectedEvent && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{selectedEvent.title}</h5>
@@ -301,80 +322,57 @@ export default function CalendarComponent({ token }: Props) {
                   disabled={loadingCancel}
                   onClick={() => handleCancelEvent(selectedEvent.id)}
                 >
-                  {loadingCancel ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Cancel'
-                  )}
+                  {loadingCancel ? <span className="spinner-border spinner-border-sm" /> : 'Cancel'}
                 </button>
                 <button
                   className="btn btn-warning btn-sm"
-                  disabled={loadingReschedule}
                   onClick={() => {
                     setRescheduleMode(true);
-                    setShowDateModal(true); // ✅ open date modal first
+                    setShowRescheduleCalendar(true);
                     setShowEventModal(false);
                   }}
                 >
-                  {loadingReschedule ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Reschedule'
-                  )}
+                  Reschedule
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
-                  Close
-                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Close</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Date Picker Modal */}
-      {showDateModal && (
+      {/* Reschedule Calendar Modal */}
+      {showRescheduleCalendar && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Choose New Date</h5>
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <input
-                  type="date"
-                  className="form-control"
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const chosenDate = new Date(e.target.value);
-                      setSelectedSlot(chosenDate);
-                    }
+                <Calendar
+                  localizer={localizer}
+                  events={events} // ✅ reuse events with same CSS
+                  defaultView={Views.MONTH}
+                  views={['month']}
+                  selectable
+                  style={{ height: '60vh' }}
+                  onSelectSlot={(slotInfo: SlotInfo) => {
+                    const newDate = new Date(slotInfo.start);
+                    setSelectedSlot(newDate);
+                    setShowRescheduleCalendar(false);
+                    setShowTimeModal(true);
                   }}
+                  eventPropGetter={eventStyleGetter}
                 />
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    if (selectedSlot) {
-                      setShowDateModal(false);
-                      setShowTimeModal(true);
-                    }
-                  }}
-                  disabled={!selectedSlot}
-                >
-                  Next: Choose Time
-                </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
-                  Cancel
-                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Time Picker */}
+      {/* Time Picker Modal */}
       {showTimeModal && selectedSlot && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -412,9 +410,7 @@ export default function CalendarComponent({ token }: Props) {
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
-                  Cancel
-                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Cancel</button>
               </div>
             </div>
           </div>
@@ -423,6 +419,7 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
+
 
 
 
