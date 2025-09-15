@@ -1,4 +1,3 @@
-// components/admin/calendar/CalendarComponent.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,6 +7,7 @@ import {
   SlotInfo,
   Views,
   View,
+  DateRange,
 } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -31,13 +31,30 @@ type ApiEvent = {
   start_time: string;
   end_time: string;
   status?: string;
-  user_name?: string;
+  userName?: string;
 };
 
 const localizer = momentLocalizer(moment);
 
 type Props = {
   token: string | null; // Admin token
+};
+
+// Map react-big-calendar views → moment units
+const viewToMomentUnit = (view: View): moment.unitOfTime.StartOf => {
+  switch (view) {
+    case Views.DAY:
+      return 'day';
+    case Views.WEEK:
+    case Views.WORK_WEEK:
+      return 'week';
+    case Views.MONTH:
+      return 'month';
+    case Views.AGENDA:
+      return 'day';
+    default:
+      return 'month';
+  }
 };
 
 export default function AdminCalendarComponent({ token }: Props) {
@@ -61,34 +78,41 @@ export default function AdminCalendarComponent({ token }: Props) {
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   // ---------------------
-  // Fetch events (admin sees all)
+  // Fetch events for visible range
   // ---------------------
+  const fetchEvents = async (start: Date, end: Date) => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/appointments/admin/all-events?start=${start.toISOString()}&end=${end.toISOString()}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error(`Failed with status ${res.status}`);
+
+      const data: ApiEvent[] = await res.json();
+      const mapped: EventType[] = data.map((e) => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        start: new Date(e.start_time),
+        end: new Date(e.end_time),
+        status: e.status ?? 'pending',
+        userName: e.userName,
+      }));
+
+      setEvents(mapped);
+    } catch (err) {
+      toast.error('❌ Failed to load events.');
+      console.error(err);
+    }
+  };
+
+  // Initial load → current month
   useEffect(() => {
     if (!token) return;
-    (async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/appointments/admin/all-events', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`Failed with status ${res.status}`);
-
-        const data: ApiEvent[] = await res.json();
-        const mapped: EventType[] = data.map((e) => ({
-          id: e.id,
-          title: e.title,
-          description: e.description,
-          start: new Date(e.start_time),
-          end: new Date(e.end_time),
-          status: e.status ?? 'pending',
-          userName: e.user_name,
-        }));
-
-        setEvents(mapped);
-      } catch (err) {
-        toast.error('❌ Failed to load events.');
-        console.error(err);
-      }
-    })();
+    const start = moment().startOf('month').toDate();
+    const end = moment().endOf('month').toDate();
+    fetchEvents(start, end);
   }, [token]);
 
   // ---------------------
@@ -99,14 +123,17 @@ export default function AdminCalendarComponent({ token }: Props) {
     setLoadingRespond(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/appointments/admin/respond/${eventId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action }),
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/appointments/admin/respond/${eventId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ action }),
+        }
+      );
 
       if (!res.ok) throw new Error(`Respond failed: ${res.status}`);
       const { event }: { event: ApiEvent } = await res.json();
@@ -133,10 +160,13 @@ export default function AdminCalendarComponent({ token }: Props) {
     setLoadingCancel(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/appointments/admin/delete/${eventId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/appointments/admin/delete/${eventId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
 
@@ -185,7 +215,12 @@ export default function AdminCalendarComponent({ token }: Props) {
       setEvents((prev) =>
         prev.map((e) =>
           e.id === event.id
-            ? { ...e, start: new Date(event.start_time), end: new Date(event.end_time), status: event.status ?? 'pending' }
+            ? {
+                ...e,
+                start: new Date(event.start_time),
+                end: new Date(event.end_time),
+                status: event.status ?? 'pending',
+              }
             : e
         )
       );
@@ -249,7 +284,9 @@ export default function AdminCalendarComponent({ token }: Props) {
         break;
     }
 
-    return { style: { background, color, borderRadius: '6px', padding: '2px 4px' } };
+    return {
+      style: { background, color, borderRadius: '6px', padding: '2px 4px' },
+    };
   };
 
   // ---------------------
@@ -259,7 +296,20 @@ export default function AdminCalendarComponent({ token }: Props) {
     <div className="box p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Main Calendar */}
+      <div className="d-flex justify-content-end mb-2">
+        <button
+          className="btn btn-outline-primary btn-sm"
+          onClick={() => {
+            const unit = viewToMomentUnit(currentView);
+            const start = moment().startOf(unit).toDate();
+            const end = moment().endOf(unit).toDate();
+            fetchEvents(start, end);
+          }}
+        >
+          Today
+        </button>
+      </div>
+
       <Calendar
         localizer={localizer}
         events={events}
@@ -269,6 +319,13 @@ export default function AdminCalendarComponent({ token }: Props) {
         defaultView={Views.MONTH}
         view={currentView}
         onView={(view) => setCurrentView(view)}
+        onRangeChange={(range: DateRange | Date[] | { start: Date; end: Date }) => {
+          if (Array.isArray(range)) {
+            fetchEvents(range[0], range[range.length - 1]);
+          } else if ('start' in range && 'end' in range) {
+            fetchEvents(range.start, range.end);
+          }
+        }}
         selectable
         onSelectEvent={handleSelectEvent}
         onSelectSlot={handleSelectSlot}
@@ -283,7 +340,10 @@ export default function AdminCalendarComponent({ token }: Props) {
 
       {/* Event Modal */}
       {showEventModal && selectedEvent && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -291,11 +351,22 @@ export default function AdminCalendarComponent({ token }: Props) {
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <p><strong>User:</strong> {selectedEvent.userName ?? 'Unknown'}</p>
-                <p><strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
-                <p><strong>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}</p>
-                <p><strong>Description:</strong> {selectedEvent.description}</p>
-                <p><strong>Status:</strong> {selectedEvent.status}</p>
+                <p>
+                  <strong>User:</strong> {selectedEvent.userName ?? 'Unknown'}
+                </p>
+                <p>
+                  <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>Time:</strong> {formatTime(selectedEvent.start)} –{' '}
+                  {formatTime(selectedEvent.end)}
+                </p>
+                <p>
+                  <strong>Description:</strong> {selectedEvent.description}
+                </p>
+                <p>
+                  <strong>Status:</strong> {selectedEvent.status}
+                </p>
               </div>
               <div className="modal-footer">
                 <button
@@ -303,14 +374,22 @@ export default function AdminCalendarComponent({ token }: Props) {
                   disabled={loadingRespond}
                   onClick={() => handleRespond(selectedEvent.id, 'approve')}
                 >
-                  {loadingRespond ? <span className="spinner-border spinner-border-sm" /> : 'Approve'}
+                  {loadingRespond ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    'Approve'
+                  )}
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
                   disabled={loadingRespond}
                   onClick={() => handleRespond(selectedEvent.id, 'decline')}
                 >
-                  {loadingRespond ? <span className="spinner-border spinner-border-sm" /> : 'Decline'}
+                  {loadingRespond ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    'Decline'
+                  )}
                 </button>
                 <button
                   className="btn btn-warning btn-sm"
@@ -327,9 +406,18 @@ export default function AdminCalendarComponent({ token }: Props) {
                   disabled={loadingCancel}
                   onClick={() => handleCancelEvent(selectedEvent.id)}
                 >
-                  {loadingCancel ? <span className="spinner-border spinner-border-sm" /> : 'Cancel'}
+                  {loadingCancel ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    'Cancel'
+                  )}
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Close</button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleCloseModals}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -338,7 +426,10 @@ export default function AdminCalendarComponent({ token }: Props) {
 
       {/* Reschedule Calendar Modal */}
       {showRescheduleCalendar && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content">
               <div className="modal-header">
@@ -369,12 +460,17 @@ export default function AdminCalendarComponent({ token }: Props) {
 
       {/* Time Picker Modal */}
       {showTimeModal && selectedSlot && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  {rescheduleMode ? 'Reschedule Appointment' : `Select Time – ${selectedSlot.toLocaleDateString()}`}
+                  {rescheduleMode
+                    ? 'Reschedule Appointment'
+                    : `Select Time – ${selectedSlot.toLocaleDateString()}`}
                 </h5>
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
@@ -390,14 +486,23 @@ export default function AdminCalendarComponent({ token }: Props) {
                         disabled={loadingReschedule}
                         onClick={() => handleReschedule(selectedSlot, hour)}
                       >
-                        {loadingReschedule ? <span className="spinner-border spinner-border-sm" /> : timeString}
+                        {loadingReschedule ? (
+                          <span className="spinner-border spinner-border-sm" />
+                        ) : (
+                          timeString
+                        )}
                       </button>
                     );
                   })}
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Cancel</button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleCloseModals}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

@@ -334,10 +334,27 @@ def admin_respond_to_event(current_admin, event_id):
     # -------------------------
 # ADMIN: VIEW ALL EVENTS
 # -------------------------
+# -------------------------
+# ADMIN: VIEW ALL EVENTS (with optional range filtering)
+# -------------------------
 @appointments_bp.route("/admin/all-events", methods=["GET"])
 @admin_token_required
 def admin_get_all_events(current_admin):
-    events = CalendarEvent.query.order_by(CalendarEvent.start_time.asc()).all()
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    query = CalendarEvent.query
+
+    if start and end:
+        try:
+            start_dt = parser.isoparse(start)
+            end_dt = parser.isoparse(end)
+            query = query.filter(CalendarEvent.start_time >= start_dt,
+                                 CalendarEvent.end_time <= end_dt)
+        except Exception:
+            return jsonify({"error": "Invalid date range"}), 400
+
+    events = query.order_by(CalendarEvent.start_time.asc()).all()
 
     results = []
     for e in events:
@@ -349,10 +366,8 @@ def admin_get_all_events(current_admin):
             "end_time": e.end_time.isoformat(),
             "status": e.status,
             "event_type": e.event_type,
-            # ✅ Unified naming
             "userName": e.user.full_name if e.user else e.guest_name,
             "userEmail": e.user.email if e.user else e.guest_email,
         })
 
     return jsonify(results), 200
-
