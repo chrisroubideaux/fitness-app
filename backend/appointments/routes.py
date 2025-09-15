@@ -330,3 +330,29 @@ def admin_respond_to_event(current_admin, event_id):
         "message": f"Event {event.status}",
         "event": event.serialize()
     }), 200
+    
+    # -------------------------
+# ADMIN: VIEW ALL EVENTS
+# -------------------------
+@appointments_bp.route("/admin/all-events", methods=["GET"])
+@admin_token_required
+def admin_get_all_events(current_admin):
+    events = CalendarEvent.query.order_by(CalendarEvent.start_time.asc()).all()
+
+    results = []
+    for e in events:
+        results.append({
+            "id": str(e.id),
+            "title": e.title,
+            "description": e.description,
+            "start_time": e.start_time.isoformat(),
+            "end_time": e.end_time.isoformat(),
+            "status": e.status,
+            "event_type": e.event_type,
+            # ✅ Unified naming
+            "userName": e.user.full_name if e.user else e.guest_name,
+            "userEmail": e.user.email if e.user else e.guest_email,
+        })
+
+    return jsonify(results), 200
+

@@ -1,6 +1,4 @@
 // app/admin/[id]/page.tsx
-
-// app/admin/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,12 +6,14 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import AdminSidebar, { type AdminSidebarTab } from '@/components/admin/sidebar/Sidebar';
-import AdminCalendar from '@/components/admin/calendar/Calendar';
+// ✅ import the new backend-enabled admin calendar
+import AdminCalendarComponent from '@/components/admin/calendar/Calendar';
+
 import AdminMessagesPanel from '@/components/admin/messages/MessagesPanel';
 import AdminNotificationsPanel from '@/components/admin/messages/NotificationsPanel';
 import PlansPanel from '@/components/admin/plans/PlansPanel';
 import UsersPanel from '@/components/admin/users/UsersPanel';
-import AdminBioCard, { type Admin as BioAdmin } from '@/components/admin/bio/BioCard';
+import AdminBioCard from '@/components/admin/bio/BioCard';
 
 import { FaCalendarAlt, FaComments } from 'react-icons/fa';
 import { IoNotificationsOutline } from 'react-icons/io5';
@@ -41,6 +41,8 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
+  const [token, setToken] = useState<string | null>(null);
+
   const notificationCount = 3;
 
   useEffect(() => {
@@ -48,11 +50,13 @@ export default function AdminPage() {
     const tokenFromURL = url.searchParams.get('token');
 
     if (tokenFromURL) {
-      localStorage.setItem('adminToken', tokenFromURL); // ✅ Always same key
+      localStorage.setItem('adminToken', tokenFromURL);
     }
 
-    const token = tokenFromURL || localStorage.getItem('adminToken');
-    if (!token) {
+    const storedToken = tokenFromURL || localStorage.getItem('adminToken');
+    setToken(storedToken);
+
+    if (!storedToken) {
       setError('No token found. Please log in again.');
       setLoading(false);
       return;
@@ -60,11 +64,12 @@ export default function AdminPage() {
 
     (async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
         const res = await fetch(`${apiBase}/api/admins/me`, {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${storedToken}`,
             'Content-Type': 'application/json',
           },
         });
@@ -85,14 +90,13 @@ export default function AdminPage() {
     router.push('/admin');
   };
 
-  // ✅ Handle "Message" button from UsersPanel
   const handleMessageUser = async (user: { id: string; full_name: string }) => {
-    setActiveTab('messages'); // switch to messages tab
-
+    setActiveTab('messages');
     const token = localStorage.getItem('adminToken');
     if (!token) return;
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
 
     try {
       const res = await fetch(`${apiBase}/api/messages/conversations`, {
@@ -101,21 +105,15 @@ export default function AdminPage() {
 
       if (!res.ok) throw new Error(`Failed to fetch conversations: ${res.status}`);
 
-      type Conversation = {
-        id: string;
-        user_id: string;
-        // add other relevant properties if needed
-      };
+      type Conversation = { id: string; user_id: string };
       const conversations: Conversation[] = await res.json();
       const convo = conversations.find((c) => c.user_id === user.id);
 
       if (convo) {
-        // ✅ If convo exists, dispatch event to open chat
         window.dispatchEvent(
           new CustomEvent('openAdminChat', { detail: { conversation: convo } })
         );
       } else {
-        // ✅ If no convo, dispatch event to start a new one
         window.dispatchEvent(
           new CustomEvent('startAdminNewMessage', {
             detail: { userId: user.id, userName: user.full_name },
@@ -130,7 +128,8 @@ export default function AdminPage() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'calendar':
-        return <AdminCalendar />;
+        // ✅ pass token down
+        return <AdminCalendarComponent token={token} />;
       case 'notifications':
         return <AdminNotificationsPanel />;
       case 'messages':
@@ -138,7 +137,7 @@ export default function AdminPage() {
       case 'plans':
         return <PlansPanel />;
       case 'users':
-        return <UsersPanel onMessageUser={handleMessageUser} />; // ✅ Pass prop
+        return <UsersPanel onMessageUser={handleMessageUser} />;
       case 'dashboard':
         return admin ? (
           <AdminBioCard
@@ -151,7 +150,7 @@ export default function AdminPage() {
               address: admin.address ?? null,
               membership_plan_id: admin.membership_plan_id ?? null,
               bio: admin.bio ?? null,
-            } satisfies BioAdmin}
+            }}
             onSaved={(updated) =>
               setAdmin((a) =>
                 a
@@ -166,7 +165,9 @@ export default function AdminPage() {
                   : a
               )
             }
-            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+            apiBase={
+              process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'
+            }
           />
         ) : null;
       default:
@@ -209,67 +210,33 @@ export default function AdminPage() {
             <div className="col-lg-8 col-xxl-9">
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
+                  {/* buttons same as before */}
                   <button
                     className={`btn btn-sm btn-${
                       activeTab === 'calendar' ? 'primary' : 'outline-primary'
                     }`}
-                    style={{
-                      padding: '4px 10px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.2',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
                     onClick={() => setActiveTab('calendar')}
                   >
-                    <FaCalendarAlt className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Calendar
+                    <FaCalendarAlt className="me-2" /> Calendar
                   </button>
-
                   <button
                     className={`btn btn-sm btn-${
                       activeTab === 'notifications' ? 'primary' : 'outline-primary'
                     } position-relative`}
-                    style={{
-                      padding: '4px 10px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.2',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
                     onClick={() => setActiveTab('notifications')}
                   >
-                    <IoNotificationsOutline className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Notifications
+                    <IoNotificationsOutline className="me-2" /> Notifications
                     {notificationCount > 0 && (
-                      <span
-                        className="badge bg-danger ms-2"
-                        style={{
-                          fontSize: '0.7rem',
-                          padding: '2px 6px',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        {notificationCount}
-                      </span>
+                      <span className="badge bg-danger ms-2">{notificationCount}</span>
                     )}
                   </button>
-
                   <button
                     className={`btn btn-sm btn-${
                       activeTab === 'messages' ? 'primary' : 'outline-primary'
                     }`}
-                    style={{
-                      padding: '4px 10px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.2',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
                     onClick={() => setActiveTab('messages')}
                   >
-                    <FaComments className="me-2" style={{ fontSize: '0.9rem' }} />
-                    Messages
+                    <FaComments className="me-2" /> Messages
                   </button>
                 </div>
               </div>
@@ -281,7 +248,6 @@ export default function AdminPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -30 }}
                   transition={{ duration: 0.3 }}
-                  className="calendarContainer"
                 >
                   {renderTabContent()}
                 </motion.div>
@@ -293,7 +259,6 @@ export default function AdminPage() {
     </div>
   );
 }
-
 
 
 
