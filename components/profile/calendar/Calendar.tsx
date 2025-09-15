@@ -42,8 +42,11 @@ export default function CalendarComponent({ token }: Props) {
   const [events, setEvents] = useState<EventType[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
+
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false); // new modal for reschedule date
   const [showTimeModal, setShowTimeModal] = useState(false);
+
   const [rescheduleMode, setRescheduleMode] = useState(false);
   const [currentView, setCurrentView] = useState<View>(Views.MONTH);
 
@@ -198,6 +201,7 @@ export default function CalendarComponent({ token }: Props) {
 
       toast.success('✅ Appointment rescheduled!');
       setShowTimeModal(false);
+      setShowDateModal(false);
       setRescheduleMode(false);
       setSelectedEvent(null);
     } catch (err) {
@@ -222,6 +226,7 @@ export default function CalendarComponent({ token }: Props) {
 
   const handleCloseModals = () => {
     setShowEventModal(false);
+    setShowDateModal(false);
     setShowTimeModal(false);
     setRescheduleMode(false);
     setSelectedEvent(null);
@@ -307,9 +312,8 @@ export default function CalendarComponent({ token }: Props) {
                   disabled={loadingReschedule}
                   onClick={() => {
                     setRescheduleMode(true);
-                    setShowTimeModal(true);
+                    setShowDateModal(true); // ✅ open date modal first
                     setShowEventModal(false);
-                    setSelectedSlot(selectedEvent.start);
                   }}
                 >
                   {loadingReschedule ? (
@@ -320,6 +324,49 @@ export default function CalendarComponent({ token }: Props) {
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {showDateModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Choose New Date</h5>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+              <div className="modal-body">
+                <input
+                  type="date"
+                  className="form-control"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const chosenDate = new Date(e.target.value);
+                      setSelectedSlot(chosenDate);
+                    }
+                  }}
+                />
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    if (selectedSlot) {
+                      setShowDateModal(false);
+                      setShowTimeModal(true);
+                    }
+                  }}
+                  disabled={!selectedSlot}
+                >
+                  Next: Choose Time
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
+                  Cancel
                 </button>
               </div>
             </div>
