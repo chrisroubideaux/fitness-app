@@ -1,5 +1,4 @@
 # app.py
-# app.py
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -17,6 +16,9 @@ from users.models import User
 from memberships.models import MembershipPlan
 from workout_session.models import WorkoutSession
 from login_session import LoginSession
+from appointments.models import CalendarEvent
+
+
 
 # --- Blueprints ---
 from memberships.routes import membership_bp
@@ -28,6 +30,7 @@ from ai.routes import ai_bp
 from workout_session import workout_sessions_bp
 from payments.routes import payments_bp
 from messages.routes import messages_bp 
+from appointments.routes import appointments_bp 
 
 from flask_dance.contrib.facebook import make_facebook_blueprint
 
@@ -126,6 +129,8 @@ def create_app():
     app.register_blueprint(workout_sessions_bp, url_prefix="/api/workout_sessions")
     app.register_blueprint(payments_bp)
     app.register_blueprint(messages_bp)  
+    app.register_blueprint(appointments_bp)  # ✅ new
+
 
     # --- Health/root ---
     @app.route("/")
@@ -138,6 +143,8 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     app.run(debug=True)
+
+
 
 
 

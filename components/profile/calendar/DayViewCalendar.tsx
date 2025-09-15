@@ -1,4 +1,4 @@
-// Day View Calendar Component
+
 // components/profile/calendar/DayViewCalendar.tsx
 'use client';
 
