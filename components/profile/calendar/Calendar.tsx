@@ -99,6 +99,13 @@ export default function CalendarComponent({ token }: Props) {
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
+    // prevent booking in the past
+    if (start < new Date()) {
+      toast.warn('⚠️ You cannot book in the past.');
+      setLoadingBook(false);
+      return;
+    }
+
     try {
       const res = await fetch('http://localhost:5000/api/appointments/book', {
         method: 'POST',
@@ -178,6 +185,13 @@ export default function CalendarComponent({ token }: Props) {
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
+    // prevent rescheduling in the past
+    if (start < new Date()) {
+      toast.warn('⚠️ You cannot reschedule to a past date.');
+      setLoadingReschedule(false);
+      return;
+    }
+
     try {
       const res = await fetch(
         `http://localhost:5000/api/appointments/update/${selectedEvent.id}`,
@@ -232,7 +246,14 @@ export default function CalendarComponent({ token }: Props) {
   };
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
-    setSelectedSlot(new Date(slotInfo.start));
+    const selectedDate = new Date(slotInfo.start);
+
+    if (selectedDate < new Date(new Date().setHours(0, 0, 0, 0))) {
+      toast.warn('⚠️ You cannot select a past date.');
+      return;
+    }
+
+    setSelectedSlot(selectedDate);
     if (currentView === 'month') {
       setShowTimeModal(true);
     }
@@ -299,6 +320,7 @@ export default function CalendarComponent({ token }: Props) {
           eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
             `${formatTime(start)} – ${formatTime(end)}`,
         }}
+        min={new Date()} // ✅ prevent selecting past in main calendar
       />
 
       {/* Event Modal */}
@@ -353,13 +375,18 @@ export default function CalendarComponent({ token }: Props) {
               <div className="modal-body">
                 <Calendar
                   localizer={localizer}
-                  events={events} // ✅ reuse events with same CSS
+                  events={events}
                   defaultView={Views.MONTH}
                   views={['month']}
                   selectable
                   style={{ height: '60vh' }}
+                  min={new Date()} // ✅ block past dates
                   onSelectSlot={(slotInfo: SlotInfo) => {
                     const newDate = new Date(slotInfo.start);
+                    if (newDate < new Date(new Date().setHours(0, 0, 0, 0))) {
+                      toast.warn('⚠️ You cannot reschedule to a past date.');
+                      return;
+                    }
                     setSelectedSlot(newDate);
                     setShowRescheduleCalendar(false);
                     setShowTimeModal(true);
@@ -419,7 +446,6 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
-
 
 
 
