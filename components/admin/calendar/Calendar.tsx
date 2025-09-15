@@ -1,3 +1,4 @@
+// components/admin/calendar/CalendarComponent.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -38,23 +39,6 @@ const localizer = momentLocalizer(moment);
 
 type Props = {
   token: string | null; // Admin token
-};
-
-// Map react-big-calendar views → moment units
-const viewToMomentUnit = (view: View): moment.unitOfTime.StartOf => {
-  switch (view) {
-    case Views.DAY:
-      return 'day';
-    case Views.WEEK:
-    case Views.WORK_WEEK:
-      return 'week';
-    case Views.MONTH:
-      return 'month';
-    case Views.AGENDA:
-      return 'day';
-    default:
-      return 'month';
-  }
 };
 
 export default function AdminCalendarComponent({ token }: Props) {
@@ -123,17 +107,14 @@ export default function AdminCalendarComponent({ token }: Props) {
     setLoadingRespond(true);
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/appointments/admin/respond/${eventId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action }),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/appointments/admin/respond/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action }),
+      });
 
       if (!res.ok) throw new Error(`Respond failed: ${res.status}`);
       const { event }: { event: ApiEvent } = await res.json();
@@ -160,13 +141,10 @@ export default function AdminCalendarComponent({ token }: Props) {
     setLoadingCancel(true);
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/appointments/admin/delete/${eventId}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/appointments/admin/delete/${eventId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
 
@@ -284,9 +262,7 @@ export default function AdminCalendarComponent({ token }: Props) {
         break;
     }
 
-    return {
-      style: { background, color, borderRadius: '6px', padding: '2px 4px' },
-    };
+    return { style: { background, color, borderRadius: '6px', padding: '2px 4px' } };
   };
 
   // ---------------------
@@ -295,20 +271,6 @@ export default function AdminCalendarComponent({ token }: Props) {
   return (
     <div className="box p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
-
-      <div className="d-flex justify-content-end mb-2">
-        <button
-          className="btn btn-outline-primary btn-sm"
-          onClick={() => {
-            const unit = viewToMomentUnit(currentView);
-            const start = moment().startOf(unit).toDate();
-            const end = moment().endOf(unit).toDate();
-            fetchEvents(start, end);
-          }}
-        >
-          Today
-        </button>
-      </div>
 
       <Calendar
         localizer={localizer}
@@ -336,6 +298,9 @@ export default function AdminCalendarComponent({ token }: Props) {
           eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
             `${formatTime(start)} – ${formatTime(end)}`,
         }}
+        // ✅ Limit visible time range to 10 AM – 7 PM
+        min={new Date(2025, 0, 1, 10, 0)}
+        max={new Date(2025, 0, 1, 19, 0)}
       />
 
       {/* Event Modal */}
@@ -358,8 +323,8 @@ export default function AdminCalendarComponent({ token }: Props) {
                   <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
                 </p>
                 <p>
-                  <strong>Time:</strong> {formatTime(selectedEvent.start)} –{' '}
-                  {formatTime(selectedEvent.end)}
+                  <strong>Time:</strong>{' '}
+                  {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}
                 </p>
                 <p>
                   <strong>Description:</strong> {selectedEvent.description}
@@ -476,8 +441,8 @@ export default function AdminCalendarComponent({ token }: Props) {
               </div>
               <div className="modal-body">
                 <div className="d-flex flex-wrap gap-2">
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const hour = 10 + i;
+                  {Array.from({ length: 9 }, (_, i) => {
+                    const hour = 10 + i; // 10 AM to 6 PM
                     const timeString = formatTime(new Date(0, 0, 0, hour));
                     return (
                       <button

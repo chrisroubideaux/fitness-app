@@ -99,7 +99,6 @@ export default function CalendarComponent({ token }: Props) {
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
-    // prevent booking in the past
     if (start < new Date()) {
       toast.warn('⚠️ You cannot book in the past.');
       setLoadingBook(false);
@@ -185,7 +184,6 @@ export default function CalendarComponent({ token }: Props) {
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
 
-    // prevent rescheduling in the past
     if (start < new Date()) {
       toast.warn('⚠️ You cannot reschedule to a past date.');
       setLoadingReschedule(false);
@@ -247,12 +245,10 @@ export default function CalendarComponent({ token }: Props) {
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
     const selectedDate = new Date(slotInfo.start);
-
     if (selectedDate < new Date(new Date().setHours(0, 0, 0, 0))) {
       toast.warn('⚠️ You cannot select a past date.');
       return;
     }
-
     setSelectedSlot(selectedDate);
     if (currentView === 'month') {
       setShowTimeModal(true);
@@ -300,7 +296,6 @@ export default function CalendarComponent({ token }: Props) {
     <div className="box p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Main Calendar */}
       <Calendar
         localizer={localizer}
         events={events}
@@ -320,7 +315,9 @@ export default function CalendarComponent({ token }: Props) {
           eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
             `${formatTime(start)} – ${formatTime(end)}`,
         }}
-        min={new Date()} // ✅ prevent selecting past in main calendar
+        // ✅ Limit visible time range to 10 AM – 7 PM
+        min={new Date(2025, 0, 1, 10, 0)}
+        max={new Date(2025, 0, 1, 19, 0)}
       />
 
       {/* Event Modal */}
@@ -380,7 +377,7 @@ export default function CalendarComponent({ token }: Props) {
                   views={['month']}
                   selectable
                   style={{ height: '60vh' }}
-                  min={new Date()} // ✅ block past dates
+                  min={new Date()}
                   onSelectSlot={(slotInfo: SlotInfo) => {
                     const newDate = new Date(slotInfo.start);
                     if (newDate < new Date(new Date().setHours(0, 0, 0, 0))) {
@@ -412,8 +409,8 @@ export default function CalendarComponent({ token }: Props) {
               </div>
               <div className="modal-body">
                 <div className="d-flex flex-wrap gap-2">
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const hour = 10 + i;
+                  {Array.from({ length: 9 }, (_, i) => {
+                    const hour = 10 + i; // 10 AM → 6 PM
                     const timeString = formatTime(new Date(0, 0, 0, hour));
                     return (
                       <button
@@ -446,7 +443,6 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
-
 
 
 /*
