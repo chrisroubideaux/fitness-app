@@ -1,15 +1,13 @@
 // app/page.tsx
-// app/page.tsx
 'use client';
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
 import Nav from "@/components/navbar/Nav";
 import HomeCover from "@/components/cover/Home";
 import Footer from "@/components/misc/Footer";
 
 import MembershipCard, { type UIMembershipPlan } from "@/components/profile/memberships/MembershipCard";
+import FeatureCards from "@/components/misc/FeatureCards"; 
 
 type BackendPlan = {
   id: string;
@@ -58,7 +56,6 @@ export default function Home() {
       setLoading(true);
       setErr(null);
       try {
-        // 1) Fetch plans
         const res = await fetch(`${base}/api/memberships/`);
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const data: BackendPlan[] = await res.json();
@@ -75,7 +72,6 @@ export default function Home() {
 
         if (!cancelled) setPlans(ui);
 
-        // 2) If logged in, fetch current plan
         if (token) {
           const me = await fetch(`${base}/api/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -92,7 +88,6 @@ export default function Home() {
       } catch {
         if (!cancelled) {
           setErr('Unable to load plans right now.');
-          // minimal fallback so UI isn’t empty
           setPlans([
             {
               id: null,
@@ -132,7 +127,6 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [base, token]);
 
-  // Confirmed inside MembershipCard modal
   async function handleSelect(plan: UIMembershipPlan) {
     if (!token) {
       localStorage.setItem('preselectedPlanId', plan.id ?? 'free');
@@ -161,7 +155,6 @@ export default function Home() {
       }
 
       if (!me.ok) throw new Error('Could not verify user.');
-
       const meJson = await me.json();
 
       const res = await fetch(`${base}/api/users/${encodeURIComponent(meJson.id)}`, {
@@ -193,30 +186,29 @@ export default function Home() {
       <main>
         <HomeCover />
 
+        <FeatureCards />
+
         <div className="container">
-          {notice && (
-            <div className="alert alert-info py-2 mt-3">{notice}</div>
-          )}
-          {err && (
-            <div className="alert alert-warning py-2 mt-2">{err}</div>
-          )}
+          {notice && <div className="alert alert-info py-2 mt-3">{notice}</div>}
+          {err && <div className="alert alert-warning py-2 mt-2">{err}</div>}
         </div>
 
-        <section className="container py-5">
+        <section className="container py-5 mt-5 pt-5">
           <div className="text-center mb-4">
-            <h2 className="mb-1">Choose Your Plan</h2>
+            <h1 className="mb-1">Choose Your Plan</h1>
             <p className="text-muted">Upgrade anytime. Cancel anytime.</p>
           </div>
 
           {loading ? (
             <div className="text-center text-muted">Loading plans…</div>
           ) : (
-            <div className="row g-3">
+            <div className="row g-3 pt-5">
               {plans.map((plan) => {
                 const isCurrent = token ? currentPlanId === plan.id : false;
                 return (
                   <div className="col-md-4" key={`${plan.id ?? 'free'}`}>
                     <MembershipCard
+                    
                       plan={plan}
                       isCurrent={isCurrent}
                       saving={saving}
@@ -234,9 +226,6 @@ export default function Home() {
     </div>
   );
 }
-
-
-
 
 
 

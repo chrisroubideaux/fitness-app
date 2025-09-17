@@ -1,5 +1,19 @@
 /* global styles */
 
+/* ----------------------- */
+/* Section spacing (global) */
+/* ----------------------- */
+main > section {
+  margin-top: 8rem;   /* space above each section */
+  margin-bottom: 8rem; /* space below each section */
+}
+
+/* Optional: tune headings spacing inside sections */
+main > section h2 {
+  margin-bottom: 2rem;
+}
+
+
 /* buttons */
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
