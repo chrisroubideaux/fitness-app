@@ -1,13 +1,15 @@
-// app/page.tsx
 'use client';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import Nav from "@/components/navbar/Nav";
 import HomeCover from "@/components/cover/Home";
 import Footer from "@/components/misc/Footer";
 
 import MembershipCard, { type UIMembershipPlan } from "@/components/profile/memberships/MembershipCard";
-import FeatureCards from "@/components/misc/FeatureCards"; 
+import FeatureCards from "@/components/misc/FeatureCards";
+import Testimonials from "@/components/misc/Testimonials";
 
 type BackendPlan = {
   id: string;
@@ -186,6 +188,7 @@ export default function Home() {
       <main>
         <HomeCover />
 
+        {/* ✅ Features section */}
         <FeatureCards />
 
         <div className="container">
@@ -193,22 +196,22 @@ export default function Home() {
           {err && <div className="alert alert-warning py-2 mt-2">{err}</div>}
         </div>
 
-        <section className="container py-5 mt-5 pt-5">
+        {/* ✅ Membership plans */}
+        <section className="container py-5">
           <div className="text-center mb-4">
-            <h1 className="mb-1">Choose Your Plan</h1>
+            <h2 className="mb-1">Choose Your Plan</h2>
             <p className="text-muted">Upgrade anytime. Cancel anytime.</p>
           </div>
 
           {loading ? (
             <div className="text-center text-muted">Loading plans…</div>
           ) : (
-            <div className="row g-3 pt-5">
+            <div className="row g-3">
               {plans.map((plan) => {
                 const isCurrent = token ? currentPlanId === plan.id : false;
                 return (
                   <div className="col-md-4" key={`${plan.id ?? 'free'}`}>
                     <MembershipCard
-                    
                       plan={plan}
                       isCurrent={isCurrent}
                       saving={saving}
@@ -221,12 +224,14 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* ✅ Testimonials slider */}
+        <Testimonials />
       </main>
       <Footer />
     </div>
   );
 }
-
 
 
 
