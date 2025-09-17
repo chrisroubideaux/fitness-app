@@ -6,7 +6,7 @@ export default function Nav() {
     <div>
      
         <nav className="navbar navbar-expand-lg shadow-sm px-4 py-3">
-  <Link className="navbar-brand fw-bold" href="/">Lena Cruz</Link>
+  <Link className="navbar-brand fw-semibold" href="/">FitByLena</Link>
 
   <button
     className="navbar-toggler"

@@ -1,14 +1,13 @@
 /* global styles */
 
-/* ----------------------- */
 /* Section spacing (global) */
-/* ----------------------- */
+
 main > section {
-  margin-top: 8rem;   /* space above each section */
-  margin-bottom: 8rem; /* space below each section */
+  margin-top: 8rem;  
+  margin-bottom: 8rem;
 }
 
-/* Optional: tune headings spacing inside sections */
+/* Tune headings spacing inside sections */
 main > section h2 {
   margin-bottom: 2rem;
 }
@@ -32,8 +31,11 @@ html {
 
 body {
   min-height: 100vh;
+  /*
   background: rgb(249,248,252);
   background: linear-gradient(234deg, rgba(249,248,252,1) 0%, rgba(205,205,225,1) 50%, rgba(253,253,255,1) 100%);
+  */
+   background: linear-gradient(135deg, #f9f9fb, #e6e9f5, #ffffff);
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -43,8 +45,7 @@ body {
 }
 
 .layout {
-  background: rgb(249,248,252);
-  background: linear-gradient(234deg, rgba(249,248,252,1) 0%, rgba(205,205,225,1) 50%, rgba(253,253,255,1) 100%);
+   background: linear-gradient(135deg, #f9f9fb, #e6e9f5, #ffffff);
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -220,7 +221,7 @@ h6 {
 
 /* footer */
 .footer {
-  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
+  /* background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff); */
   border-radius: 10px;
   color: #ffffff;
   padding-top: 2rem;
