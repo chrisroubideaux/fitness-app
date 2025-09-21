@@ -8,7 +8,7 @@ export default function Testimonials() {
     {
       avatar:
         'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=400&q=80&crop=faces',
-      name: 'Lilly Carter',
+      name: 'Liam Carter',
       role: 'Elite Member',
       highlight: 'Best decision I made this year!',
       quote:
@@ -87,8 +87,24 @@ export default function Testimonials() {
     },
   ];
 
+  // 🔥 Motion Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15, // wave effect
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
   return (
-    <section className="testimonials-section shasdow-lg mt-5">
+    <section className="testimonials-section">
       <div className="container py-5">
         <motion.div
           className="text-center mb-5"
@@ -97,19 +113,22 @@ export default function Testimonials() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="mb-1">What Our Members Say</h1>
+          <h1 className="mb-1 fs-2">What Our Members Say</h1>
           <p className="text-muted">Real stories from our fitness community</p>
         </motion.div>
 
-        <div className="row g-4">
+        <motion.div
+          className="row g-4"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           {testimonials.map((t, i) => (
             <motion.div
               key={i}
               className="col-md-6 col-lg-3"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              variants={cardVariants}
             >
               <div className="testimonial-card h-100">
                 <p className="testimonial-highlight">{t.highlight}</p>
@@ -135,11 +154,12 @@ export default function Testimonials() {
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
+
 
 
 

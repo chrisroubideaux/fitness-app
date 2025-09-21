@@ -1,5 +1,4 @@
 // components/profile/memberships/MembershipCard.tsx
-// components/profile/memberships/MembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';
@@ -21,19 +20,19 @@ type Props = {
   isCurrent: boolean;
   saving?: boolean;
 
-  /** Called when user confirms inside the modal (used when authenticated) */
+ 
   onSelect: () => Promise<void> | void;
 
-  /** How many features to preview on the card (default 4) */
+ 
   previewCount?: number;
 
-  /** If falsey, confirmation will show the "account required" modal */
+ 
   isAuthenticated?: boolean;
 
-  /** Optional: override where to send unauthenticated users */
+ 
   loginPath?: string;
 
-  /** Optional: handle unauth redirect yourself (instead of built-in redirect) */
+ 
   onAuthRedirect?: (planId?: string | null) => void;
 };
 
@@ -150,7 +149,7 @@ export default function MembershipCard({
         </div>
       </motion.div>
 
-      {/* Modal 1: details + confirm */}
+    
       <AnimatePresence>
         {open && (
           <motion.div
@@ -240,7 +239,7 @@ export default function MembershipCard({
         )}
       </AnimatePresence>
 
-      {/* Modal 2: account required */}
+     
       <AnimatePresence>
         {openWarn && (
           <motion.div
@@ -313,34 +312,43 @@ export default function MembershipCard({
 }
 
 
-
-
 /*
 // components/profile/memberships/MembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiX, FiZap } from 'react-icons/fi';
+import { FiCheck, FiX, FiZap, FiAlertTriangle } from 'react-icons/fi';
 
 export type UIMembershipPlan = {
   id: string | null;
   name: string;
-  price: string;            
+  price: string;
   badge?: string | null;
-  gradient?: string | null; 
+  gradient?: string | null;
   description?: string | null;
-  features?: string[];      
+  features?: string[];
 };
 
-  type Props = {
+type Props = {
   plan: UIMembershipPlan;
   isCurrent: boolean;
   saving?: boolean;
 
+ 
   onSelect: () => Promise<void> | void;
+
  
   previewCount?: number;
+
+ 
+  isAuthenticated?: boolean;
+
+ 
+  loginPath?: string;
+
+ 
+  onAuthRedirect?: (planId?: string | null) => void;
 };
 
 export default function MembershipCard({
@@ -349,8 +357,12 @@ export default function MembershipCard({
   saving = false,
   onSelect,
   previewCount = 4,
+  isAuthenticated = false,
+  loginPath = '/login',
+  onAuthRedirect,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);        // details modal
+  const [openWarn, setOpenWarn] = useState(false); // account required modal
   const titleId = useId();
 
   const hasFeatures = Array.isArray(plan.features) && plan.features.length > 0;
@@ -358,8 +370,24 @@ export default function MembershipCard({
   const hiddenCount = hasFeatures ? Math.max(0, plan.features!.length - preview.length) : 0;
 
   async function confirm() {
+    if (!isAuthenticated) {
+      setOpenWarn(true);
+      return;
+    }
     await onSelect?.();
     setOpen(false);
+  }
+
+  function handleWarnContinue() {
+    const chosenId = plan.id ?? 'free';
+    try {
+      localStorage.setItem('preselectedPlanId', chosenId);
+    } catch {}
+    if (onAuthRedirect) {
+      onAuthRedirect(chosenId);
+    } else {
+      window.location.href = `${loginPath}?planId=${encodeURIComponent(chosenId)}`;
+    }
   }
 
   return (
@@ -395,7 +423,6 @@ export default function MembershipCard({
             <p className="small text-muted mb-2">{plan.description}</p>
           )}
 
-         
           {hasFeatures && (
             <ul className="list-unstyled small m-0">
               {preview.map((label) => (
@@ -416,7 +443,6 @@ export default function MembershipCard({
             </ul>
           )}
 
-         
           {hiddenCount > 0 && (
             <div className="mt-2">
               <span className="pill-count" aria-hidden>+{hiddenCount} more</span>
@@ -425,7 +451,6 @@ export default function MembershipCard({
         </div>
 
         <div className="card-footer bg-white border-0 pb-3 d-flex justify-content-between align-items-center">
-         
           <button
             type="button"
             className={`btn btn-sm ${isCurrent ? 'btn-outline-secondary' : 'btn-primary'} btn-thin`}
@@ -436,11 +461,10 @@ export default function MembershipCard({
             {isCurrent ? 'Current plan' : plan.name.toLowerCase() === 'free' ? 'Switch to Free' : 'Choose Plan'}
             {!isCurrent && <FiZap className='text-white' style={{ marginLeft: 6, marginTop: -2 }} />}
           </button>
-
         </div>
       </motion.div>
 
-   
+    
       <AnimatePresence>
         {open && (
           <motion.div
@@ -451,6 +475,7 @@ export default function MembershipCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            style={{ zIndex: 1060 }}
           >
             <div
               className="membership-modal__backdrop"
@@ -517,7 +542,7 @@ export default function MembershipCard({
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-primary btn-thin`}
+                  className="btn btn-primary btn-thin"
                   onClick={confirm}
                   disabled={saving || isCurrent}
                 >
@@ -528,9 +553,80 @@ export default function MembershipCard({
           </motion.div>
         )}
       </AnimatePresence>
+
+     
+      <AnimatePresence>
+        {openWarn && (
+          <motion.div
+            className="membership-modal"
+            role="dialog"
+            aria-modal="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ zIndex: 1061 }}
+          >
+            <div
+              className="membership-modal__backdrop"
+              onClick={() => setOpenWarn(false)}
+              aria-hidden
+            />
+            <motion.div
+              className="membership-modal__dialog"
+              initial={{ y: 24, scale: 0.98 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 12, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 230, damping: 24 }}
+            >
+              <div className="membership-modal__header" style={{ background: 'linear-gradient(135deg, #fffbe6, #fff)' }}>
+                <h5 className="m-0 d-flex align-items-center gap-2">
+                  <FiAlertTriangle /> Create an account to continue
+                </h5>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-light"
+                  onClick={() => setOpenWarn(false)}
+                  aria-label="Close"
+                >
+                  <FiX />
+                </button>
+              </div>
+
+              <div className="membership-modal__body">
+                <p className="small text-muted mb-2">
+                  You need an account to choose a plan and manage billing.
+                </p>
+                <div className="d-flex align-items-center justify-content-between mb-1">
+                  <div className="fw-semibold">{plan.name}</div>
+                  <div className="text-muted">{plan.price}</div>
+                </div>
+              </div>
+
+              <div className="membership-modal__footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-thin"
+                  onClick={() => setOpenWarn(false)}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-thin"
+                  onClick={handleWarnContinue}
+                >
+                  Sign in / Create account
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
+
+
 
 
 

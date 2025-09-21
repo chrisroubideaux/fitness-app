@@ -1,4 +1,5 @@
 /* about.css */
+/* about.css */
 
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
@@ -12,38 +13,42 @@
   }
 }
 
-/* about-intro */
 .about-intro {
   position: relative;
-  padding: 8rem 1rem;
-  height: 35rem;
-  background-image: linear-gradient(
-      rgba(0, 0, 0, 0.4),
-      rgba(0, 0, 0, 0.4)
-    ),
-    url("/images/admin/image6.png");
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+  padding: 6rem 2rem;
+  min-height: 32rem;
+
+  background: linear-gradient(135deg, #6a5acd, #7e8ef1, #5bd1d7);
+
+
   color: white;
-  text-align: center;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-
-.about-intro h2 {
-  font-size: 2.5rem;
+.about-intro h1 {
+  font-size: 3rem;
   font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #fff;
 }
 
 .about-intro p {
-  max-width: 700px;
-  margin: 0 auto;
-  font-size: 1.125rem;
+  max-width: 600px;
+  font-size: 1.25rem;
   line-height: 1.7;
+  margin-bottom: 2rem;
+  color: #f0f0f0;
+}
+
+.about-intro .social-icon {
+  color: #fff;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.about-intro .social-icon:hover {
+  color: #FFD670; /* accent hover */
 }
 
 .avatar-lg {
@@ -53,20 +58,42 @@
   border-radius: 50%;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
+
 /* mission section */
 .mission-section {
-  /* background: linear-gradient(234deg, #ffecd2, #fcb69f, #a1c4fd, #c2ffd8); */
   border-radius: 0;
   color: #fff;
 }
 
-.mission-section h3 {
-  font-size: 2rem;
+.mission-section h3,
+.mission-section h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #fff;
+  margin-bottom: 1rem;
 }
 
 .mission-section .text-muted {
   color: #f7f7f7 !important;
+}
+
+/* unified mission text box */
+.mission-text-box {
+  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  color: #fff;
+  line-height: 1.7;
+  padding: 2rem;
+  margin-top: 1rem;
+}
+
+.mission-text-box p {
+  margin-bottom: 1.5rem;
+}
+
+.mission-text-box p:last-child {
+  margin-bottom: 0;
 }
 
 .mission-img {
@@ -86,11 +113,10 @@
 }
 
 .mission-icon {
-   color:  #9c97ff;
+  color: #9c97ff;
   font-size: 6rem;
   background-size: 400% 400%;
   border-radius: 50%;
-  
 }
 
 /* trainer team section */
@@ -104,43 +130,168 @@
 
 .team-icon {
   font-size: 8rem;
-  color:  #a1c4fd;
- 
- /* background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);*/
+  color: #a1c4fd;
   padding: 20px;
   border-radius: 50%;
 }
 
 
-
-/* File: styles/about.css 
-.about-intro {
-  background: linear-gradient(234deg, #fcb69f, #a1c4fd, #c2ffd8);
-  padding: 6rem 1rem;
+/* values section */
+.values-section {
+  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  border-radius: 16px;
+  padding: 4rem 2rem;
   color: #fff;
-  text-align: center;
-  border-radius: 0;
-  background-size: cover;
-  background-position: center;
 }
 
-.about-intro h2 {
+.values-section h2 {
   font-size: 2.5rem;
-  font-weight: 700;
+  color: #fff;
 }
 
-.about-intro p {
-  max-width: 700px;
-  margin: 0 auto;
-  font-size: 1.125rem;
-  line-height: 1.7;
+.value-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  color: #fff;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.avatar-lg {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 50%;
+.value-card:hover {
+  transform: translateY(-6px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
-*/
+
+.value-icon {
+  font-size: 2.5rem;
+  color: #ffd670;
+}
+
+
+/* journey section */
+.journey-section {
+  background: #f9f9fb;
+  border-radius: 16px;
+  padding: 4rem 2rem;
+}
+
+.journey-section h2 {
+  font-size: 2.5rem;
+  color: #333;
+}
+
+/* timeline wrapper */
+.timeline {
+  position: relative;
+  margin: 2rem auto;
+  padding: 1rem 0;
+  max-width: 900px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  transform: translateX(-50%);
+  border-radius: 4px;
+}
+
+/* timeline item */
+.timeline-item {
+  position: relative;
+  width: 50%;
+  padding: 1.5rem 2rem;
+}
+
+.timeline-item:nth-child(odd) {
+  left: 0;
+  text-align: right;
+}
+
+.timeline-item:nth-child(even) {
+  left: 50%;
+  text-align: left;
+}
+
+.timeline-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-year {
+  font-weight: bold;
+  color: #7e8ef1;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-icon {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #7e8ef1;
+  border-radius: 50%;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  box-shadow: 0 0 0 4px #f9f9fb;
+}
+
+/* Stats Section */
+.stats-section {
+  background: #f8f9fc;
+  border-radius: 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  color: #7e8ef1;
+}
+
+.stat-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0.3rem 0;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Mini Testimonials Carousel */
+.mini-testimonials {
+  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  color: #fff;
+}
+
+.testimonial-slide {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  color: #fff;
+  line-height: 1.6;
+}
+
+.testimonial-quote {
+  font-size: 1.2rem;
+  font-style: italic;
+}
+

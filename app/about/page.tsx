@@ -1,8 +1,11 @@
 // About Page
 import AboutIntro from "@/components/admin/about/aboutIntro";
+import JourneyTimeline from "@/components/admin/about/JourneyTimeline";
 import MissionSection from "@/components/admin/about/MissionSection";
-import ServicesSection from "@/components/admin/about/ServicesSection";
 import TrainerDetails from "@/components/admin/about/TrainerDetails";
+import ValuesSection from "@/components/admin/about/ValuesSection";
+import StatsSection from "@/components/admin/about/StatsSection";
+import MiniTestimonialsCarousel from "@/components/admin/about/MiniTestimonialsCarousel";
 import Footer from "@/components/misc/Footer";
 import Nav from "@/components/navbar/Nav";
 
@@ -16,9 +19,10 @@ export default function About() {
           <MissionSection />
           
           <TrainerDetails />
-          <div className="mt-5 py-5">
-            <ServicesSection />
-          </div>
+          <ValuesSection />
+          <JourneyTimeline />
+          <StatsSection />
+          <MiniTestimonialsCarousel />
         </div>
         <Footer />
       </div>

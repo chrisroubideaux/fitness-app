@@ -1,18 +1,30 @@
 // AboutIntro component
+// components/about/AboutIntro.tsx
+'use client';
+
 import Image from "next/image";
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function AboutIntro() {
   return (
-    <section className="about-intro hero-section py-5">
+    <section className="about-intro hero-section">
       <div className="container">
         <div className="row align-items-center">
           
           {/* Left: Text + Social Icons */}
-          <div className="col-md-6 text-center text-md-start">
+          <motion.div
+            className="col-md-6 text-center text-md-start"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             <h1 className="fw-bold mb-4">About Me</h1>
             <p className="lead mb-4">
-              I’m Lena Cruz, a certified personal trainer and wellness coach passionate about helping you feel strong, confident, and empowered — inside and out.
+              I’m Lena Cruz, a certified personal trainer and wellness coach
+              passionate about helping you feel strong, confident, and empowered —
+              inside and out.
             </p>
             <div className="d-flex justify-content-center justify-content-md-start gap-3 flex-wrap">
               <a
@@ -40,24 +52,31 @@ export default function AboutIntro() {
                 <FaYoutube /> <span>YouTube</span>
               </a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right: Image */}
-          <div className="col-md-6 text-center mt-5 mt-md-0">
+          <motion.div
+            className="col-md-6 text-center mt-5 mt-md-0"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
             <Image
-              src="/images/admin/image5.png" 
+              src="/images/admin/image5.png"
               alt="Lena Cruz"
-              width={400}
-              height={400}
-              className="img-fluid rounded shadow"
+              width={420}
+              height={420}
+              className=" shadow-lg "
               priority
             />
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
   );
 }
+
 
 
 

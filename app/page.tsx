@@ -10,6 +10,7 @@ import Footer from "@/components/misc/Footer";
 import MembershipCard, { type UIMembershipPlan } from "@/components/profile/memberships/MembershipCard";
 import FeatureCards from "@/components/misc/FeatureCards";
 import Testimonials from "@/components/misc/Testimonials";
+import ServicesSection from "@/components/admin/about/ServicesSection";
 
 type BackendPlan = {
   id: string;
@@ -199,18 +200,18 @@ export default function Home() {
         {/* ✅ Membership plans */}
         <section className="container py-5">
           <div className="text-center mb-4">
-            <h2 className="mb-1">Choose Your Plan</h2>
+            <h1 className="mb-1">Choose Your Plan</h1>
             <p className="text-muted">Upgrade anytime. Cancel anytime.</p>
           </div>
 
           {loading ? (
             <div className="text-center text-muted">Loading plans…</div>
           ) : (
-            <div className="row g-3">
+            <div className="row g-3 mt-5">
               {plans.map((plan) => {
                 const isCurrent = token ? currentPlanId === plan.id : false;
                 return (
-                  <div className="col-md-4" key={`${plan.id ?? 'free'}`}>
+                  <div className="col-md-4 mt-5" key={`${plan.id ?? 'free'}`}>
                     <MembershipCard
                       plan={plan}
                       isCurrent={isCurrent}
@@ -224,6 +225,7 @@ export default function Home() {
             </div>
           )}
         </section>
+        <ServicesSection />
 
         {/* ✅ Testimonials slider */}
         <Testimonials />

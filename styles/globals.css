@@ -249,15 +249,13 @@ h6 {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(-45deg, #fcb69f, #ffecd2, #a1c4fd, #c2ffd8);
-  color: #fff;
+  color: #7E8EF1; /* brand accent */
   font-size: 1.2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: color 0.3s ease, background 0.3s ease;
   text-decoration: none;
 }
 
 .social-icons a:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  background: #7E8EF1; /* solid brand hover background */
 }
-
