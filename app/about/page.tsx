@@ -19,10 +19,18 @@ export default function About() {
           <MissionSection />
           
           <TrainerDetails />
+          <div className="my-5">
           <ValuesSection />
+          </div>
+          <div className="my-5">
           <JourneyTimeline />
+          </div>
+          <div className="my-5">
           <StatsSection />
+          </div>
+          <div className="my-5">
           <MiniTestimonialsCarousel />
+          </div>
         </div>
         <Footer />
       </div>
