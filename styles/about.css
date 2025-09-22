@@ -1,5 +1,4 @@
 /* about.css */
-/* about.css */
 
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
@@ -17,10 +16,7 @@
   position: relative;
   padding: 6rem 2rem;
   min-height: 32rem;
-
   background: linear-gradient(135deg, #6a5acd, #7e8ef1, #5bd1d7);
-
-
   color: white;
   display: flex;
   align-items: center;
@@ -56,6 +52,13 @@
   height: 120px;
   object-fit: cover;
   border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.about-image {
+  width: 80%;
+  height: auto;
+  border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -138,7 +141,7 @@
 
 /* values section */
 .values-section {
-  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  background: linear-gradient(234deg, #a1c4fd, #dcecfe);
   border-radius: 16px;
   padding: 4rem 2rem;
   color: #fff;
@@ -164,7 +167,7 @@
 
 .value-icon {
   font-size: 2.5rem;
-  color: #ffd670;
+  color: #a1c4fd;
 }
 
 
@@ -247,7 +250,7 @@
 /* Stats Section */
 .stats-section {
   background: #f8f9fc;
-  border-radius: 0;
+  border-radius: 30px;
 }
 
 .stat-item {
@@ -278,8 +281,10 @@
 
 /* Mini Testimonials Carousel */
 .mini-testimonials {
-  background: linear-gradient(135deg, #7e8ef1, #5bd1d7);
+  background: linear-gradient(135deg, #feaea8, #ceddf8);
   color: #fff;
+  border-radius: 16px;
+  padding: 4rem 2rem;
 }
 
 .testimonial-slide {

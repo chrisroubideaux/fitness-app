@@ -8,9 +8,10 @@ import HomeCover from "@/components/cover/Home";
 import Footer from "@/components/misc/Footer";
 
 import MembershipCard, { type UIMembershipPlan } from "@/components/profile/memberships/MembershipCard";
-import FeatureCards from "@/components/misc/FeatureCards";
+//import FeatureCards from "@/components/misc/FeatureCards";
 import Testimonials from "@/components/misc/Testimonials";
 import ServicesSection from "@/components/admin/about/ServicesSection";
+import StatsSection from '@/components/admin/about/StatsSection';
 
 type BackendPlan = {
   id: string;
@@ -189,8 +190,7 @@ export default function Home() {
       <main>
         <HomeCover />
 
-        {/* ✅ Features section */}
-        <FeatureCards />
+         <ServicesSection />
 
         <div className="container">
           {notice && <div className="alert alert-info py-2 mt-3">{notice}</div>}
@@ -225,10 +225,12 @@ export default function Home() {
             </div>
           )}
         </section>
-        <ServicesSection />
+      
 
-        {/* ✅ Testimonials slider */}
+      
         <Testimonials />
+
+        <StatsSection />
       </main>
       <Footer />
     </div>

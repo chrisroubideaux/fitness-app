@@ -39,7 +39,7 @@ export default function JourneyTimeline() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="fw-bold mb-3">My Journey</h2>
+          <h1 className="fw-bold mb-3 fs-2">My Journey</h1>
           <p className="text-muted">
             The milestones that shaped my path as a trainer and wellness coach.
           </p>

@@ -47,7 +47,7 @@ export default function MiniTestimonialsCarousel() {
   return (
     <section className="mini-testimonials py-5">
       <div className="container text-center">
-        <h2 className="fw-bold mb-4">What Clients Say</h2>
+        <h1 className="fw-bold mb-4 fs-2 text-white">What Clients Say</h1>
         
         <div className="position-relative mx-auto" style={{ maxWidth: 600 }}>
           <AnimatePresence mode="wait">

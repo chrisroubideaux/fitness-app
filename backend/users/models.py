@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID
 from extensions import db
+
+
 from memberships.models import MembershipPlan
 
 class User(db.Model):

@@ -6,11 +6,12 @@ export default function ServicesSection() {
   return (
     <>
     <div className="">
-    <div className="text-center my-5">
+   
+    <section className="services-section container-fluid py-5">
+       <div className="text-center my-5">
       <h5 className="fs-2 fw-bold">Our Services</h5>
       <p className="fs-5 text-muted">Empowering your fitness journey with personalized coaching and support.</p>
     </div>
-    <section className="services-section container-fluid py-5">
       <div className=" my-5 pt-5">
         <div className="row align-items-center">
           {/* Left: Grid of Service Cards */}

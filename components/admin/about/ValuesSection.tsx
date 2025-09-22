@@ -7,22 +7,22 @@ import { FaDumbbell, FaBalanceScale, FaClock, FaBrain } from 'react-icons/fa';
 export default function ValuesSection() {
   const values = [
     {
-      icon: <FaClock />,
+      icon: <FaClock className='value-icon' />,
       title: 'Consistency',
       description: 'Commitment every day builds long-term success.',
     },
     {
-      icon: <FaDumbbell />,
+      icon: <FaDumbbell className='value-icon' />,
       title: 'Strength',
       description: 'True strength is built in body, mind, and spirit.',
     },
     {
-      icon: <FaBalanceScale />,
+      icon: <FaBalanceScale className='value-icon' />,
       title: 'Balance',
       description: 'Fitness that supports—not disrupts—your lifestyle.',
     },
     {
-      icon: <FaBrain />,
+      icon: <FaBrain className='value-icon' />,
       title: 'Mindset',
       description: 'Growth comes from discipline, focus, and positivity.',
     },
@@ -39,7 +39,7 @@ export default function ValuesSection() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="fw-bold mb-3">Core Values</h2>
-          <p className="text-muted">
+          <p className="text-white">
             The principles that guide every training session and every success story.
           </p>
         </motion.div>

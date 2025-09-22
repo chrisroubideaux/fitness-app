@@ -21,7 +21,7 @@ export default function StatsSection() {
   ];
 
   return (
-    <section className="stats-section py-5">
+    <section className="stats-section py-5 shadow-lg">
       <div className="container">
         <motion.div
           className="text-center mb-5"
@@ -30,7 +30,7 @@ export default function StatsSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="fw-bold mb-3">Our Impact</h2>
+          <h1 className="fw-bold mb-3 fs-2">Our Impact</h1>
           <p className="text-muted">Numbers that showcase our journey</p>
         </motion.div>
 

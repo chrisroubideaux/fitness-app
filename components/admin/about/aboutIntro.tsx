@@ -67,7 +67,7 @@ export default function AboutIntro() {
               alt="Lena Cruz"
               width={420}
               height={420}
-              className=" shadow-lg "
+              className=" shadow-lg about-image"
               priority
             />
           </motion.div>
