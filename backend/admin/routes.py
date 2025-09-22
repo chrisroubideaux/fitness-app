@@ -96,6 +96,24 @@ def get_all_admins(current_admin):
         'membership_plan_id': str(a.membership_plan_id) if a.membership_plan_id else None
     } for a in admins]), 200
 
+# -------------------------
+# GET all admins (public - guest access)
+# -------------------------
+@admin_bp.route('/public', methods=['GET'])
+def get_all_admins_public():
+    admins = Admin.query.all()
+    return jsonify([{
+        'admin_id': str(a.id),
+        'full_name': a.full_name,
+        'bio': a.bio,
+        'profile_image_url': a.profile_image_url,
+        'profile_banner_url': a.profile_banner_url,
+        'role': a.role,
+        'experience_level': a.experience_level,
+        'experience_years': a.experience_years,
+        'specialties': a.specialties,
+    } for a in admins]), 200
+
 
 # -------------------------
 # GET single admin by ID

@@ -8,9 +8,6 @@ type Admin = {
   admin_id: string;
   full_name: string;
   bio: string | null;
-  certifications: string | null;
-  email: string;
-  phone_number: string | null;
   profile_image_url: string | null;
   profile_banner_url: string | null;
   role: string | null;
@@ -23,11 +20,17 @@ export default function Teams() {
   const [admins, setAdmins] = useState<Admin[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admins")
+    fetch("http://localhost:5000/api/admins/public")
       .then((res) => res.json())
       .then((data) => {
-        // Filter out your own account
-        const filtered = data.filter(
+        const arr: Admin[] = Array.isArray(data)
+          ? data
+          : Array.isArray((data as { admins?: Admin[] }).admins)
+          ? (data as { admins: Admin[] }).admins
+          : [];
+
+        // filter out your own account
+        const filtered = arr.filter(
           (a: Admin) => a.full_name !== "Chris Roubideaux"
         );
         setAdmins(filtered);
@@ -36,86 +39,179 @@ export default function Teams() {
   }, []);
 
   return (
-    <section className="py-12 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-3xl font-bold text-center mb-10">
-          Meet Our Trainers
-        </h2>
+    <section className="py-5 bg-light">
+      <div className="container">
+        <h2 className="text-center mb-5 fw-bold">Meet Our Trainers</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="row g-4">
           {admins.map((admin, i) => (
-            <motion.div
-              key={admin.admin_id}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.15 }}
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden"
-            >
-              {/* Banner */}
-              {admin.profile_banner_url && (
-                <div className="h-32 w-full overflow-hidden">
+            <div key={admin.admin_id} className="col-md-6 col-lg-4">
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                whileHover={{ scale: 1.03 }}
+                className="card h-100 shadow-sm border-0"
+              >
+                {/* Banner */}
+                {admin.profile_banner_url && (
                   <img
                     src={admin.profile_banner_url}
                     alt={`${admin.full_name} banner`}
-                    className="w-full h-full object-cover"
+                    className="card-img-top"
+                    style={{ height: "160px", objectFit: "cover" }}
                   />
-                </div>
-              )}
+                )}
 
-              {/* Profile */}
-              <div className="p-6 text-center">
-                <div className="flex justify-center -mt-16">
+                <div className="card-body text-center">
                   <img
                     src={admin.profile_image_url || "/images/default-avatar.png"}
                     alt={admin.full_name}
-                    className="w-24 h-24 rounded-full border-4 border-white shadow-md object-cover"
+                    className="rounded-circle border border-3 border-white shadow mb-3"
+                    style={{
+                      width: "90px",
+                      height: "90px",
+                      objectFit: "cover",
+                      marginTop: "-65px",
+                    }}
                   />
-                </div>
 
-                <h3 className="mt-4 text-xl font-semibold">
-                  {admin.full_name}
-                </h3>
-                <p className="text-sm text-gray-500">{admin.role}</p>
+                  <h5 className="card-title mb-1">{admin.full_name}</h5>
+                  <p className="text-muted small mb-2">
+                    {admin.role || "Trainer"}
+                  </p>
 
-                <p className="mt-3 text-gray-600 text-sm line-clamp-3">
-                  {admin.bio || "No bio available"}
-                </p>
+                  <p className="card-text text-truncate" style={{ maxHeight: "3rem" }}>
+                    {admin.bio || "No bio available"}
+                  </p>
 
-                <div className="mt-4">
                   {admin.specialties && (
-                    <p className="text-xs font-medium text-blue-600">
+                    <p className="fw-semibold text-primary small mb-1">
                       {admin.specialties}
                     </p>
                   )}
                   {admin.experience_years && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-muted small mb-0">
                       {admin.experience_years}+ years experience
                     </p>
                   )}
                 </div>
-
-                <div className="mt-5 flex justify-center gap-4">
-                  <a
-                    href={`mailto:${admin.email}`}
-                    className="text-sm text-blue-500 hover:underline"
-                  >
-                    Contact
-                  </a>
-                  {admin.phone_number && (
-                    <a
-                      href={`tel:${admin.phone_number}`}
-                      className="text-sm text-blue-500 hover:underline"
-                    >
-                      Call
-                    </a>
-                  )}
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           ))}
         </div>
       </div>
     </section>
   );
 }
+
+
+
+
+/*
+"use client";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+
+type Admin = {
+  admin_id: string;
+  full_name: string;
+  bio: string | null;
+  profile_image_url: string | null;
+  profile_banner_url: string | null;
+  role: string | null;
+  specialties: string | null;
+  experience_years: number | null;
+  experience_level: string | null;
+};
+
+export default function Teams() {
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/admins/public")
+      .then((res) => res.json())
+      .then((data) => {
+        const arr: Admin[] = Array.isArray(data)
+          ? data
+          : Array.isArray((data as { admins?: Admin[] }).admins)
+          ? (data as { admins: Admin[] }).admins
+          : [];
+
+        // filter out your own account
+        const filtered = arr.filter(
+          (a: Admin) => a.full_name !== "Chris Roubideaux"
+        );
+        setAdmins(filtered);
+      })
+      .catch((err) => console.error("Failed to load admins:", err));
+  }, []);
+
+  return (
+    <section className="py-5 bg-light">
+      <div className="container">
+        <h2 className="text-center mb-5 fw-bold">Meet Our Trainers</h2>
+
+        <div className="row g-4">
+          {admins.map((admin, i) => (
+            <div key={admin.admin_id} className="col-md-6 col-lg-4">
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                whileHover={{ scale: 1.03 }}
+                className="card h-100 shadow-sm border-0"
+              >
+               
+                {admin.profile_banner_url && (
+                  <img
+                    src={admin.profile_banner_url}
+                    alt={`${admin.full_name} banner`}
+                    className="card-img-top"
+                    style={{ height: "160px", objectFit: "cover" }}
+                  />
+                )}
+
+                <div className="card-body text-center">
+                  <img
+                    src={admin.profile_image_url || "/images/default-avatar.png"}
+                    alt={admin.full_name}
+                    className="rounded-circle border border-3 border-white shadow mb-3"
+                    style={{
+                      width: "90px",
+                      height: "90px",
+                      objectFit: "cover",
+                      marginTop: "-65px",
+                    }}
+                  />
+
+                  <h5 className="card-title mb-1">{admin.full_name}</h5>
+                  <p className="text-muted small mb-2">
+                    {admin.role || "Trainer"}
+                  </p>
+
+                  <p className="card-text text-truncate" style={{ maxHeight: "3rem" }}>
+                    {admin.bio || "No bio available"}
+                  </p>
+
+                  {admin.specialties && (
+                    <p className="fw-semibold text-primary small mb-1">
+                      {admin.specialties}
+                    </p>
+                  )}
+                  {admin.experience_years && (
+                    <p className="text-muted small mb-0">
+                      {admin.experience_years}+ years experience
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+*/
