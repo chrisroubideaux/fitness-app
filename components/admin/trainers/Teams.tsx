@@ -39,9 +39,9 @@ export default function Teams() {
   }, []);
 
   return (
-    <section className="py-5 bg-light">
+    <section className="py-5 shadow-lg">
       <div className="container">
-        <h2 className="text-center mb-5 fw-bold">Meet Our Trainers</h2>
+        <h1 className="text-center mb-5 fw-bold fs-2">Meet Our Trainers</h1>
 
         <div className="row g-4">
           {admins.map((admin, i) => (
@@ -51,7 +51,7 @@ export default function Teams() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.15 }}
                 whileHover={{ scale: 1.03 }}
-                className="card h-100 shadow-sm border-0"
+                className="card h-100 shadow-sm border-10"
               >
                 {/* Banner */}
                 {admin.profile_banner_url && (
@@ -76,17 +76,17 @@ export default function Teams() {
                     }}
                   />
 
-                  <h5 className="card-title mb-1">{admin.full_name}</h5>
+                  <h5 className=" mb-1">{admin.full_name}</h5>
                   <p className="text-muted small mb-2">
                     {admin.role || "Trainer"}
                   </p>
 
-                  <p className="card-text text-truncate" style={{ maxHeight: "3rem" }}>
+                  <p className=" text-truncate" style={{ maxHeight: "3rem" }}>
                     {admin.bio || "No bio available"}
                   </p>
 
                   {admin.specialties && (
-                    <p className="fw-semibold text-primary small mb-1">
+                    <p className="fw-semibold paragraph text-dark small mb-1">
                       {admin.specialties}
                     </p>
                   )}

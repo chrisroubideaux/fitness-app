@@ -194,6 +194,43 @@ def delete_admin(current_admin, admin_id):
     db.session.commit()
     return jsonify({'message': f"Admin '{admin.full_name}' deleted"}), 200
 
+# -------------------------
+# TEST: Update admin (no token required)
+# -------------------------
+@admin_bp.route('/test/<string:admin_id>', methods=['PUT'])
+def update_admin_no_token(admin_id):
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({'error': 'Admin not found'}), 404
+
+    data = request.get_json() or {}
+
+    admin.full_name = data.get('full_name', admin.full_name)
+    admin.bio = data.get('bio', admin.bio)
+    admin.address = data.get('address', admin.address)
+    admin.phone_number = data.get('phone_number', admin.phone_number)
+    admin.profile_image_url = data.get('profile_image_url', admin.profile_image_url)
+    admin.profile_banner_url = data.get('profile_banner_url', admin.profile_banner_url)
+    admin.age = data.get('age', admin.age)
+    admin.weight = data.get('weight', admin.weight)
+    admin.height = data.get('height', admin.height)
+    admin.gender = data.get('gender', admin.gender)
+    admin.fitness_goal = data.get('fitness_goal', admin.fitness_goal)
+    admin.activity_level = data.get('activity_level', admin.activity_level)
+    admin.experience_level = data.get('experience_level', admin.experience_level)
+    admin.experience_years = data.get('experience_years', admin.experience_years)
+    admin.certifications = data.get('certifications', admin.certifications)
+    admin.specialties = data.get('specialties', admin.specialties)
+    admin.medical_conditions = data.get('medical_conditions', admin.medical_conditions)
+    admin.role = data.get('role', admin.role)
+    admin.membership_plan_id = data.get('membership_plan_id', admin.membership_plan_id)
+
+    db.session.commit()
+    return jsonify({'message': f'Admin {admin.full_name} updated successfully (NO TOKEN)'}), 200
+
+
+
+
 
 # -------------------------
 # GET current admin profile

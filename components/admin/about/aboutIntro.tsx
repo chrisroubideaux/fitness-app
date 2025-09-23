@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 
 export default function AboutIntro() {
   return (
-    <section className="about-intro hero-section">
+    <section className="about-intro hero-section shadow-lg">
       <div className="container">
         <div className="row align-items-center">
           

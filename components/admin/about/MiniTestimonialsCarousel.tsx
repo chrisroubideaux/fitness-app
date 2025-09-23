@@ -45,7 +45,7 @@ export default function MiniTestimonialsCarousel() {
   const current = testimonials[index];
 
   return (
-    <section className="mini-testimonials py-5">
+    <section className="mini-testimonials py-5 shadow-lg">
       <div className="container text-center">
         <h1 className="fw-bold mb-4 fs-2 text-white">What Clients Say</h1>
         

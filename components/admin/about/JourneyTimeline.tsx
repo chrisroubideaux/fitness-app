@@ -30,7 +30,7 @@ export default function JourneyTimeline() {
   ];
 
   return (
-    <section className="journey-section py-5">
+    <section className="journey-section py-5 shadow-lg">
       <div className="container">
         <motion.div
           className="text-center mb-5"

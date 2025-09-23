@@ -29,7 +29,7 @@ export default function ValuesSection() {
   ];
 
   return (
-    <section className="values-section py-5">
+    <section className="values-section py-5 shadow-lg">
       <div className="container">
         <motion.div
           className="text-center mb-5"
