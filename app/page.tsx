@@ -3,18 +3,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
 import Nav from "@/components/navbar/Nav";
 import HomeCover from "@/components/cover/Home";
-import Footer from "@/components/misc/Footer";
-
 import MembershipCard, { type UIMembershipPlan } from "@/components/profile/memberships/MembershipCard";
 import Testimonials from "@/components/misc/Testimonials";
 import ServicesSection from "@/components/admin/about/ServicesSection";
 import StatsSection from '@/components/admin/about/StatsSection';
-
-// ✅ Import Teams component
 import Teams from "@/components/admin/trainers/Teams";
+import Footer from "@/components/misc/Footer";
 
 type BackendPlan = {
   id: string;

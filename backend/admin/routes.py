@@ -114,6 +114,32 @@ def get_all_admins_public():
         'specialties': a.specialties,
     } for a in admins]), 200
 
+# -------------------------
+# GET single admin (public)
+# -------------------------
+@admin_bp.route('/public/<string:admin_id>', methods=['GET'])
+def get_admin_public(admin_id):
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    return jsonify({
+        "admin_id": str(admin.id),
+        "full_name": admin.full_name,
+        "bio": admin.bio,
+        "address": admin.address,
+        "phone_number": admin.phone_number,
+        "profile_image_url": admin.profile_image_url,
+        "profile_banner_url": admin.profile_banner_url,
+        "role": admin.role,
+        "experience_level": admin.experience_level,
+        "experience_years": admin.experience_years,
+        "certifications": admin.certifications,
+        "specialties": admin.specialties,
+        "email": admin.email,
+    }), 200
+
+
 
 # -------------------------
 # GET single admin by ID
