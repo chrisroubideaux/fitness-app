@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa";
 
@@ -17,7 +17,6 @@ type Admin = {
   specialties: string | null;
   experience_years: number | null;
   experience_level: string | null;
-  // ✅ new social fields
   facebook?: string | null;
   instagram?: string | null;
   youtube?: string | null;
@@ -37,7 +36,6 @@ export default function Teams() {
           ? (data as { admins: Admin[] }).admins
           : [];
 
-        // filter out your own account
         const filtered = arr.filter(
           (a: Admin) => a.full_name !== "Chris Roubideaux"
         );
@@ -45,6 +43,22 @@ export default function Teams() {
       })
       .catch((err) => console.error("Failed to load admins:", err));
   }, []);
+
+  // ✅ Fix: proper Variants typing
+  const cardVariants: Variants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.15, duration: 0.5, ease: "easeOut" }, // fix ease type
+    }),
+    hover: {
+      scale: 1.05,
+      boxShadow: "0px 8px 25px rgba(0,0,0,0.2)",
+      transition: { duration: 0.3 },
+    },
+    tap: { scale: 0.98 },
+  };
 
   return (
     <section className="py-5 shadow-lg">
@@ -59,11 +73,13 @@ export default function Teams() {
                 className="text-decoration-none text-dark"
               >
                 <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.15 }}
-                  whileHover={{ scale: 1.03 }}
                   className="card h-100 shadow-sm border-10"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover="hover"
+                  whileTap="tap"
+                  custom={i}
                 >
                   {admin.profile_banner_url && (
                     <img
@@ -111,46 +127,38 @@ export default function Teams() {
 
                     {/* ✅ Social icons row */}
                     <div className="d-flex justify-content-center gap-3 mt-3">
-                      {admin.facebook && (
-                        <a
-                          href={admin.facebook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary"
-                        >
-                          <FaFacebookF size={18} />
-                        </a>
-                      )}
-                      {admin.instagram && (
-                        <a
-                          href={admin.instagram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-danger"
-                        >
-                          <FaInstagram size={18} />
-                        </a>
-                      )}
-                      {admin.youtube && (
-                        <a
-                          href={admin.youtube}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-danger"
-                        >
-                          <FaYoutube size={18} />
-                        </a>
-                      )}
-                      {admin.tiktok && (
-                        <a
-                          href={admin.tiktok}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-dark"
-                        >
-                          <FaTiktok size={18} />
-                        </a>
-                      )}
+                      <a
+                        href={admin.facebook || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary"
+                      >
+                        <FaFacebookF className="social-icon" size={18} />
+                      </a>
+                      <a
+                        href={admin.instagram || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-danger"
+                      >
+                        <FaInstagram className="social-icon" size={18} />
+                      </a>
+                      <a
+                        href={admin.youtube || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-danger"
+                      >
+                        <FaYoutube className="social-icon" size={18} />
+                      </a>
+                      <a
+                        href={admin.tiktok || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-dark"
+                      >
+                        <FaTiktok className="social-icon" size={18} />
+                      </a>
                     </div>
                   </div>
                 </motion.div>
