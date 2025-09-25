@@ -1,4 +1,5 @@
 // app/trainers/[id]/page.tsx
+// app/trainers/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,8 +8,7 @@ import Nav from "@/components/navbar/Nav";
 
 // ✅ Import reusable components
 import BioAchievements from "@/components/admin/trainers/BioAchievements";
-import TrainerContact from "@/components/admin/trainers/TrainerContact";
-import TrainerSocials from "@/components/admin/trainers/TrainerSocials";
+import ProfileImage from "@/components/admin/trainers/ProfileImage";
 
 type Admin = {
   admin_id: string;
@@ -69,21 +69,19 @@ export default function TrainerDetailPage() {
             </div>
           )}
 
-          {/* Profile */}
-          <div className="text-center mb-5">
-            <img
-              src={admin.profile_image_url || "/images/default-avatar.png"}
-              alt={admin.full_name}
-              className="rounded-circle border border-4 shadow"
-              style={{
-                width: "140px",
-                height: "140px",
-                objectFit: "cover",
-                marginTop: "-70px",
-              }}
+          {/* ✅ Profile (image, name, role, contact, socials) */}
+          <div className="mb-5">
+            <ProfileImage
+              url={admin.profile_image_url}
+              name={admin.full_name}
+              role={admin.role}
+              email={admin.email}
+              phone_number={admin.phone_number}
+              facebook={admin.facebook}
+              instagram={admin.instagram}
+              youtube={admin.youtube}
+              tiktok={admin.tiktok}
             />
-            <h2 className="mt-3">{admin.full_name}</h2>
-            <p className="text-muted">{admin.role || "Trainer"}</p>
           </div>
 
           {/* ✅ Combined Bio + Achievements */}
@@ -94,25 +92,6 @@ export default function TrainerDetailPage() {
             experience_years={admin.experience_years}
             certifications={admin.certifications}
           />
-
-          {/* ✅ Contact */}
-          <div className="mb-5">
-            <TrainerContact
-              email={admin.email}
-              phone_number={admin.phone_number}
-            />
-          </div>
-
-          {/* ✅ Social Media */}
-          <div className="mb-5">
-            <TrainerSocials
-              name={admin.full_name}
-              facebook={admin.facebook}
-              instagram={admin.instagram}
-              youtube={admin.youtube}
-              tiktok={admin.tiktok}
-            />
-          </div>
         </div>
       </section>
     </>
