@@ -5,9 +5,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Nav from "@/components/navbar/Nav";
 
-// ✅ Import the new reusable components
-import BioDescription from "@/components/admin/trainers/BioDescription";
-import TrainerAchievements from "@/components/admin/trainers/TrainerAchievements";
+// ✅ Import reusable components
+import BioAchievements from "@/components/admin/trainers/BioAchievements";
 import TrainerContact from "@/components/admin/trainers/TrainerContact";
 import TrainerSocials from "@/components/admin/trainers/TrainerSocials";
 
@@ -56,16 +55,18 @@ export default function TrainerDetailPage() {
       {/* ✅ Global Navbar */}
       <Nav />
 
-      <section className="py-5 layout h-100">
+      <section className="py-5 bg-light min-vh-100">
         <div className="container">
           {/* Banner */}
           {admin.profile_banner_url && (
-            <img
-              src={admin.profile_banner_url}
-              alt="banner"
-              className="w-100 mb-4 rounded shadow"
-              style={{ maxHeight: "320px", objectFit: "cover" }}
-            />
+            <div className="mb-5">
+              <img
+                src={admin.profile_banner_url}
+                alt="banner"
+                className="w-100 rounded shadow"
+                style={{ maxHeight: "320px", objectFit: "cover" }}
+              />
+            </div>
           )}
 
           {/* Profile */}
@@ -85,11 +86,9 @@ export default function TrainerDetailPage() {
             <p className="text-muted">{admin.role || "Trainer"}</p>
           </div>
 
-          {/* ✅ Bio */}
-          <BioDescription bio={admin.bio} />
-
-          {/* ✅ Achievements */}
-          <TrainerAchievements
+          {/* ✅ Combined Bio + Achievements */}
+          <BioAchievements
+            bio={admin.bio}
             specialties={admin.specialties}
             experience_level={admin.experience_level}
             experience_years={admin.experience_years}
@@ -97,19 +96,23 @@ export default function TrainerDetailPage() {
           />
 
           {/* ✅ Contact */}
-          <TrainerContact
-            email={admin.email}
-            phone_number={admin.phone_number}
-          />
+          <div className="mb-5">
+            <TrainerContact
+              email={admin.email}
+              phone_number={admin.phone_number}
+            />
+          </div>
 
           {/* ✅ Social Media */}
-          <TrainerSocials
-            name={admin.full_name}
-            facebook={admin.facebook}
-            instagram={admin.instagram}
-            youtube={admin.youtube}
-            tiktok={admin.tiktok}
-          />
+          <div className="mb-5">
+            <TrainerSocials
+              name={admin.full_name}
+              facebook={admin.facebook}
+              instagram={admin.instagram}
+              youtube={admin.youtube}
+              tiktok={admin.tiktok}
+            />
+          </div>
         </div>
       </section>
     </>
