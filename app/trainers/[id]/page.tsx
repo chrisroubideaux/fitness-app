@@ -9,6 +9,7 @@ import Nav from "@/components/navbar/Nav";
 // ✅ Import reusable components
 import BioAchievements from "@/components/admin/trainers/BioAchievements";
 import ProfileImage from "@/components/admin/trainers/ProfileImage";
+import TrainerFooter from "@/components/admin/trainers/TrainerFooter"; 
 
 type Admin = {
   admin_id: string;
@@ -94,6 +95,9 @@ export default function TrainerDetailPage() {
           />
         </div>
       </section>
+
+      {/* ✅ Footer */}
+      <TrainerFooter />
     </>
   );
 }
