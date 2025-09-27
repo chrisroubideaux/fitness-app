@@ -1,7 +1,5 @@
 /* global styles */
 
-/* Section spacing (global) */
-
 main > section {
   margin-top: 8rem;  
   margin-bottom: 8rem;
@@ -35,7 +33,7 @@ body {
   background: rgb(249,248,252);
   background: linear-gradient(234deg, rgba(249,248,252,1) 0%, rgba(205,205,225,1) 50%, rgba(253,253,255,1) 100%);
   */
-   background: linear-gradient(135deg, #f9f9fb, #e6e9f5, #ffffff);
+  background: linear-gradient(135deg, #f9f9fb, #e6e9f5, #ffffff);
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -71,6 +69,7 @@ body {
 }
 
 /* headings */
+
 h1 {
   color: #7E8EF1;
   margin: 0;
@@ -110,7 +109,6 @@ h6 {
   transition: transform 0.2s ease;
 }
 */
-
 
 .btn {
   background: linear-gradient(-45deg, #9fa2fc, #c0c4fc, #a1c4fd, #c2cbff);

@@ -1,8 +1,12 @@
+// components/profile/Login.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 
-const Login: React.FC = () => {
+const Login = () => {
   const [error] = useState<string | null>(null);
 
   const handleGoogleLogin = () => {
@@ -26,21 +30,52 @@ const Login: React.FC = () => {
   }, []);
 
   return (
-    <div className="container py-5" style={{ maxWidth: '420px', margin: 'auto' }}>
-      {/* ✅ Brand Heading */}
-      <h1 className="text-center mb-2 fw-bold" style={{ fontSize: '2rem', color: '#6a11cb' }}>
-        Fit By Lena
-      </h1>
-      <h2 className="text-center mb-4">Login</h2>
+    <div
+      className=" container py-5 d-flex flex-column justify-content-between"
+      
+    >
+      {/* ✅ Brand Heading + Back Home */}
+      <motion.div
+        className="text-center mb-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h1
+          className="fs-2 fw-bold"
+         
+        >
+          Fit By Lena
+        </h1>
+        <Link
+          href="/"
+          className="btn btn-sm btn-outline-secondary rounded-pill mt-2 px-3"
+        >
+          Back Home
+        </Link>
+      </motion.div>
+
+     
 
       {/* ✅ Social Login Container */}
-      <div
-        className="shadow p-4 rounded"
-        style={{
-          background: 'linear-gradient(135deg, #f9f9f9, #f1f1f1)',
-          borderRadius: '20px',
-        }}
+      <motion.div
+        className="  p-4 rounded flex-grow-0"
+        
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
       >
+
+       {/* ✅ Title */}
+      <motion.h1
+        className="fs-2 text-center mb-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        Login
+      </motion.h1>
+
         <div className="d-flex flex-column gap-3">
           {/* Google Login */}
           <button
@@ -48,7 +83,7 @@ const Login: React.FC = () => {
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
               borderRadius: '50px',
-              padding: '5px 20px', // ✅ reduced padding
+              padding: '5px',
               background: 'linear-gradient(90deg, #6a11cb, #2575fc)',
               border: 'none',
               transition: 'all 0.3s ease',
@@ -87,7 +122,7 @@ const Login: React.FC = () => {
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
               borderRadius: '50px',
-              padding: '5px 20px', // ✅ reduced padding
+              padding: '5px',
               background: 'linear-gradient(90deg, #1877f2, #00c6ff)',
               border: 'none',
               transition: 'all 0.3s ease',
@@ -122,7 +157,7 @@ const Login: React.FC = () => {
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
               borderRadius: '50px',
-              padding: '5px 20px', // ✅ reduced padding
+              padding: '5px',
               background: 'linear-gradient(90deg, #000000, #434343)',
               border: 'none',
               transition: 'all 0.3s ease',
@@ -152,7 +187,7 @@ const Login: React.FC = () => {
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
               borderRadius: '50px',
-              padding: '5px 20px', // ✅ reduced padding
+              padding: '5px',
               background: 'linear-gradient(90deg, #ff0050, #00f2ea)',
               border: 'none',
               transition: 'all 0.3s ease',
@@ -177,15 +212,26 @@ const Login: React.FC = () => {
             </div>
             <span className="flex-grow-1 text-start">Continue with TikTok</span>
           </button>
-        </div>
-      </div>
 
-      {error && <p className="text-danger text-center mt-3">{error}</p>}
+          {error && <p className="text-danger text-center mt-3">{error}</p>}
+        </div>
+      </motion.div>
+
+      {/* ✅ Footer Copyright */}
+      <motion.p
+        className="text-center text-muted small mt-4 mb-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+      >
+        © FitByLena 2025
+      </motion.p>
     </div>
   );
 };
 
 export default Login;
+
 
 
 

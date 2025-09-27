@@ -23,7 +23,7 @@ export default function Page() {
 
 
       {/* Right: Login Form */}
-      <div className="col-6 d-flex flex-column justify-content-center align-items-center p-5 bg-light">
+      <div className="login col-6 d-flex flex-column justify-content-center align-items-center p-5 bg-light">
         <Login />
       </div>
 
