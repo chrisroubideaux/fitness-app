@@ -65,7 +65,7 @@
   height: 100%;
   backdrop-filter: blur(8px);
 /*  background: rgba(0, 0, 0, 0.3); */
-   background: linear-gradient(to bottom right, #1e1e2f, #343458, #1e1e2f); 
+  background: linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff);
   inset: 0;
   display: flex;
   justify-content: center;

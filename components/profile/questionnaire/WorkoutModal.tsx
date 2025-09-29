@@ -1,5 +1,4 @@
 // questionnaire/WorkoutModal.tsx
-// questionnaire/WorkoutModal.tsx
 'use client';
 
 import { useState } from 'react';
@@ -24,9 +23,7 @@ type FormDataShape = Record<FieldName, string>;
 type Step = {
   name: FieldName;
   question: string;
-  /** Present for numeric inputs */
   type?: 'number';
-  /** Present for select-type questions */
   options?: string[];
 };
 
@@ -84,7 +81,7 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
   const current = steps[currentStep];
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string } }
   ) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -92,7 +89,6 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
   function handleSkip() {
     localStorage.setItem('hasCompletedQuestionnaire', 'true');
     onClose();
-    // optional local reset
     setShowPlan(false);
     setCurrentStep(0);
     setFormData({
@@ -130,7 +126,6 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
       parseInt(formData.height_feet || '0', 10) * 12 +
       parseInt(formData.height_inches || '0', 10);
 
-    // ✅ Keep feet/inches in the payload AND add combined height
     type Payload = FormDataShape & { height: string };
     const payload: Payload = {
       ...formData,
@@ -146,7 +141,6 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
 
       setPlan(res.data.workout_plan);
 
-      // 🎉 Confetti celebration
       confetti({
         particleCount: 100,
         spread: 70,
@@ -163,7 +157,6 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
   const handleClose = () => {
     localStorage.setItem('hasCompletedQuestionnaire', 'true');
     onClose();
-    // optional local reset
     setShowPlan(false);
     setCurrentStep(0);
     setFormData({
@@ -186,7 +179,7 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
 
       if (trimmed.startsWith('**Week')) {
         return (
-          <li key={`week-${idx}`} className="list-group-item fw-bold text-primary bg-light">
+          <li key={`week-${idx}`} className="list-group-item fw-bold text-primary ">
             📅 {trimmed.replace(/\*\*/g, '')}
           </li>
         );
@@ -266,16 +259,15 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
             <div className="d-flex gap-2 mt-3">
               <button
                 onClick={nextStep}
-                className="btn btn-primary"
+                className="btn btn-sm"
                 disabled={loading}
               >
                 {currentStep === steps.length - 1 ? 'Submit' : 'Next'}
               </button>
 
-              {/* Skip for now */}
               <button
                 type="button"
-                className="btn btn-outline-secondary"
+                className="btn btn-sm ms-lg-1 mt-2 mt-lg-0"
                 onClick={handleSkip}
                 disabled={loading}
               >

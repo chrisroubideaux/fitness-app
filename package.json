@@ -47,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-big-calendar": "^1.16.2",
     "@types/react-dom": "^19",
+    "@types/react-select": "^5.0.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "typescript": "^5"
