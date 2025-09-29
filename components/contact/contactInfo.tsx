@@ -1,31 +1,39 @@
 // /components/contact/ContactInfo.tsx
-import { FaEnvelope, FaPhoneAlt, FaMapMarkerAlt } from "react-icons/fa";
-import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
+import {
+  FaEnvelope,
+  FaPhoneAlt,
+  FaMapMarkerAlt,
+  FaFacebookF,
+  FaInstagram,
+  FaYoutube,
+} from "react-icons/fa";
 
 export default function ContactInfo() {
   return (
-    <div className=" contact-section p-4 rounded shadow-sm">
-      <h5 className="mb-3 fw-bold">Get in Touch</h5>
+    <div>
+      <h5 className="fw-bold mb-3">Get in Touch</h5>
       <ul className="list-unstyled mb-4">
-        <li className="mb-2">
-          <FaEnvelope className="social-icon me-2" />
+        <li className="mb-3 d-flex align-items-center">
+          <FaEnvelope className="me-3 social-icon" />
           <span>lena@fitbylena.com</span>
         </li>
-        <li className="mb-2">
-          <FaPhoneAlt className="social-icon me-2" />
+        <li className="mb-3 d-flex align-items-center">
+          <FaPhoneAlt className="me-3 social-icon" />
           <span>+1 (555) 123-4567</span>
         </li>
-        <li className="mb-2">
-          <FaMapMarkerAlt className="social-icon me-2" />
+        <li className="mb-3 d-flex align-items-center">
+          <FaMapMarkerAlt className="me-3 social-icon " />
           <span>Brooklyn, NY</span>
         </li>
       </ul>
       <div className="d-flex gap-3">
-        <a href="#"><FaFacebookF className="social-icon fs-5" /></a>
-        <a href="#"><FaInstagram className="social-icon fs-5" /></a>
-        <a href="#"><FaYoutube className="social-icon fs-3" /></a>
+        <a href="#"><FaFacebookF size={24} className="social-icon" /></a>
+        <a href="#"><FaInstagram size={24} className="social-icon" /></a>
+        <a href="#"><FaYoutube size={28} className="social-icon " /></a>
       </div>
-       <h6 className="mt-3"><span >Copyright © 2025 Fit by Lena</span></h6>
+      <p className="small text-muted mt-4 mb-0">
+        © 2025 Fit by Lena. All rights reserved.
+      </p>
     </div>
   );
 }
