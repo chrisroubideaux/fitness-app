@@ -225,6 +225,13 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
     });
   };
 
+  function prevStep(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    event.preventDefault();
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  }
+
   return (
     <motion.div
       className="modal-overlay"
@@ -257,6 +264,14 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
             />
 
             <div className="d-flex gap-2 mt-3">
+              <button
+                onClick={prevStep}
+                className="btn btn-sm"
+                disabled={loading}
+              >
+                Back
+              </button>
+
               <button
                 onClick={nextStep}
                 className="btn btn-sm"
@@ -328,7 +343,7 @@ export default function WorkoutModal({ onClose }: { onClose: () => void }) {
                 <ul className="list-group list-group-flush mb-3">
                   {renderFormattedPlan()}
                 </ul>
-                <button className="btn btn-outline-secondary w-100" onClick={handleClose}>
+                <button className="btn btn-sm ms-lg-1 mt-2 mt-lg-0" onClick={handleClose}>
                   Close and return to profile
                 </button>
               </>

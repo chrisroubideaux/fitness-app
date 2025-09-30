@@ -4,7 +4,6 @@
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-
 import Sidebar from '@/components/profile/sidebar/Sidebar';
 import CalendarComponent from '@/components/profile/calendar/Calendar';
 import MessagesPanel from '@/components/profile/messages/MessagesPanel';

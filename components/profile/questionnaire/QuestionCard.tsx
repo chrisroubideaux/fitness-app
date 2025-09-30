@@ -12,7 +12,6 @@ import {
   FaUserGraduate,
   FaUser,
   FaHome,
-  FaQuestion,
 } from 'react-icons/fa';
 
 type QuestionCardProps = {
@@ -21,7 +20,11 @@ type QuestionCardProps = {
   type?: string;
   options?: string[];
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { target: { name: string; value: string } }) => void;
+  onChange: (
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+      | { target: { name: string; value: string } }
+  ) => void;
 };
 
 export default function QuestionCard({
@@ -57,10 +60,10 @@ export default function QuestionCard({
     if (lower.includes('intermediate')) return <FaUserGraduate className="me-2 social-icon" />;
     if (lower.includes('advanced')) return <FaDumbbell className="me-2 social-icon" />;
 
-    return <FaQuestion className="me-2 social-icon" />;
+    // ❌ no default fallback icon anymore
+    return null;
   };
 
-  // ✅ react-select options with icons
   const formattedOptions =
     options?.map((opt) => ({
       value: opt,
@@ -93,9 +96,7 @@ export default function QuestionCard({
                   label: (
                     <div className="d-flex align-items-center">
                       {getIcon(value)}
-                      <span>
-                        {value} 
-                      </span>
+                      <span>{value}</span>
                     </div>
                   ),
                 }

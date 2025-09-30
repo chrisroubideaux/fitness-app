@@ -1,8 +1,9 @@
-// Workout Plan Chart
-/* components/profile/charts/WorkoutPlan.tsx */
+// components/profile/charts/WorkoutPlan.tsx 
+// components/profile/charts/WorkoutPlan.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiCalendar,
@@ -17,6 +18,12 @@ import {
   FiPrinter,
   FiDownload,
 } from "react-icons/fi";
+
+// Lazy load WorkoutModal
+const WorkoutModal = dynamic<{ onClose: () => void }>(
+  () => import("@/components/profile/questionnaire/WorkoutModal"),
+  { ssr: false }
+);
 
 /** ---------- Types ---------- */
 type WorkoutPlan = {
@@ -44,7 +51,7 @@ type ParsedPlan = { weeks: Week[] };
 function splitIntoWeeks(raw: string): string[] {
   const text = raw.replace(/\r\n/g, "\n").trim();
   const parts: string[] = [];
-  const weekRegex = /^Week\s+\d+.*$/gmi;
+  const weekRegex = /^Week\s+\d+.*$/gim;
   let match: RegExpExecArray | null;
   const headers: { index: number }[] = [];
   while ((match = weekRegex.exec(text)) !== null) headers.push({ index: match.index });
@@ -78,7 +85,10 @@ function parseWeekBlock(block: string): Week {
       current = { label, name, items: [], rest: /(^|\s)rest(\s|$)/i.test(name) };
       continue;
     }
-    if (!current) { introLines.push(ln); continue; }
+    if (!current) {
+      introLines.push(ln);
+      continue;
+    }
     if (/^\*|-|\d+\./.test(ln)) current.items.push(ln.replace(/^(\*|-|\d+\.)\s*/, ""));
     else if (/^rest$/i.test(ln)) current.rest = true;
     else current.items.push(ln);
@@ -113,12 +123,17 @@ function DayCard({ day }: { day: Day }) {
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
         <div className="d-flex align-items-center gap-2">
           {isRest ? <FiMoon className="bio-icon" /> : <FiActivity className="bio-icon" />}
-          <strong>{day.label}: {day.name}</strong>
+          <strong>
+            {day.label}: {day.name}
+          </strong>
         </div>
         {isRest ? (
           <span className="badge rounded-pill text-bg-light border">Rest Day</span>
         ) : (
-          <span className="badge rounded-pill" style={{ background: "rgba(126,142,241,.15)", color: "#6b7cff" }}>
+          <span
+            className="badge rounded-pill"
+            style={{ background: "rgba(126,142,241,.15)", color: "#6b7cff" }}
+          >
             Training
           </span>
         )}
@@ -132,7 +147,13 @@ function DayCard({ day }: { day: Day }) {
             return (
               <li key={i} className="d-flex align-items-start gap-2 mb-1">
                 <span style={{ lineHeight: 1.2, marginTop: 2 }}>
-                  {isCardio ? <FiHeart className="bio-icon" /> : isProgress ? <FiTrendingUp className="bio-icon" /> : <FiCheckCircle className="bio-icon" />}
+                  {isCardio ? (
+                    <FiHeart className="bio-icon" />
+                  ) : isProgress ? (
+                    <FiTrendingUp className="bio-icon" />
+                  ) : (
+                    <FiCheckCircle className="bio-icon" />
+                  )}
                 </span>
                 <span>{it}</span>
               </li>
@@ -212,8 +233,8 @@ export default function WorkoutPlan() {
   const [parsed, setParsed] = useState<ParsedPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
-  // Navbar + collapsible control
   const [openStates, setOpenStates] = useState<boolean[]>([]);
   const [activeWeek, setActiveWeek] = useState<number>(0);
   const weekRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -234,12 +255,11 @@ export default function WorkoutPlan() {
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const data = await res.json();
         const plan = (data.workout_plans && data.workout_plans[0]) || null;
-        if (!plan) setErr("No workout plans found.");
-        else {
+        if (plan) {
           setLatestPlan(plan);
           const p = parsePlan(plan.content || "");
           setParsed(p);
-          setOpenStates(p.weeks.map((_, i) => i === 0)); 
+          setOpenStates(p.weeks.map((_, i) => i === 0));
           setActiveWeek(0);
         }
       } catch (e) {
@@ -252,7 +272,7 @@ export default function WorkoutPlan() {
     run();
   }, []);
 
-  // Print: open all -> print -> restore
+  // Restore collapsed/expanded states after print
   useEffect(() => {
     const handler = () => {
       if (savedOpenStatesRef.current) {
@@ -264,10 +284,28 @@ export default function WorkoutPlan() {
     return () => window.removeEventListener("afterprint", handler);
   }, []);
 
+  // ✅ Central Time formatting, safe fallback
   const updatedAt = useMemo(() => {
     if (!latestPlan?.created_at) return null;
     try {
-      return new Date(latestPlan.created_at).toLocaleString();
+      let raw = latestPlan.created_at;
+      // Ensure proper ISO string
+      if (!raw.endsWith("Z") && !raw.includes("+")) {
+        raw += "Z";
+      }
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return latestPlan.created_at;
+
+      return d.toLocaleString("en-US", {
+        timeZone: "America/Chicago",
+        hour12: true,
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        // 👇 no seconds displayed
+      });
     } catch {
       return latestPlan.created_at;
     }
@@ -275,7 +313,7 @@ export default function WorkoutPlan() {
 
   function handlePillClick(i: number) {
     setActiveWeek(i);
-    setOpenStates((prev) => prev.map((_, idx) => idx === i)); 
+    setOpenStates((prev) => prev.map((_, idx) => idx === i));
     const el = weekRefs.current[i];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -288,45 +326,32 @@ export default function WorkoutPlan() {
     });
   }
 
-  function handlePrint() {
-    if (!parsed) return;
-    savedOpenStatesRef.current = [...openStates];
-    setOpenStates(parsed.weeks.map(() => true));
-    setTimeout(() => window.print(), 50);
+  async function handleDelete() {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Missing token, please log in again.");
+        return;
+      }
+      const res = await fetch(
+        `http://localhost:5000/api/ai/delete-workout-plan/${latestPlan?.id}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error("Failed to delete plan");
+      setLatestPlan(null);
+      setParsed(null);
+    } catch (err) {
+      console.error("❌ Delete error:", err);
+      alert("Could not delete plan.");
+    }
   }
 
-  function buildMarkdown(): string {
-    if (!parsed || !latestPlan) return latestPlan?.content || "";
-    const lines: string[] = [];
-    lines.push(`# Your Workout Plan`);
-    if (latestPlan.created_at) lines.push(`_Last Updated: ${updatedAt}_`);
-    lines.push("");
-
-    parsed.weeks.forEach((w) => {
-      lines.push(`## ${w.title}`);
-      if (w.intro) lines.push(w.intro);
-      w.days.forEach((d) => {
-        lines.push(`- **${d.label}: ${d.name}**`);
-        d.items.forEach((it) => lines.push(`  - ${it}`));
-        if (d.items.length === 0) lines.push(`  - (No items listed)`);
-      });
-      lines.push("");
-    });
-    return lines.join("\n");
+  function handleGenerate() {
+    setShowQuestionnaire(true);
   }
 
-  function handleDownload() {
-    const md = buildMarkdown();
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const dateSlug = updatedAt ? updatedAt.replace(/[^\d]+/g, "") : "";
-    a.href = url;
-    a.download = `workout-plan${dateSlug ? "-" + dateSlug : ""}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  if (showQuestionnaire) {
+    return <WorkoutModal onClose={() => setShowQuestionnaire(false)} />;
   }
 
   if (loading) {
@@ -342,7 +367,17 @@ export default function WorkoutPlan() {
   }
 
   if (err) return <div className="alert alert-danger">{err}</div>;
-  if (!latestPlan || !parsed) return null;
+
+  if (!latestPlan || !parsed) {
+    return (
+      <div className="p-3 text-center">
+        <h5>No workout plan available</h5>
+        <button className="btn btn-sm btn-success mt-2" onClick={handleGenerate}>
+          ➕ Generate Plan
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -360,7 +395,10 @@ export default function WorkoutPlan() {
       {/* Header */}
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <h5 className="mb-0 d-flex align-items-center gap-2">
-          <span role="img" aria-label="clipboard">📋</span> Your Workout Plan
+          <span role="img" aria-label="clipboard">
+            📋
+          </span>{" "}
+          Your Workout Plan
         </h5>
         <div className="d-flex align-items-center gap-2">
           {updatedAt && (
@@ -368,10 +406,25 @@ export default function WorkoutPlan() {
               <FiClock className="bio-icon" /> Last Updated: {updatedAt}
             </div>
           )}
-          <button className="btn btn-sm btn-outline-secondary" onClick={handlePrint}>
+          <button className="btn btn-sm btn-outline-danger" onClick={handleDelete}>
+            🗑 Delete Plan
+          </button>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => window.print()}>
             <FiPrinter style={{ marginTop: -2 }} /> Print
           </button>
-          <button className="btn btn-sm btn-primary" onClick={handleDownload}>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => {
+              const md = latestPlan.content;
+              const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "workout-plan.md";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
             <FiDownload style={{ marginTop: -2 }} /> Download
           </button>
         </div>
@@ -380,12 +433,7 @@ export default function WorkoutPlan() {
       {/* Week navbar (pills) */}
       <div
         className="mt-3 mb-2"
-        style={{
-          display: "flex",
-          gap: "8px",
-          overflowX: "auto",
-          paddingBottom: 6,
-        }}
+        style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: 6 }}
       >
         {parsed.weeks.map((w, i) => (
           <button
@@ -404,7 +452,7 @@ export default function WorkoutPlan() {
               boxShadow: i === activeWeek ? "0 6px 14px rgba(0,0,0,.08)" : "none",
             }}
           >
-            <FiCalendar className="bio-icon" style={{ marginTop: -2 }} />&nbsp;Week {i + 1}
+            <FiCalendar className="bio-icon" style={{ marginTop: -2 }} /> Week {i + 1}
           </button>
         ))}
       </div>
