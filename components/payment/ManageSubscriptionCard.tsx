@@ -1,5 +1,4 @@
 // components/payment/ManageSubscriptionCard.tsx
-
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -24,7 +23,6 @@ export default function ManageSubscriptionCard({
 }) {
   const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
-
   const [me, setMe] = useState<Me | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | "free">("free");
@@ -190,7 +188,7 @@ export default function ManageSubscriptionCard({
         setMsg(atPeriodEnd ? "Cancellation scheduled at period end." : "Subscription cancelled immediately.");
       }
 
-      // Optimistic UI on immediate cancel / reconciled / noop
+     
       if (!atPeriodEnd || json?.reconciled || json?.noop) {
         setMe((m) => (m ? { ...m, stripe_subscription_id: null, membership_plan_id: null } : m));
       }

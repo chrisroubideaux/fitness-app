@@ -1,5 +1,4 @@
 // components/profile/messages/NewMessageTab.tsx
-// components/profile/messages/NewMessageTab.tsx
 'use client';
 
 import { useEffect, useState, JSX } from 'react';
@@ -123,7 +122,7 @@ export default function NewMessageTab({ onStart }: Props) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form className='' onSubmit={handleSubmit} >
         {/* Recipient Dropdown */}
         <div className="mb-3">
           <label className="form-label">Recipient</label>
@@ -172,7 +171,7 @@ export default function NewMessageTab({ onStart }: Props) {
                 background: 'linear-gradient(234deg, #fdfcff, #e6e9f5, #ffffff)',
               }),
             }}
-            placeholder="Select an admin…"
+            placeholder="Select…"
           />
         </div>
 

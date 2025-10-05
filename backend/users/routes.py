@@ -219,3 +219,35 @@ def list_admins_for_users():
         "email": a.email,
         "profile_image_url": getattr(a, "profile_image_url", None)
     } for a in admins]), 200
+    
+    # -------------------------
+# DEV TOKEN (for local testing only)
+# -------------------------
+@user_bp.route('/dev-token', methods=['POST'])
+def issue_dev_token():
+    """
+    Issue a fake JWT for local testing without OAuth.
+    POST /api/users/dev-token
+    Body (optional):
+    {
+        "id": "<uuid>",
+        "email": "test@example.com",
+        "full_name": "Test User"
+    }
+    """
+    data = request.get_json() or {}
+
+    fake_id = data.get("id") or str(uuid4())
+    fake_email = data.get("email") or "dev@example.com"
+    fake_name = data.get("full_name") or "Dev User"
+
+    # Use your existing util (utils/jwt_token.py)
+    token = generate_jwt_token(fake_id, fake_email)
+
+    return jsonify({
+        "token": token,
+        "id": fake_id,
+        "email": fake_email,
+        "full_name": fake_name,
+        "role": "user"
+    }), 200

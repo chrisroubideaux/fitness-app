@@ -1,7 +1,5 @@
 // Login page
-// app/login/page.tsx
 "use client";
-
 import Login from "@/components/profile/Login";
 
 
@@ -10,16 +8,16 @@ export default function Page() {
     <div className=" d-flex vh-100">
       {/* Left: Background Video */}
       <div className="col-6 position-relative overflow-hidden">
-  <img
-    src="/images/login/login.png"
-    alt="Login background"
-    className="w-100 h-100"
-    style={{
-      objectFit: "cover",   // ✅ Fill container
-      objectPosition: "center", // ✅ Keep focus in middle
-    }}
-  />
-</div>
+        <img
+          src="/images/login/login.png"
+          alt="Login background"
+          className="w-100 h-100"
+          style={{
+            objectFit: "cover",   // ✅ Fill container
+            objectPosition: "center", // ✅ Keep focus in middle
+          }}
+        />
+      </div>
 
 
       {/* Right: Login Form */}

@@ -161,7 +161,7 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
 
   return (
     <div className="inbox-wrapper bg-transparent">
-      <h6 className="mb-3">Inbox</h6>
+      <h5 className="mb-3 fw-bold fw-6">Inbox</h5>
 
       {loading && <div className="text-muted small">Loading conversations…</div>}
       {error && (

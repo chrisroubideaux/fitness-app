@@ -1,5 +1,4 @@
 // components/payment/StripeMembershipCard.tsx
-// components/payment/StripeMembershipCard.tsx
 'use client';
 
 import React, { useId, useState } from 'react';
@@ -8,9 +7,9 @@ import { FiCheck, FiX, FiZap } from 'react-icons/fi';
 import { loadStripe } from '@stripe/stripe-js';
 
 export type UIMembershipPlan = {
-  id: string | null;          // MembershipPlan UUID (null for Free)
+  id: string | null;         
   name: string;
-  price: string;              // "$9/mo" etc
+  price: string;             
   badge?: string | null;
   gradient?: string | null;
   description?: string | null;
@@ -25,7 +24,7 @@ type Props = {
   onBeforeRedirect?: () => void;
   previewCount?: number;
   apiBase?: string;
-  successPath?: string;       // <- point this to /billing/success
+  successPath?: string;    
   cancelPath?: string;
 };
 
@@ -36,7 +35,7 @@ export default function StripeMembershipCard({
   onBeforeRedirect,
   previewCount = 4,
   apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000',
-  successPath = '/billing/success',   // ✅ default to your handler page
+  successPath = '/billing/success',  
   cancelPath = '/profile',
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -72,9 +71,9 @@ export default function StripeMembershipCard({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          plan_id: plan.id,                 // used by backend
-          stripe_price_id: plan.stripe_price_id, // harmless extra
-          success_path: successPath,        // ✅ send /billing/success
+          plan_id: plan.id,                
+          stripe_price_id: plan.stripe_price_id, 
+          success_path: successPath,       
           cancel_path: cancelPath,
         }),
       });

@@ -12,7 +12,7 @@ class WorkoutPlan(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(
         db.DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc)  # ✅ always UTC, with tzinfo
+        default=lambda: datetime.now(timezone.utc)  
     )
 
     user = db.relationship("User", back_populates="workout_plans")

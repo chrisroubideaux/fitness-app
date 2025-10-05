@@ -1,14 +1,13 @@
 // components/profile/memberships/MembershipsPanel.tsx
-// components/profile/memberships/MembershipsPanel.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiFrown, FiSettings, FiGrid, FiInfo } from "react-icons/fi";
+import {  FiSettings, FiGrid, FiInfo } from "react-icons/fi";
 import Tabs from "@/components/payment/Tab";
 import StripeMembershipCard, { type UIMembershipPlan } from "@/components/payment/StripeMembershipCard";
 import ManageSubscriptionCard from "@/components/payment/ManageSubscriptionCard";
-import SubscriptionDetails from "@/components/payment/SubscriptionDetails"; // ✅ moved here
+import SubscriptionDetails from "@/components/payment/SubscriptionDetails"; 
 
 type TabKey = "plans" | "manage" | "details";
 type TabItem = { key: TabKey; label: string; icon: React.ReactNode };
@@ -144,8 +143,8 @@ export default function MembershipsPanel({
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="p-3">
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-        <h5 className="mb-0 d-flex align-items-center gap-2">
-          <FiFrown /> Memberships
+        <h5 className="mb-0 d-flex align-items-center gap-2 fw-bold">
+             Memberships
         </h5>
         <div className="text-muted small">Choose a plan or manage your subscription.</div>
         <Tabs

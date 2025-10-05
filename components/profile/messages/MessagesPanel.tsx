@@ -49,7 +49,7 @@ export default function MessagesPanel() {
   };
 
   return (
-    <div className="panel-wrapper">
+    <div className="panel-wrapper shadow=lg">
       {/* Top navigation buttons */}
       <div className="d-flex justify-content-start gap-2 mb-3">
         <button

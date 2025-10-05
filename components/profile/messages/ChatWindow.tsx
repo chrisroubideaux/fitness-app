@@ -232,7 +232,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
     <div className="chat-window-wrapper p-3 rounded shadow-sm">
       {/* Header with Delete + Delete All */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="mb-0">Conversation with {selectedThread.sender}</h6>
+        <h6 className="mb-0 fw-bold">Messages: {selectedThread.sender} </h6>
         <div className="d-flex gap-2">
           <button
             className="btn btn-outline-danger btn-sm"
@@ -253,7 +253,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
         </div>
       </div>
 
-      <h6 className="mb-3">{selectedThread.subject}</h6>
+    
 
       {/* Messages */}
       <div className="chat-messages bg-transparent" style={{ maxHeight: '65vh', overflowY: 'auto' }}>

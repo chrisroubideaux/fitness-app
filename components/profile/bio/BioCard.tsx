@@ -1,5 +1,4 @@
 /* components/profile/bio/BioCard.tsx */
-/* components/profile/bio/BioCard.tsx */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,7 +42,7 @@ type Props = {
   className?: string;
   onSaved?: (updated: User) => void;
   apiBase?: string;
-  /** Optional multipart upload endpoint returning {url} or {profile_image_url} */
+ 
   imageUploadPath?: string;
 };
 
@@ -350,7 +349,7 @@ export default function BioCard({
       style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}
     >
       <div className="card-body">
-        {/* floating gradient alerts */}
+       
         <AnimatePresence>
           {error && (
             <motion.div
@@ -375,7 +374,7 @@ export default function BioCard({
         </AnimatePresence>
 
         <form onSubmit={handleSave}>
-          {/* Avatar (camera button is the only trigger) */}
+      
           <div className="d-flex flex-column align-items-center text-center mb-3">
             <div className="bio-avatar">
               {shownAvatar ? (
@@ -390,7 +389,7 @@ export default function BioCard({
                 </div>
               )}
 
-              {/* hidden file input (not disabled) */}
+            
               <input
                 ref={fileInputRef}
                 type="file"
@@ -399,7 +398,7 @@ export default function BioCard({
                 className="d-none"
               />
 
-              {/* camera badge — only opens picker when pressed */}
+            
               <button
                 type="button"
                 className={`bio-avatar__edit ${saving ? "is-disabled" : ""}`}
@@ -416,7 +415,7 @@ export default function BioCard({
             </div>
           </div>
 
-          {/* Fields with side-by-side icons */}
+        
           <div className="mb-2">
             <label className="form-label mb-1">Full Name</label>
             <div className="bio-row">
@@ -513,7 +512,7 @@ export default function BioCard({
 
           <hr className="bio-divider" />
 
-          {/* Bottom actions */}
+          
           <div className="d-flex justify-content-between align-items-center">
             <div className="text-muted small">
               {isEditing
@@ -555,9 +554,6 @@ export default function BioCard({
     </motion.div>
   );
 }
-
-
-
 
 /*
 "use client";
@@ -649,6 +645,11 @@ export default function BioCard({
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string>(user.profile_image_url ?? "");
 
+  // NEW: human-friendly plan name (default to Free if no plan)
+  const [planName, setPlanName] = useState<string>(
+    user.membership_plan_id ? "Loading…" : "Free"
+  );
+
   // File picking & preview
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -656,7 +657,6 @@ export default function BioCard({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
-  const planLabel = useMemo(() => user.membership_plan_id ?? "Free", [user.membership_plan_id]);
 
   // Reset when user changes
   useEffect(() => {
@@ -671,6 +671,7 @@ export default function BioCard({
     setError(null);
     setSuccess(null);
     setIsEditing(false);
+    setPlanName(user.membership_plan_id ? "Loading…" : "Free");
   }, [user]);
 
   // Build preview + dataURL when selecting a file
@@ -697,6 +698,70 @@ export default function BioCard({
     }, 2500);
     return () => clearTimeout(t);
   }, [error, success]);
+
+  // NEW: Resolve membership plan name from API (with localStorage cache)
+  useEffect(() => {
+    const currentId = user.membership_plan_id;
+    if (!currentId) {
+      setPlanName("Free");
+      return;
+    }
+
+    const cacheKey = "planNames:v1";
+    let cached: Record<string, string> = {};
+    try {
+      cached = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+    } catch {
+      cached = {};
+    }
+
+    if (cached[currentId]) {
+      setPlanName(cached[currentId]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(`${base}/api/memberships/`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data) {
+          // fallback: show the id if we cannot load names
+          setPlanName(currentId);
+          return;
+        }
+
+        // Normalize: accept either array or {items:[...]} or {data:[...]}
+        const arr =
+          Array.isArray(data) ? data :
+          Array.isArray(data.items) ? data.items :
+          Array.isArray(data.data) ? data.data :
+          [];
+
+        const map: Record<string, string> = {};
+        for (const p of arr) {
+          if (p && p.id && p.name) map[p.id] = p.name;
+        }
+
+        const name = map[currentId] || currentId;
+        setPlanName(name);
+
+        // update cache
+        try {
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ ...cached, ...map })
+          );
+        } catch {}
+      } catch {
+        setPlanName(currentId); // fallback if request fails
+      }
+    })();
+  }, [user.membership_plan_id, base, token]);
 
   const shownAvatar = previewUrl || avatarUrl;
 
@@ -866,7 +931,7 @@ export default function BioCard({
         </AnimatePresence>
 
         <form onSubmit={handleSave}>
-        
+      
           <div className="d-flex flex-column align-items-center text-center mb-3">
             <div className="bio-avatar">
               {shownAvatar ? (
@@ -907,7 +972,7 @@ export default function BioCard({
             </div>
           </div>
 
-       
+        
           <div className="mb-2">
             <label className="form-label mb-1">Full Name</label>
             <div className="bio-row">
@@ -995,7 +1060,7 @@ export default function BioCard({
               <input
                 type="text"
                 className="form-control form-control-sm bio-row__control"
-                value={planLabel}
+                value={planName}  
                 readOnly
                 aria-label="Membership plan"
               />
@@ -1004,7 +1069,7 @@ export default function BioCard({
 
           <hr className="bio-divider" />
 
-        
+          
           <div className="d-flex justify-content-between align-items-center">
             <div className="text-muted small">
               {isEditing
@@ -1046,5 +1111,7 @@ export default function BioCard({
     </motion.div>
   );
 }
+
+
 
 */
