@@ -1,4 +1,3 @@
-
 package: auraface
 files:
   detection: scrfd_10g_bnkps.onnx
