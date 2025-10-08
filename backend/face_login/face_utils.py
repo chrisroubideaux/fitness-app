@@ -1,5 +1,5 @@
 # backend/face/face_utils.py
-# backend/face_login/face_utils.py
+
 import os
 import numpy as np
 import cv2

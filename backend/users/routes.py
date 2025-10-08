@@ -1,9 +1,11 @@
 # backend/users/routes.py
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import jwt_required, get_jwt_identity
+import traceback
 from uuid import uuid4
 from admin.models import Admin
-
+from gcs_client import upload_file_to_gcs
 from .models import User, db
 from utils.jwt_token import generate_jwt_token
 from utils.decorators import token_required
@@ -251,3 +253,28 @@ def issue_dev_token():
         "full_name": fake_name,
         "role": "user"
     }), 200
+
+# 
+@user_bp.route("/upload-profile", methods=["POST"])
+@token_required
+def upload_profile_image(current_user):
+    try:
+        user = User.query.get(current_user.id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        if "image" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        image = request.files["image"]
+        filename = f"profile-images/{uuid4()}.jpg"
+
+        url = upload_file_to_gcs(image, filename)
+        user.profile_image_url = url
+        db.session.commit()
+
+        return jsonify({"message": "Profile image uploaded", "url": url}), 200
+
+    except Exception as e:
+        traceback.print_exc()  # 👈 Shows full error in terminal
+        return jsonify({"error": str(e)}), 500

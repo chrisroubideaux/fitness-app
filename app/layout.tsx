@@ -14,6 +14,9 @@ import '@/styles/charts.css';
 import '@/styles/form.css';
 import '@/styles/memberships.css';
 
+import { ToastContainer } from "react-toastify"; // ✅ Toastify
+import "react-toastify/dist/ReactToastify.css";  // ✅ Toastify CSS
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +51,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        <ToastContainer />
       </body>
     </html>
   );

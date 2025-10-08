@@ -1,4 +1,5 @@
 /* components/profile/bio/BioCard.tsx */
+/* components/profile/bio/BioCard.tsx */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,8 +43,6 @@ type Props = {
   className?: string;
   onSaved?: (updated: User) => void;
   apiBase?: string;
- 
-  imageUploadPath?: string;
 };
 
 function initialsOf(name: string | null): string {
@@ -72,7 +71,6 @@ export default function BioCard({
   className,
   onSaved,
   apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000",
-  imageUploadPath,
 }: Props) {
   const base = useMemo(() => apiBase.replace(/\/+$/, ""), [apiBase]);
 
@@ -88,20 +86,13 @@ export default function BioCard({
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string>(user.profile_image_url ?? "");
 
-  // NEW: human-friendly plan name (default to Free if no plan)
-  const [planName, setPlanName] = useState<string>(
-    user.membership_plan_id ? "Loading…" : "Free"
-  );
-
-  // File picking & preview
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [dataUrl, setDataUrl] = useState<string | null>(null); // fallback if no upload route
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
-  // Reset when user changes
+  // Reset state when user changes
   useEffect(() => {
     setFullName(user.full_name ?? "");
     setPhone(user.phone_number ?? "");
@@ -110,25 +101,19 @@ export default function BioCard({
     setAvatarUrl(user.profile_image_url ?? "");
     setFile(null);
     setPreviewUrl(null);
-    setDataUrl(null);
     setError(null);
     setSuccess(null);
     setIsEditing(false);
-    setPlanName(user.membership_plan_id ? "Loading…" : "Free");
   }, [user]);
 
-  // Build preview + dataURL when selecting a file
+  // Build preview for file
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
-      setDataUrl(null);
       return;
     }
     const obj = URL.createObjectURL(file);
     setPreviewUrl(obj);
-    const reader = new FileReader();
-    reader.onload = () => setDataUrl(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
     return () => URL.revokeObjectURL(obj);
   }, [file]);
 
@@ -141,70 +126,6 @@ export default function BioCard({
     }, 2500);
     return () => clearTimeout(t);
   }, [error, success]);
-
-  // NEW: Resolve membership plan name from API (with localStorage cache)
-  useEffect(() => {
-    const currentId = user.membership_plan_id;
-    if (!currentId) {
-      setPlanName("Free");
-      return;
-    }
-
-    const cacheKey = "planNames:v1";
-    let cached: Record<string, string> = {};
-    try {
-      cached = JSON.parse(localStorage.getItem(cacheKey) || "{}");
-    } catch {
-      cached = {};
-    }
-
-    if (cached[currentId]) {
-      setPlanName(cached[currentId]);
-      return;
-    }
-
-    (async () => {
-      try {
-        const res = await fetch(`${base}/api/memberships/`, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const data = await res.json().catch(() => null);
-        if (!res.ok || !data) {
-          // fallback: show the id if we cannot load names
-          setPlanName(currentId);
-          return;
-        }
-
-        // Normalize: accept either array or {items:[...]} or {data:[...]}
-        const arr =
-          Array.isArray(data) ? data :
-          Array.isArray(data.items) ? data.items :
-          Array.isArray(data.data) ? data.data :
-          [];
-
-        const map: Record<string, string> = {};
-        for (const p of arr) {
-          if (p && p.id && p.name) map[p.id] = p.name;
-        }
-
-        const name = map[currentId] || currentId;
-        setPlanName(name);
-
-        // update cache
-        try {
-          localStorage.setItem(
-            cacheKey,
-            JSON.stringify({ ...cached, ...map })
-          );
-        } catch {}
-      } catch {
-        setPlanName(currentId); // fallback if request fails
-      }
-    })();
-  }, [user.membership_plan_id, base, token]);
 
   const shownAvatar = previewUrl || avatarUrl;
 
@@ -226,32 +147,26 @@ export default function BioCard({
     setFile(f);
   }
 
-  async function uploadImageIfNeeded(): Promise<string> {
-    // With upload route: POST the file, use returned URL
-    if (imageUploadPath && file) {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${base}${imageUploadPath}`, {
-        method: "POST",
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: fd,
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Image upload failed (${res.status}): ${text || res.statusText}`);
-      }
-      const data: { url?: string; profile_image_url?: string } =
-        (await res.json().catch(() => ({}))) || {};
-      const url = data.url ?? data.profile_image_url ?? "";
-      if (!url) throw new Error("Upload succeeded but no URL returned by server.");
-      return url;
+  async function uploadImage(): Promise<string | null> {
+    if (!file) return avatarUrl;
+
+    const fd = new FormData();
+    fd.append("image", file);
+
+    const res = await fetch(`${base}/api/users/upload-profile`, {
+      method: "POST",
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: fd,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Image upload failed (${res.status}): ${text || res.statusText}`);
     }
 
-    // No upload route: send base64 so backend can store it (if you support it)
-    if (!imageUploadPath && dataUrl) return dataUrl;
-
-    // No new file: keep existing
-    return avatarUrl;
+    const data: { url?: string; profile_image_url?: string } =
+      (await res.json().catch(() => ({}))) || {};
+    return data.url ?? data.profile_image_url ?? null;
   }
 
   function handleCancel() {
@@ -262,7 +177,6 @@ export default function BioCard({
     setAvatarUrl(user.profile_image_url ?? "");
     setFile(null);
     setPreviewUrl(null);
-    setDataUrl(null);
     setError(null);
     setSuccess(null);
     setIsEditing(false);
@@ -280,9 +194,9 @@ export default function BioCard({
     setSuccess(null);
 
     try {
-      const finalAvatarUrl = await uploadImageIfNeeded();
+      const uploadedUrl = await uploadImage();
+      const finalAvatarUrl = uploadedUrl || avatarUrl;
 
-      // Backend expects: full_name, bio, address, phone, profile_image
       const payload = {
         full_name: fullName || null,
         bio: bio || null,
@@ -326,7 +240,6 @@ export default function BioCard({
       setIsEditing(false);
       setFile(null);
       setPreviewUrl(null);
-      setDataUrl(null);
       setAvatarUrl(updatedUser.profile_image_url ?? "");
       onSaved?.(updatedUser);
     } catch (err) {
@@ -349,7 +262,6 @@ export default function BioCard({
       style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}
     >
       <div className="card-body">
-       
         <AnimatePresence>
           {error && (
             <motion.div
@@ -374,7 +286,6 @@ export default function BioCard({
         </AnimatePresence>
 
         <form onSubmit={handleSave}>
-      
           <div className="d-flex flex-column align-items-center text-center mb-3">
             <div className="bio-avatar">
               {shownAvatar ? (
@@ -389,7 +300,6 @@ export default function BioCard({
                 </div>
               )}
 
-            
               <input
                 ref={fileInputRef}
                 type="file"
@@ -398,7 +308,6 @@ export default function BioCard({
                 className="d-none"
               />
 
-            
               <button
                 type="button"
                 className={`bio-avatar__edit ${saving ? "is-disabled" : ""}`}
@@ -415,104 +324,97 @@ export default function BioCard({
             </div>
           </div>
 
-        
+          {/* Full name */}
           <div className="mb-2">
             <label className="form-label mb-1">Full Name</label>
             <div className="bio-row">
-              <FiUser className="bio-row__icon" aria-hidden="true" />
+              <FiUser className="bio-row__icon" />
               <input
                 type="text"
                 className="form-control form-control-sm bio-row__control"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your name"
                 disabled={disableFields}
-                aria-label="Full name"
               />
             </div>
           </div>
 
+          {/* Email */}
           <div className="mb-2">
             <label className="form-label mb-1">Email</label>
             <div className="bio-row">
-              <FiMail className="bio-row__icon" aria-hidden="true" />
+              <FiMail className="bio-row__icon" />
               <input
                 type="email"
                 className="form-control form-control-sm bio-row__control"
                 value={email}
                 readOnly
-                aria-readonly="true"
-                title="Email is managed by your account provider"
-                aria-label="Email"
               />
             </div>
           </div>
 
+          {/* Phone */}
           <div className="mb-2">
             <label className="form-label mb-1">Phone</label>
             <div className="bio-row">
-              <FiPhone className="bio-row__icon" aria-hidden="true" />
+              <FiPhone className="bio-row__icon" />
               <input
                 type="tel"
                 className="form-control form-control-sm bio-row__control"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 555-5555"
                 disabled={disableFields}
-                aria-label="Phone number"
               />
             </div>
           </div>
 
+          {/* Address */}
           <div className="mb-2">
             <label className="form-label mb-1">Address</label>
             <div className="bio-row">
-              <FiMapPin className="bio-row__icon" aria-hidden="true" />
+              <FiMapPin className="bio-row__icon" />
               <input
                 type="text"
                 className="form-control form-control-sm bio-row__control"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street, City, State"
                 disabled={disableFields}
-                aria-label="Address"
               />
             </div>
           </div>
 
+          {/* Bio */}
           <div className="mb-2">
             <label className="form-label mb-1">Bio</label>
             <div className="bio-row bio-row--textarea">
-              <FiInfo className="bio-row__icon" aria-hidden="true" />
+              <FiInfo className="bio-row__icon" />
               <textarea
                 className="form-control bio-textarea bio-row__control"
                 rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself"
                 disabled={disableFields}
-                aria-label="Bio"
               />
             </div>
           </div>
 
+          {/* Membership */}
           <div className="mb-2">
             <label className="form-label mb-1">Membership Plan</label>
             <div className="bio-row">
-              <FiAward className="bio-row__icon" aria-hidden="true" />
+              <FiAward className="bio-row__icon" />
               <input
                 type="text"
                 className="form-control form-control-sm bio-row__control"
-                value={planName}  
+                value={user.membership_plan_id ? "Custom Plan" : "Free"}
                 readOnly
-                aria-label="Membership plan"
               />
             </div>
           </div>
 
           <hr className="bio-divider" />
 
-          
+          {/* Buttons */}
           <div className="d-flex justify-content-between align-items-center">
             <div className="text-muted small">
               {isEditing
@@ -554,10 +456,14 @@ export default function BioCard({
     </motion.div>
   );
 }
+
 
 /*
 "use client";
 
+/* components/profile/bio/BioCard.tsx 
+"use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
@@ -1111,6 +1017,7 @@ export default function BioCard({
     </motion.div>
   );
 }
+
 
 
 

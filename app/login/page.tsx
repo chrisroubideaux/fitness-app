@@ -1,22 +1,25 @@
 // Login page
 "use client";
 import Login from "@/components/profile/Login";
+import Image from "next/image";
 
 
 export default function Page() {
   return (
+    <div className="layout ">
     <div className=" d-flex vh-100">
-      {/* Left: Background Video */}
       <div className="col-6 position-relative overflow-hidden">
-        <img
-          src="/images/login/login.png"
-          alt="Login background"
-          className="w-100 h-100"
-          style={{
-            objectFit: "cover",   // ✅ Fill container
-            objectPosition: "center", // ✅ Keep focus in middle
-          }}
-        />
+          <Image
+            src="/images/login/login.png"
+            alt="Login background"
+            fill
+            style={{
+              objectFit: "cover",   // ✅ Fill container
+              objectPosition: "center", // ✅ Keep focus in middle
+            }}
+            className="w-100 h-100"
+            priority
+          />
       </div>
 
 
@@ -26,6 +29,7 @@ export default function Page() {
       </div>
 
 
+    </div>
     </div>
   );
 }

@@ -1,13 +1,15 @@
 # admin/routes.py
-# admin/routes.py
+import os
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from uuid import uuid4
 from extensions import db
 from .models import Admin
 from users.models import User
 from .jwt_token import generate_admin_jwt_token
 from .decorators import admin_token_required
+from gcs_client import upload_file_to_gcs
 
 admin_bp = Blueprint('admins', __name__, url_prefix='/api/admins')
 
@@ -331,6 +333,74 @@ def delete_any_user(current_admin, user_id):
 def logout_admin(current_admin):
     return jsonify({'message': 'Admin logged out successfully'}), 200
 
+# -------------------------
+# UPLOAD admin profile avatar (to GCS)
+# -------------------------
+@admin_bp.route("/upload-profile", methods=["POST"])
+@admin_token_required
+def upload_profile_image(current_admin):
+    admin = Admin.query.get(current_admin.id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    if "image" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    image = request.files["image"]
+
+    # Preserve extension (jpg/png/webp)
+    ext = os.path.splitext(secure_filename(image.filename))[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    filename = f"admin-profile-images/{admin.id}/profile{ext}"
+
+    try:
+        url = upload_file_to_gcs(image, filename)
+        admin.profile_image_url = url
+        db.session.commit()
+        return jsonify({
+            "message": "Profile avatar uploaded",
+            "url": url,
+            "profile_image_url": url
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# -------------------------
+# UPLOAD admin profile banner (to GCS)
+# -------------------------
+@admin_bp.route("/upload-banner", methods=["POST"])
+@admin_token_required
+def upload_banner_image(current_admin):
+    admin = Admin.query.get(current_admin.id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+
+    if "image" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    image = request.files["image"]
+
+    # Preserve extension (jpg/png/webp)
+    ext = os.path.splitext(secure_filename(image.filename))[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    filename = f"admin-profile-images/{admin.id}/banner{ext}"
+
+    try:
+        url = upload_file_to_gcs(image, filename)
+        admin.profile_banner_url = url
+        db.session.commit()
+        return jsonify({
+            "message": "Profile banner uploaded",
+            "url": url,
+            "profile_banner_url": url
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 """""""""""
 # -------------------------
