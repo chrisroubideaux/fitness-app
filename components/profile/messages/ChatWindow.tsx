@@ -229,7 +229,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
   }, [onDeleteAllThreads]);
 
   return (
-    <div className="chat-window-wrapper p-3 rounded shadow-sm">
+    <div className="chat-window-wrapper p-3 rounded shadow-lg">
       {/* Header with Delete + Delete All */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h6 className="mb-0 fw-bold">Messages: {selectedThread.sender} </h6>
@@ -256,7 +256,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
     
 
       {/* Messages */}
-      <div className="chat-messages bg-transparent" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+      <div className="chat-messages" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
         {loading && messages.length === 0 && <div className="text-muted small mb-2">Loading messages…</div>}
 
         {messages.map((msg) => (

@@ -1,5 +1,4 @@
 /* components/profile/bio/BioCard.tsx */
-/* components/profile/bio/BioCard.tsx */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -258,8 +257,8 @@ export default function BioCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`card shadow-sm chart-gradient bio-card mx-auto ${className ?? ""}`}
-      style={{ borderRadius: 16, maxWidth: 600, width: "100%" }}
+      className={`card shadow-md chart-gradient bio-card mx-auto ${className ?? ""}`}
+      style={{ borderRadius: 16, maxWidth: 700, width: "100%", border: "none" }}
     >
       <div className="card-body">
         <AnimatePresence>

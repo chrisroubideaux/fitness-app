@@ -1,5 +1,4 @@
 // components/admin/plans/PlansPanel.tsx
-// components/admin/plans/PlansPanel.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -71,8 +70,7 @@ function sortPlans(list: Plan[]): Plan[] {
   return [...list].sort((a, b) => {
     const aw = ORDER_MAP.get(norm(a.name)) ?? BIG;
     const bw = ORDER_MAP.get(norm(b.name)) ?? BIG;
-    if (aw !== bw) return aw - bw; // known tiers first, in desired order
-    // both unknown or same weight: alphabetical by trimmed name
+    if (aw !== bw) return aw - bw; 
     return a.name.trim().localeCompare(b.name.trim());
   });
 }
@@ -253,7 +251,8 @@ export default function PlansPanel() {
   // UI
   const renderList = () => (
     <>
-      <div className="admin-header">
+    <div className="mb-3">
+      <div className="admin-header shadow-lg">
         <h5 className="mb-0 fs-4">Membership Plans</h5>
         <div className="d-flex gap-2">
           <button className="btn btn-md btn-slim" onClick={openCreate}>
@@ -277,7 +276,7 @@ export default function PlansPanel() {
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
       {!loading && !error && (
-        <div className="table-responsive bg-transparent">
+        <div className="table-responsive bg-transparent shadow-sm rounded">
           <table className="table table-sm align-middle table-glass bg-transparent">
             <thead>
               <tr>
@@ -369,6 +368,7 @@ export default function PlansPanel() {
           </div>
         </div>
       )}
+      </div>
     </>
   );
 

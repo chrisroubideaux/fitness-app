@@ -1,6 +1,5 @@
 // components/admin/users/UsersPanel.tsx
-// components/admin/messages/MessagesPanel.tsx
-
+// components/admin/users/UsersPanel.tsx
 'use client';
 
 import { useState } from 'react';
@@ -11,11 +10,11 @@ import NewMessageTab from './NewMessageTab';
 import ChatWindow from './ChatWindow';
 import { MessageThread, UIMessage } from './types';
 
-export default function MessagesPanel() {
+export default function UsersPanel() {
   const [activeSubTab, setActiveSubTab] = useState<'inbox' | 'new' | 'chat'>('inbox');
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
 
-  // Open an existing conversation (from Inbox)
+  // Open an existing conversation
   const handleOpenThread = (thread: MessageThread) => {
     setSelectedThread(thread);
     setActiveSubTab('chat');
@@ -24,21 +23,25 @@ export default function MessagesPanel() {
   // Start a new conversation with a specific admin
   const startChatWithAdmin = (
     adminId: string,
-    label = 'Coach/Admin',
-    subject = 'New conversation'
+    label: string = 'Coach/Admin',
+    subject: string = 'New conversation'
   ) => {
-    setSelectedThread({
-      admin_id: adminId, // use admin_id instead of id
+    const newThread: MessageThread = {
+      admin_id: adminId,
       sender: label,
       subject,
       messages: [] as UIMessage[],
-    });
+      // ✅ both avatars provided, no type errors
+      admin_profile_image_url: '/admin-avatar.png',
+      user_profile_image_url: '/user-avatar.png',
+    };
+    setSelectedThread(newThread);
     setActiveSubTab('chat');
   };
 
   return (
     <div className="panel-wrapper">
-     
+      {/* Navigation buttons */}
       <div className="d-flex justify-content-start gap-2 mb-3">
         <button
           className={`btn btn-sm btn-${activeSubTab === 'chat' ? 'primary' : 'outline-primary'}`}
@@ -61,7 +64,7 @@ export default function MessagesPanel() {
         </button>
       </div>
 
-      
+      {/* Tabs */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSubTab}
@@ -86,8 +89,6 @@ export default function MessagesPanel() {
     </div>
   );
 }
-
-
 
 
 /*

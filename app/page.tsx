@@ -10,7 +10,7 @@ import Testimonials from "@/components/misc/Testimonials";
 import ServicesSection from "@/components/admin/about/ServicesSection";
 import StatsSection from '@/components/admin/about/StatsSection';
 import Teams from "@/components/admin/trainers/Teams";
-import Footer from "@/components/misc/Footer";
+import TrainerFooter from "@/components/admin/trainers/TrainerFooter";
 
 type BackendPlan = {
   id: string;
@@ -232,7 +232,7 @@ export default function Home() {
 
         <StatsSection />
       </main>
-      <Footer />
+      <TrainerFooter />
     </div>
   );
 }

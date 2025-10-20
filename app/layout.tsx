@@ -8,6 +8,7 @@ import '@/styles/navbar.css';
 import '@/styles/contact.css';
 import '@/styles/about.css';
 import '@/styles/card.css';
+import '@/styles/plans.css'
 import '@/styles/calendar.css';
 import '@/styles/messages.css';
 import '@/styles/charts.css';

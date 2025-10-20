@@ -1,7 +1,6 @@
 // components/about/ServicesSection.tsx
 import { FaDumbbell, FaUtensils, FaCalendarAlt, FaHeartbeat } from "react-icons/fa";
 
-
 export default function ServicesSection() {
   return (
     <>
@@ -10,7 +9,10 @@ export default function ServicesSection() {
     <section className="services-section container-fluid py-5">
        <div className="text-center my-5">
       <h5 className="fs-2 fw-bold">Our Services</h5>
-      <p className="fs-5 text-muted">Empowering your fitness journey with personalized coaching and support.</p>
+      <p className=" text-muted">Empowering your fitness journey 
+        <br />
+        with personalized coaching
+        and support.</p>
     </div>
       <div className=" my-5 pt-5">
         <div className="row align-items-center">
@@ -18,7 +20,7 @@ export default function ServicesSection() {
           <div className="col-md-6 mb-4 mb-md-0">
             <div className="row g-3">
               <div className="col-6">
-                <div className="service-card text-center p-4 shadow-sm h-100">
+                <div className="service-card text-center shadow-sm p-4 h-100">
                   <FaDumbbell className="service-icon mb-3" />
                   <h5 className="fw-bold">Personalized Workouts</h5>
                   <p className="small">Custom fitness plans tailored to your goals and schedule.</p>
@@ -51,11 +53,11 @@ export default function ServicesSection() {
           {/* Right: Descriptive Paragraph */}
           <div className="col-md-6 text-center text-md-start">
             <h1 className="fw-bold mb-4">What We Offer</h1>
-            <p className="fs-5 text-dark">
+            <p className="fs-5 text-gray">
               Whether you&#39;re looking to lose weight, build muscle, or simply feel more confident in your skin,
               Lena’s programs are designed to support your full transformation.
             </p>
-            <p className="fs-5 text-dark">
+            <p className="fs-5 text-gray">
               From flexible training plans and group coaching to meal prep resources and accountability check-ins,
               this platform delivers everything you need to level up your wellness journey — at your pace.
             </p>

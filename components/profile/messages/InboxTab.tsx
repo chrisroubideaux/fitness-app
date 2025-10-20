@@ -10,7 +10,7 @@ type ApiConversation = {
   admin_id: string;
   peer_display_name: string;
   last_message_at: string | null;
-  last_message_body?: string | null;   // ✅ add support if backend sends snippet
+  last_message_body?: string | null; 
   unread_count?: number;
   created_at: string | null;
 };
@@ -174,21 +174,23 @@ export default function InboxTab({ onMessageClick }: InboxProps) {
         {sorted.map((thread) => (
           <li
             key={thread.id}
-            className="list-group-item list-group-item-action bg-transparent"
+            className="list-group-item list-group-item-action shadow-s"
+            style={{ cursor: 'pointer' }}
+
             onClick={() => {
               onMessageClick(thread);
               setThreads((prev) =>
                 prev.map((t) => (t.id === thread.id ? { ...t, unread_count: 0 } : t))
               );
             }}
-            style={{ cursor: 'pointer' }}
+           
           >
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <strong>{thread.sender}</strong> — {thread.subject}
+                <strong>{thread.sender}</strong>
                 <UnreadBadge count={thread.unread_count} />
                 {thread.preview && (
-                  <div className="text-muted small">{thread.preview}</div>
+                  <div className=" small">{thread.preview}</div>
                 )}
               </div>
               <small className="text-muted">

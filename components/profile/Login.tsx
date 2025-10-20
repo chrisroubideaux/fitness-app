@@ -81,23 +81,24 @@ const Login = () => {
 
   return (
     <div className="container d-flex flex-column justify-content-between">
-      {/* Header */}
+    
       <motion.div
         className="text-center mb-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="fs-2 fw-bold">Fit By Lena</h1>
+        
         <Link
           href="/"
           className="btn btn-sm btn-outline-secondary rounded-pill mt-2 px-3"
         >
           Back Home
         </Link>
+      
       </motion.div>
 
-      {/* Login Card */}
+    
       <motion.div
         className="p-4 rounded flex-grow-0"
         initial={{ opacity: 0, y: 20 }}
@@ -105,7 +106,7 @@ const Login = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <motion.h1
-          className="fs-2 text-center mb-4"
+          className="fs-2 fw-bold text-center mb-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -113,23 +114,27 @@ const Login = () => {
           Login
         </motion.h1>
 
-        {/* Face Login (standalone) */}
+       
         <div className="text-center mb-3">
           <button
-            onClick={handleFaceLogin}
-            className="bg-transparent border-0 shadow-none"
-            style={{ outline: "none" }}
-          >
-            <FaCameraRetro size={36} />
-          </button>
+  onClick={handleFaceLogin}
+  className="bg-transparent border-0 shadow-none"
+  style={{ outline: 'none' }}
+  data-bs-toggle="tooltip"
+  data-bs-placement="top"
+  title="Login with Face Recognition"
+>
+  <FaCameraRetro className="bio-icon" size={36} />
+</button>
+
         </div>
 
-        {/* Styled Divider */}
+       
         <hr style={{ width: "50%", margin: "1rem auto" }} />
 
-        {/* Social Login Buttons */}
+       
         <div className="d-flex flex-column gap-3">
-          {/* Google Login */}
+         
           <button
             onClick={handleGoogleLogin}
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
@@ -142,7 +147,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-              {/* Google SVG */}
+            
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512" width="18" height="18">
                 <path fill="#EA4335" d="M488 261.8c0-17.6-1.6-34.6-4.7-51H249v96.6h135.6c-5.8 31.2-23.2 57.6-49.2 75.2l79.6 61.9C456.3 406.6 488 338.8 488 261.8z"/>
                 <path fill="#34A853" d="M249 502c66.9 0 123-22.1 164-60l-79.6-61.9c-22.1 14.8-50.4 23.5-84.4 23.5-64.9 0-119.8-43.8-139.6-102.7l-82 63.3C68.1 447.5 152.9 502 249 502z"/>
@@ -153,7 +158,7 @@ const Login = () => {
             <span className="flex-grow-1 text-start">Continue with Google</span>
           </button>
 
-          {/* Facebook Login */}
+         
           <button
             onClick={handleFacebookLogin}
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
@@ -166,7 +171,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-              {/* Facebook SVG */}
+            
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" width="18" height="18">
                 <path fill="#1877f2" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S293.1 0 267.5 0c-73.36 0-121.5 44.38-121.5 124.72V195.3H86.41V288h59.59v224h92.66V288z"/>
               </svg>
@@ -174,7 +179,7 @@ const Login = () => {
             <span className="flex-grow-1 text-start">Continue with Facebook</span>
           </button>
 
-          {/* X Login */}
+         
           <button
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
@@ -186,7 +191,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-              {/* X SVG */}
+            
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1227" width="18" height="18">
                 <path
                   fill="black"
@@ -197,7 +202,7 @@ const Login = () => {
             <span className="flex-grow-1 text-start">Continue with X</span>
           </button>
 
-          {/* TikTok Login */}
+        
           <button
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
@@ -209,7 +214,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-              {/* TikTok SVG */}
+             
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18">
                 <path
                   fill="#000000"
@@ -223,7 +228,7 @@ const Login = () => {
         </div>
       </motion.div>
 
-      {/* Footer */}
+     
       <motion.p
         className="text-center text-muted small mt-4 mb-0"
         initial={{ opacity: 0 }}
@@ -240,23 +245,27 @@ export default Login;
 
 
 
+
 // Previous version without Next.js navigation
 /*
 // components/profile/Login.tsx
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { FaCameraRetro } from "react-icons/fa";
+import { toast } from 'react-toastify';
+
 
 const Login = () => {
-  const [error, setError] = useState<string | null>(null);
-
   const handleGoogleLogin = () => {
+    toast.info("Redirecting to Google...");
     window.location.href = 'http://localhost:5000/auth/google/login';
   };
 
   const handleFacebookLogin = () => {
+    toast.info("Redirecting to Facebook...");
     window.location.href = 'http://localhost:5000/auth/facebook/login';
   };
 
@@ -293,16 +302,17 @@ const Login = () => {
 
       if (res.ok && data.token) {
         localStorage.setItem("authToken", data.token);
+        toast.success("Face login successful!");
         window.location.href = data.user_id
           ? `/profile/${data.user_id}`
           : "/profile";
       } else {
-        setError("Face login failed");
+        toast.error("Face login failed. Please try again.");
         console.error("Face login failed:", data);
       }
     } catch (err) {
       console.error("Error with face login:", err);
-      setError("Could not access camera");
+      toast.error("Could not access camera");
     }
   };
 
@@ -313,29 +323,31 @@ const Login = () => {
 
     if (token) {
       localStorage.setItem("authToken", token);
+      toast.success("Login successful!");
       window.location.href = userId ? `/profile/${userId}` : '/profile';
     }
   }, []);
 
   return (
-    <div className="container py-5 d-flex flex-column justify-content-between">
-     
+    <div className="container d-flex flex-column justify-content-between">
+    
       <motion.div
         className="text-center mb-4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="fs-2 fw-bold">Fit By Lena</h1>
+        
         <Link
           href="/"
           className="btn btn-sm btn-outline-secondary rounded-pill mt-2 px-3"
         >
           Back Home
         </Link>
+      
       </motion.div>
 
-   
+    
       <motion.div
         className="p-4 rounded flex-grow-0"
         initial={{ opacity: 0, y: 20 }}
@@ -343,7 +355,7 @@ const Login = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <motion.h1
-          className="fs-2 text-center mb-4"
+          className="fs-2 fw-bold text-center mb-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -351,15 +363,19 @@ const Login = () => {
           Login
         </motion.h1>
 
-      
+       
         <div className="text-center mb-3">
           <button
-            onClick={handleFaceLogin}
-            className="bg-transparent border-0 shadow-none"
-            style={{ outline: "none" }}
-          >
-            <FaCameraRetro size={36} />
-          </button>
+  onClick={handleFaceLogin}
+  className="bg-transparent border-0 shadow-none"
+  style={{ outline: 'none' }}
+  data-bs-toggle="tooltip"
+  data-bs-placement="top"
+  title="Login with Face Recognition"
+>
+  <FaCameraRetro className="bio-icon" size={36} />
+</button>
+
         </div>
 
        
@@ -380,7 +396,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-             
+            
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512" width="18" height="18">
                 <path fill="#EA4335" d="M488 261.8c0-17.6-1.6-34.6-4.7-51H249v96.6h135.6c-5.8 31.2-23.2 57.6-49.2 75.2l79.6 61.9C456.3 406.6 488 338.8 488 261.8z"/>
                 <path fill="#34A853" d="M249 502c66.9 0 123-22.1 164-60l-79.6-61.9c-22.1 14.8-50.4 23.5-84.4 23.5-64.9 0-119.8-43.8-139.6-102.7l-82 63.3C68.1 447.5 152.9 502 249 502z"/>
@@ -391,7 +407,7 @@ const Login = () => {
             <span className="flex-grow-1 text-start">Continue with Google</span>
           </button>
 
-          
+         
           <button
             onClick={handleFacebookLogin}
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
@@ -412,7 +428,7 @@ const Login = () => {
             <span className="flex-grow-1 text-start">Continue with Facebook</span>
           </button>
 
-          
+         
           <button
             className="d-flex align-items-center shadow-sm w-100 text-white fw-semibold"
             style={{
@@ -424,7 +440,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-             
+            
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1227" width="18" height="18">
                 <path
                   fill="black"
@@ -447,7 +463,7 @@ const Login = () => {
           >
             <div className="d-flex align-items-center justify-content-center me-3 bg-white"
               style={{ width: '40px', height: '40px', borderRadius: '50%' }}>
-           
+             
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="18" height="18">
                 <path
                   fill="#000000"
@@ -458,8 +474,6 @@ const Login = () => {
             </div>
             <span className="flex-grow-1 text-start">Continue with TikTok</span>
           </button>
-
-          {error && <p className="text-danger text-center mt-3">{error}</p>}
         </div>
       </motion.div>
 
@@ -473,15 +487,10 @@ const Login = () => {
         © FitByLena 2025
       </motion.p>
     </div>
-    
   );
 };
 
-
-
 export default Login;
-
-
 
 
 

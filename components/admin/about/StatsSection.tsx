@@ -21,7 +21,7 @@ export default function StatsSection() {
   ];
 
   return (
-    <section className="stats-section py-5 shadow-lg">
+    <section className="stats-section py-5 shadow-sm ">
       <div className="container">
         <motion.div
           className="text-center mb-5"

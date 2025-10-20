@@ -1,5 +1,5 @@
 // components/admin/messages/types.ts
-
+// components/admin/messages/types.ts
 export type UIMessage = {
   id: string;
   sender: 'admin' | 'user';
@@ -8,18 +8,20 @@ export type UIMessage = {
 };
 
 export type MessageThread = {
-  id?: string;          // conversation id
-  user_id?: string;     // for admin side (who the admin is chatting with)
-  admin_id?: string;    // for user side  (which admin/coach)
-  sender: string;       // display name in the list
+  id?: string;             
+  user_id?: string;        
+  admin_id?: string;       
+  sender: string;          
   subject: string;
-  preview?: string;     // optional last-message preview
-  timestamp?: string;   // formatted last_message_at
-  unread_count?: number; // <-- add this for the red badge
+  preview?: string;        
+  timestamp?: string;      
+  unread_count?: number;   
   messages?: UIMessage[];
+
+  // ✅ both optional so no TS errors
+  user_profile_image_url?: string;
+  admin_profile_image_url?: string;
 };
-
-
 
 
 /*

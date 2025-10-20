@@ -1,0 +1,12 @@
+/* styles/plans.css */
+
+.plans-hero {
+  position: relative;
+  padding: 6rem 2rem;
+  min-height: 32rem;
+  background: #f790fc;
+  background: linear-gradient(90deg, rgb(141, 116, 252) 0%, rgb(213, 162, 253) 52%, rgb(201, 167, 253) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+}
