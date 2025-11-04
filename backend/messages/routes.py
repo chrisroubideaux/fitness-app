@@ -1,5 +1,4 @@
 # backend/messages/routes.py
-# backend/messages/routes.py
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta, timezone
@@ -388,6 +387,69 @@ def send_message():
     }
     return jsonify(payload), 201
 
+# ---------------------------------
+# DELETE: Individual Message
+# ---------------------------------
+@messages_bp.route("/<uuid:message_id>", methods=["DELETE"])
+def delete_message(message_id):
+    """
+    DELETE /api/messages/<uuid:message_id>?for=me|everyone&hard=true|false
+
+    - ?for=me → hides only for the requester (default)
+    - ?for=everyone → hides for both admin & user (admins only)
+    - ?hard=true → completely deletes from DB (admins only)
+    """
+    try:
+        kind, me = resolve_principal()
+    except AuthError as e:
+        return jsonify({"error": "Unauthorized", "message": str(e)}), 401
+
+    msg = Message.query.get_or_404(message_id)
+    conv = Conversation.query.get(msg.conversation_id)
+
+    # Permission check: only participants can delete
+    if kind == "admin":
+        if msg.sender_admin_id != me.id and conv.admin_id != me.id:
+            return jsonify({"error": "Forbidden"}), 403
+    elif kind == "user":
+        if msg.sender_user_id != me.id and conv.user_id != me.id:
+            return jsonify({"error": "Forbidden"}), 403
+
+    now = _now_utc()
+    mode = (request.args.get("for") or "me").lower()
+    hard = request.args.get("hard", "false").lower() == "true"
+
+    # --- Hard delete (admins only) ---
+    if hard:
+        if kind != "admin":
+            return jsonify({"error": "Only admins can permanently delete messages"}), 403
+        db.session.delete(msg)
+        db.session.commit()
+        return jsonify({"ok": True, "hard_deleted": True}), 200
+
+    # --- Soft delete (default) ---
+    if mode == "everyone":
+        if kind != "admin":
+            return jsonify({"error": "Only admins can delete for everyone"}), 403
+        msg.deleted_for_user_at = now
+        msg.deleted_for_admin_at = now
+        msg.moderation_deleted_at = now
+        msg.moderation_deleted_by_admin_id = me.id
+    elif mode == "me":
+        if kind == "admin":
+            msg.deleted_for_admin_at = now
+        else:
+            msg.deleted_for_user_at = now
+    else:
+        return jsonify({"error": f"Invalid delete mode '{mode}'"}), 400
+
+    db.session.commit()
+    return jsonify({
+        "ok": True,
+        "deleted_at": _iso_z(now),
+        "mode": mode,
+        "hard_deleted": False
+    }), 200
 
 
 

@@ -1,5 +1,5 @@
 # app.py
-# app.py
+
 import os
 import sys
 from flask import Flask, jsonify
@@ -23,6 +23,7 @@ from login_session import LoginSession
 from appointments.models import CalendarEvent
 from admin.models import Admin, AdminIdentity
 from face_login.models import FaceEmbedding
+from chats.models import Chat  
 
 # --- Blueprints ---
 from memberships.routes import membership_bp
@@ -36,6 +37,7 @@ from payments.routes import payments_bp
 from messages.routes import messages_bp
 from appointments.routes import appointments_bp
 from face_login import face_bp
+from chats.routes import chats_bp
 
 from flask_dance.contrib.facebook import make_facebook_blueprint
 
@@ -114,6 +116,7 @@ def create_app():
     app.register_blueprint(messages_bp)
     app.register_blueprint(appointments_bp)
     app.register_blueprint(face_bp)
+    app.register_blueprint(chats_bp)
 
     # --- Health/root ---
     @app.route("/")

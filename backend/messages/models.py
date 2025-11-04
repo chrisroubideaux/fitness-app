@@ -8,6 +8,9 @@ from sqlalchemy import Index, CheckConstraint
 from extensions import db
 
 
+# ---------------------------------------------------------
+# Utility: always return UTC datetime
+# ---------------------------------------------------------
 def utcnow():
     return datetime.now(timezone.utc)
 
@@ -23,12 +26,12 @@ class Conversation(db.Model):
     user_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
     )
     admin_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("admins.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
     )
 
     last_message_at = db.Column(db.DateTime(timezone=True), default=utcnow, index=True)
@@ -52,61 +55,77 @@ class Message(db.Model):
     __tablename__ = "messages"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
     conversation_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("conversations.id", ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
     )
 
     sender_role = db.Column(db.String(10), nullable=False)  # 'user' or 'admin'
     sender_user_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True
+        nullable=True,
     )
     sender_admin_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("admins.id", ondelete="SET NULL"),
-        nullable=True
+        nullable=True,
     )
 
     body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, index=True, nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        default=utcnow,
+        index=True,
+        nullable=False,
+    )
 
     read_by_user_at = db.Column(db.DateTime(timezone=True), nullable=True)
     read_by_admin_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # -----------------------------------------------------
-    # Moderation / Toxicity Analysis Fields
+    # Moderation / Analysis Fields
     # -----------------------------------------------------
     is_toxic = db.Column(db.Boolean, default=False)
     toxicity_score = db.Column(db.Float)
 
-    # If you want to expand later:
     sentiment = db.Column(db.String(50))  # POSITIVE, NEGATIVE, NEUTRAL
     sentiment_score = db.Column(db.Float)
     intent = db.Column(db.String(50))  # e.g., 'question', 'feedback'
 
     # -----------------------------------------------------
-    # Soft delete and moderation controls
+    # Soft Delete + Moderation Controls
     # -----------------------------------------------------
     deleted_for_user_at = db.Column(db.DateTime(timezone=True), nullable=True)
     deleted_for_admin_at = db.Column(db.DateTime(timezone=True), nullable=True)
-
     moderation_deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
     moderation_deleted_by_admin_id = db.Column(
         UUID(as_uuid=True),
         db.ForeignKey("admins.id", ondelete="SET NULL"),
-        nullable=True
+        nullable=True,
     )
 
     __table_args__ = (
-        CheckConstraint("sender_role in ('user', 'admin')", name="ck_messages_sender_role"),
+        CheckConstraint("sender_role IN ('user', 'admin')", name="ck_messages_sender_role"),
         Index("ix_messages_conv_created", "conversation_id", "created_at"),
     )
 
     # -----------------------------------------------------
-    # Helper Serialization
+    # Helper: UTC ISO 8601 serializer
+    # -----------------------------------------------------
+    @staticmethod
+    def _to_iso(dt: datetime | None):
+        if not dt:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    # -----------------------------------------------------
+    # Public serializer
     # -----------------------------------------------------
     def to_dict(self):
         return {
@@ -119,11 +138,13 @@ class Message(db.Model):
             "sentiment": self.sentiment,
             "sentiment_score": self.sentiment_score,
             "intent": self.intent,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "read_by_user_at": self.read_by_user_at.isoformat() if self.read_by_user_at else None,
-            "read_by_admin_at": self.read_by_admin_at.isoformat() if self.read_by_admin_at else None,
+            "created_at": self._to_iso(self.created_at),
+            "read_by_user_at": self._to_iso(self.read_by_user_at),
+            "read_by_admin_at": self._to_iso(self.read_by_admin_at),
+            "deleted_for_user_at": self._to_iso(self.deleted_for_user_at),
+            "deleted_for_admin_at": self._to_iso(self.deleted_for_admin_at),
+            "moderation_deleted_at": self._to_iso(self.moderation_deleted_at),
         }
-
 
 
 """""""""
