@@ -1,5 +1,4 @@
 // components/profile/messages/ChatWindow.tsx
-// components/profile/messages/ChatWindow.tsx
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -11,10 +10,9 @@ type ApiMessage = {
   conversation_id: string;
   sender_role: 'admin' | 'user';
   body: string;
-  created_at: string;
+  created_at: string | null;
   read_by_user_at: string | null;
   read_by_admin_at: string | null;
-  // 🧠 Toxicity/NLP fields
   is_toxic?: boolean;
   toxicity_score?: number;
 };
@@ -24,7 +22,6 @@ type UIMessage = {
   sender: 'admin' | 'user';
   content: string;
   timestamp: string;
-  // 🧠 New toxicity metadata for display
   is_toxic?: boolean;
   toxicity_score?: number;
 };
@@ -51,7 +48,7 @@ type Props = {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
-// User-side API helper
+// 🔧 Helper for API calls
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
   const headers: HeadersInit = {
@@ -59,6 +56,7 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(init.headers || {}),
   };
+
   const url = path.includes('?') ? `${path}&ts=${Date.now()}` : `${path}?ts=${Date.now()}`;
   const res = await fetch(`${BASE}${url}`, { cache: 'no-store', ...init, headers });
   if (!res.ok) {
@@ -68,15 +66,24 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+// ✅ Safe date formatter to prevent "Invalid Date"
+const fmtTime = (iso?: string | null) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
+
 export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAllThreads }: Props) {
   const [conversationId, setConversationId] = useState<string | undefined>(selectedThread.id);
   const [messages, setMessages] = useState<UIMessage[]>(selectedThread.messages ?? []);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const fmtTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const toUi = (data: ApiMessage[]): UIMessage[] =>
     data.map((m) => ({
@@ -88,7 +95,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
       toxicity_score: m.toxicity_score ?? 0,
     }));
 
-  // Ensure conversation ID
+  // Ensure conversation ID exists
   useEffect(() => {
     let abort = false;
     async function ensureConversationId() {
@@ -106,7 +113,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
         });
         if (!abort) setConversationId(conv.id);
       } catch (e) {
-        console.error('❌ Failed to ensure conversation id (user):', e);
+        console.error('❌ Failed to ensure conversation id:', e);
       }
     }
     ensureConversationId();
@@ -122,9 +129,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
       if (!conversationId) return;
       setLoading(true);
       try {
-        const data = await api<ApiMessage[]>(
-          `/api/messages/conversations/${conversationId}/messages?limit=50`
-        );
+        const data = await api<ApiMessage[]>(`/api/messages/conversations/${conversationId}/messages?limit=50`);
         if (abort) return;
         setMessages(toUi(Array.isArray(data) ? data : []));
         await api<{ ok: boolean; read_at?: string }>(
@@ -132,7 +137,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
           { method: 'POST' }
         );
       } catch (e) {
-        console.error('❌ Load messages failed (user):', e);
+        console.error('❌ Load messages failed:', e);
       } finally {
         if (!abort) setLoading(false);
       }
@@ -143,13 +148,13 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
     };
   }, [conversationId]);
 
-  // Sync on thread switch
+  // Sync thread switch
   useEffect(() => {
     setConversationId(selectedThread.id);
     setMessages(selectedThread.messages ?? []);
   }, [selectedThread]);
 
-  // Send message with toxicity handling
+  // Send message
   const handleSendMessage = useCallback(async () => {
     const body = newMessage.trim();
     if (!body) return;
@@ -180,11 +185,9 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
         body: JSON.stringify(payload),
       });
 
-      // --- Handle blocked (422) ---
       if (res.status === 422) {
         const data = await res.json().catch(() => ({}));
-        const reason =
-          data?.error || 'Message blocked for toxicity.';
+        const reason = data?.error || 'Message blocked for toxicity.';
         alert(`⚠️ ${reason}`);
         setNewMessage('');
         setBusy(false);
@@ -196,23 +199,35 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
         throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
       }
 
-      const created = (await res.json()) as ApiMessage;
+      const data = await res.json();
+      const created = data.message ?? data;
+
       if (!conversationId) setConversationId(created.conversation_id);
 
       setMessages((prev) => [
         ...prev,
         {
-          id: created.id,
+          id: created.id || `${Date.now()}-${Math.random()}`,
           sender: created.sender_role,
           content: created.body,
           timestamp: fmtTime(created.created_at),
           is_toxic: created.is_toxic ?? false,
           toxicity_score: created.toxicity_score ?? 0,
         },
+        ...(data.auto_reply
+          ? [
+              {
+                id: data.auto_reply.id || `auto-${Date.now()}-${Math.random()}`,
+                sender: data.auto_reply.sender_role,
+                content: data.auto_reply.body,
+                timestamp: fmtTime(data.auto_reply.created_at),
+              },
+            ]
+          : []),
       ]);
       setNewMessage('');
     } catch (e) {
-      console.error('❌ Send failed (user):', e);
+      console.error('❌ Send failed:', e);
       alert('Failed to send message.');
     } finally {
       setBusy(false);
@@ -232,7 +247,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
       setConversationId(undefined);
       setNewMessage('');
     } catch (e) {
-      console.error('❌ Delete conversation failed (user):', e);
+      console.error('❌ Delete conversation failed:', e);
       alert('Failed to delete conversation.');
     }
   }, [conversationId, onDeleteThread]);
@@ -254,7 +269,7 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
       setConversationId(undefined);
       setNewMessage('');
     } catch (e) {
-      console.error('❌ Delete all conversations failed (user):', e);
+      console.error('❌ Delete all failed:', e);
       alert('Failed to delete all conversations.');
     }
   }, [onDeleteAllThreads]);
@@ -269,7 +284,6 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
             className="btn btn-outline-danger btn-sm"
             onClick={handleDeleteThread}
             disabled={!conversationId || busy}
-            title="Hide this conversation from my inbox"
           >
             🗑️ Delete
           </button>
@@ -277,7 +291,6 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
             className="btn btn-outline-secondary btn-sm"
             onClick={handleDeleteAll}
             disabled={busy}
-            title="Hide ALL conversations"
           >
             🧹 Delete All
           </button>
@@ -290,9 +303,9 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
           <div className="text-muted small mb-2">Loading messages…</div>
         )}
 
-        {messages.map((msg) => (
+        {messages.map((msg, index) => (
           <motion.div
-            key={msg.id}
+            key={msg.id || `msg-${index}-${msg.sender}-${msg.timestamp}`}
             className={`d-flex mb-3 ${
               msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'
             }`}
@@ -332,7 +345,9 @@ export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAll
                   msg.content
                 )}
               </div>
-              <div className="text-muted small mt-1">{msg.timestamp}</div>
+              {msg.timestamp && (
+                <div className="text-muted small mt-1">{msg.timestamp}</div>
+              )}
             </div>
 
             {msg.sender === 'user' && (

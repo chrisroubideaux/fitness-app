@@ -1,4 +1,5 @@
 // components/admin/messages/ChatWindow.tsx
+// components/admin/messages/ChatWindow.tsx
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -11,9 +12,9 @@ type ApiMessage = {
   conversation_id: string;
   sender_role: 'admin' | 'user';
   body: string;
-  created_at: string;
-  read_by_user_at: string | null;
-  read_by_admin_at: string | null;
+  created_at?: string | null;
+  read_by_user_at?: string | null;
+  read_by_admin_at?: string | null;
   is_toxic?: boolean;
   toxicity_score?: number;
 };
@@ -22,7 +23,7 @@ type ApiListOk = { ok: boolean; read_at?: string };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
-// ------- Error Helper -------
+// 🧰 Safe error parser
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   try {
@@ -32,7 +33,7 @@ function errorMessage(err: unknown): string {
   }
 }
 
-// ------- Admin-side API Helper -------
+// 🧰 Admin API wrapper
 async function adminApi<T>(path: string, init: RequestInit = {}): Promise<T> {
   const ls = typeof window !== 'undefined' ? window.localStorage : null;
   const token =
@@ -48,22 +49,27 @@ async function adminApi<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
   const raw = await res.text().catch(() => '');
-
-  if (!res.ok) {
-    console.error(`[adminApi] ${res.status} ${res.statusText} →`, raw || '(no body)');
-    throw new Error(`${res.status} ${res.statusText}: ${raw || 'Request failed'}`);
-  }
-
-  if (!raw) return {} as T;
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${raw || 'Request failed'}`);
   try {
-    return JSON.parse(raw) as T;
+    return raw ? (JSON.parse(raw) as T) : ({} as T);
   } catch {
-    console.warn('[adminApi] Non-JSON response:', raw);
     return {} as T;
   }
 }
 
-// ------- Props -------
+// 🕒 SAFE time formatter — handles null, undefined, invalid, etc.
+const fmtTime = (iso?: string | null): string => {
+  if (!iso || typeof iso !== 'string') return '';
+  const parsed = iso.endsWith('Z') || iso.includes('T') ? iso : `${iso}Z`;
+  const d = new Date(parsed);
+  if (isNaN(d.getTime())) return '';
+  try {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
+
 type Props = {
   selectedThread: MessageThread;
   onDeleteThread?: (threadId: string) => void;
@@ -71,7 +77,6 @@ type Props = {
   onActivity?: () => void;
 };
 
-// ------- Component -------
 export default function AdminChatWindow({
   selectedThread,
   onDeleteThread,
@@ -86,11 +91,7 @@ export default function AdminChatWindow({
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const fmtTime = useCallback(
-    (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    []
-  );
-
+  // 🧩 Map backend → UI safely
   const toUi = useCallback(
     (data: ApiMessage[]): UIMessage[] =>
       data.map((m) => ({
@@ -101,15 +102,15 @@ export default function AdminChatWindow({
         is_toxic: m.is_toxic ?? false,
         toxicity_score: m.toxicity_score ?? 0,
       })),
-    [fmtTime]
+    []
   );
 
-  // Scroll to bottom when messages change
+  // 🔽 Scroll to bottom
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load messages + mark read
+  // 🔄 Load messages
   useEffect(() => {
     let abort = false;
     async function load() {
@@ -121,7 +122,7 @@ export default function AdminChatWindow({
           `/api/messages/conversations/${conversationId}/messages?limit=50`
         );
         if (abort) return;
-        setMessages(toUi(data));
+        setMessages(toUi(data || []));
         await adminApi<ApiListOk>(`/api/messages/conversations/${conversationId}/read`, {
           method: 'POST',
         });
@@ -129,7 +130,7 @@ export default function AdminChatWindow({
       } catch (e) {
         const msg = errorMessage(e);
         console.error('❌ Load messages failed (admin):', msg);
-        if (!abort) setError(msg || 'Failed to load messages');
+        if (!abort) setError(msg);
       } finally {
         if (!abort) setLoading(false);
       }
@@ -140,6 +141,7 @@ export default function AdminChatWindow({
     };
   }, [conversationId, toUi, onActivity]);
 
+  // 🔄 When switching threads
   useEffect(() => {
     setConversationId(selectedThread.id);
     setMessages(selectedThread.messages ?? []);
@@ -147,7 +149,7 @@ export default function AdminChatWindow({
 
   const canSend = useMemo(() => newMessage.trim().length > 0 && !sending, [newMessage, sending]);
 
-  // ------- Send message with toxicity handling -------
+  // 💬 Send message
   const handleSendMessage = useCallback(async () => {
     const body = newMessage.trim();
     if (!body || sending) return;
@@ -169,7 +171,7 @@ export default function AdminChatWindow({
       id: tempId,
       sender: 'admin',
       content: body,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: fmtTime(new Date().toISOString()),
     };
 
     try {
@@ -189,13 +191,11 @@ export default function AdminChatWindow({
         body: JSON.stringify(payload),
       });
 
-      // --- Handle blocked (422) ---
       if (res.status === 422) {
         const data = await res.json().catch(() => ({}));
         const reason = data?.error || 'Message blocked for toxicity.';
         alert(`⚠️ ${reason}`);
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        setNewMessage('');
         setSending(false);
         return;
       }
@@ -205,17 +205,21 @@ export default function AdminChatWindow({
         throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
       }
 
-      const created = (await res.json()) as ApiMessage;
-      if (!conversationId) setConversationId(created.conversation_id);
+      const created = (await res.json()) as Partial<ApiMessage>;
+      if (!conversationId && created.conversation_id)
+        setConversationId(created.conversation_id);
+
+      // 🧠 Defensive timestamp handling
+      const safeTimestamp = fmtTime(created.created_at) || fmtTime(new Date().toISOString());
 
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempId
             ? {
-                id: created.id,
-                sender: created.sender_role,
-                content: created.body,
-                timestamp: fmtTime(created.created_at),
+                id: created.id || tempId,
+                sender: created.sender_role || 'admin',
+                content: created.body || body,
+                timestamp: safeTimestamp,
                 is_toxic: created.is_toxic ?? false,
                 toxicity_score: created.toxicity_score ?? 0,
               }
@@ -227,13 +231,13 @@ export default function AdminChatWindow({
       const msg = errorMessage(e);
       console.error('❌ Send failed (admin):', msg);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setError(msg || 'Failed to send message');
+      setError(msg);
     } finally {
       setSending(false);
     }
-  }, [conversationId, fmtTime, newMessage, selectedThread.user_id, sending, onActivity]);
+  }, [conversationId, newMessage, selectedThread.user_id, sending, onActivity]);
 
-  // ------- Delete conversation -------
+  // 🗑 Delete one
   const handleDeleteThread = useCallback(async () => {
     if (!conversationId) return;
     if (!confirm('Hide this conversation for admin?')) return;
@@ -246,21 +250,19 @@ export default function AdminChatWindow({
       setConversationId(undefined);
       setNewMessage('');
     } catch (e) {
-      const msg = errorMessage(e);
-      console.error('❌ Delete conversation failed (admin):', msg);
-      setError('Failed to delete conversation.');
+      setError(errorMessage(e));
     }
   }, [conversationId, onDeleteThread]);
 
-  // ------- Delete all conversations -------
+  // 🧹 Delete all
   const handleDeleteAll = useCallback(async () => {
     if (!confirm('Hide ALL conversations for admin?')) return;
     try {
       const convos: Array<{ id: string }> = await adminApi(`/api/messages/conversations?limit=200`);
       await Promise.all(
         convos.map((c) =>
-          adminApi(`/api/messages/conversations/${c.id}?for=me`, { method: 'DELETE' }).catch((e) =>
-            console.error('Delete failed for', c.id, e)
+          adminApi(`/api/messages/conversations/${c.id}?for=me`, { method: 'DELETE' }).catch(() =>
+            null
           )
         )
       );
@@ -269,13 +271,11 @@ export default function AdminChatWindow({
       setConversationId(undefined);
       setNewMessage('');
     } catch (e) {
-      const msg = errorMessage(e);
-      console.error('❌ Delete all failed (admin):', msg);
-      setError('Failed to delete all conversations.');
+      setError(errorMessage(e));
     }
   }, [onDeleteAllThreads]);
 
-  // ------- Render -------
+  // 🧱 Render
   return (
     <div className="chat-window-wrapper p-3 rounded shadow-sm">
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -293,8 +293,6 @@ export default function AdminChatWindow({
           </button>
         </div>
       </div>
-
-      {selectedThread.subject && <h6 className="mb-3">{selectedThread.subject}</h6>}
 
       {error && (
         <div className="alert alert-warning py-2 px-3 mb-2" role="alert">
@@ -342,14 +340,16 @@ export default function AdminChatWindow({
             >
               <div className="small">
                 {msg.is_toxic ? (
-                  <span>
+                  <>
                     ⚠️ <em>Flagged for review</em>
-                  </span>
+                  </>
                 ) : (
                   msg.content
                 )}
               </div>
-              <div className="text-muted small mt-1">{msg.timestamp}</div>
+              {msg.timestamp && (
+                <div className="text-muted small mt-1">{msg.timestamp}</div>
+              )}
             </div>
 
             {msg.sender === 'admin' && (
@@ -387,7 +387,6 @@ export default function AdminChatWindow({
     </div>
   );
 }
-
 
 
 /*
