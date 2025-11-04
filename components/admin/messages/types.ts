@@ -5,6 +5,8 @@ export type UIMessage = {
   sender: 'admin' | 'user';
   content: string;
   timestamp: string;
+  is_toxic?: boolean;
+  toxicity_score?: number;
 };
 
 export type MessageThread = {

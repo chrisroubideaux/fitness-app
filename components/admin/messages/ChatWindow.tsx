@@ -11,15 +11,18 @@ type ApiMessage = {
   conversation_id: string;
   sender_role: 'admin' | 'user';
   body: string;
-  created_at: string; // ISO string with Z
+  created_at: string;
   read_by_user_at: string | null;
   read_by_admin_at: string | null;
+  is_toxic?: boolean;
+  toxicity_score?: number;
 };
 
 type ApiListOk = { ok: boolean; read_at?: string };
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
+// ------- Error Helper -------
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   try {
@@ -29,7 +32,7 @@ function errorMessage(err: unknown): string {
   }
 }
 
-// ------- Admin-side API helper -------
+// ------- Admin-side API Helper -------
 async function adminApi<T>(path: string, init: RequestInit = {}): Promise<T> {
   const ls = typeof window !== 'undefined' ? window.localStorage : null;
   const token =
@@ -37,19 +40,11 @@ async function adminApi<T>(path: string, init: RequestInit = {}): Promise<T> {
       ls?.getItem('token')?.trim() ||
       ls?.getItem('admin_token')?.trim()) ?? '';
 
-  const mergedHeaders: HeadersInit =
-    typeof init.headers === 'undefined'
-      ? { 'Content-Type': 'application/json' }
-      : init.headers instanceof Headers
-      ? init.headers
-      : { 'Content-Type': 'application/json', ...(init.headers as Record<string, string>) };
-
-  const headers: HeadersInit = token
-    ? {
-        ...(mergedHeaders as Record<string, string>),
-        Authorization: `Bearer ${token}`,
-      }
-    : mergedHeaders;
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(init.headers || {}),
+  };
 
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
   const raw = await res.text().catch(() => '');
@@ -89,7 +84,6 @@ export default function AdminChatWindow({
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const fmtTime = useCallback(
@@ -104,11 +98,13 @@ export default function AdminChatWindow({
         sender: m.sender_role,
         content: m.body,
         timestamp: fmtTime(m.created_at),
+        is_toxic: m.is_toxic ?? false,
+        toxicity_score: m.toxicity_score ?? 0,
       })),
     [fmtTime]
   );
 
-  // Scroll bottom
+  // Scroll to bottom when messages change
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -126,14 +122,11 @@ export default function AdminChatWindow({
         );
         if (abort) return;
         setMessages(toUi(data));
-
-        // Mark read
         await adminApi<ApiListOk>(`/api/messages/conversations/${conversationId}/read`, {
           method: 'POST',
         });
-
         onActivity?.();
-      } catch (e: unknown) {
+      } catch (e) {
         const msg = errorMessage(e);
         console.error('❌ Load messages failed (admin):', msg);
         if (!abort) setError(msg || 'Failed to load messages');
@@ -152,11 +145,9 @@ export default function AdminChatWindow({
     setMessages(selectedThread.messages ?? []);
   }, [selectedThread]);
 
-  const canSend = useMemo(
-    () => newMessage.trim().length > 0 && !sending,
-    [newMessage, sending]
-  );
+  const canSend = useMemo(() => newMessage.trim().length > 0 && !sending, [newMessage, sending]);
 
+  // ------- Send message with toxicity handling -------
   const handleSendMessage = useCallback(async () => {
     const body = newMessage.trim();
     if (!body || sending) return;
@@ -187,14 +178,35 @@ export default function AdminChatWindow({
       setMessages((prev) => [...prev, optimistic]);
       setNewMessage('');
 
-      const created = await adminApi<ApiMessage>(`/api/messages/send`, {
+      const res = await fetch(`${BASE}/api/messages/send`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof window !== 'undefined' && localStorage.getItem('adminToken')
+            ? { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+            : {}),
+        },
         body: JSON.stringify(payload),
       });
 
-      if (!conversationId) {
-        setConversationId(created.conversation_id);
+      // --- Handle blocked (422) ---
+      if (res.status === 422) {
+        const data = await res.json().catch(() => ({}));
+        const reason = data?.error || 'Message blocked for toxicity.';
+        alert(`⚠️ ${reason}`);
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setNewMessage('');
+        setSending(false);
+        return;
       }
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
+      }
+
+      const created = (await res.json()) as ApiMessage;
+      if (!conversationId) setConversationId(created.conversation_id);
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -204,13 +216,14 @@ export default function AdminChatWindow({
                 sender: created.sender_role,
                 content: created.body,
                 timestamp: fmtTime(created.created_at),
+                is_toxic: created.is_toxic ?? false,
+                toxicity_score: created.toxicity_score ?? 0,
               }
             : m
         )
       );
-
       onActivity?.();
-    } catch (e: unknown) {
+    } catch (e) {
       const msg = errorMessage(e);
       console.error('❌ Send failed (admin):', msg);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -218,13 +231,12 @@ export default function AdminChatWindow({
     } finally {
       setSending(false);
     }
-  }, [conversationId, fmtTime, newMessage, selectedThread.user_id, onActivity, sending]);
+  }, [conversationId, fmtTime, newMessage, selectedThread.user_id, sending, onActivity]);
 
-  // ✅ Delete one conversation
+  // ------- Delete conversation -------
   const handleDeleteThread = useCallback(async () => {
     if (!conversationId) return;
     if (!confirm('Hide this conversation for admin?')) return;
-
     try {
       await adminApi<{ ok: boolean }>(`/api/messages/conversations/${conversationId}?for=me`, {
         method: 'DELETE',
@@ -233,17 +245,16 @@ export default function AdminChatWindow({
       setMessages([]);
       setConversationId(undefined);
       setNewMessage('');
-    } catch (e: unknown) {
+    } catch (e) {
       const msg = errorMessage(e);
       console.error('❌ Delete conversation failed (admin):', msg);
       setError('Failed to delete conversation.');
     }
   }, [conversationId, onDeleteThread]);
 
-  // ✅ Delete all conversations
+  // ------- Delete all conversations -------
   const handleDeleteAll = useCallback(async () => {
     if (!confirm('Hide ALL conversations for admin?')) return;
-
     try {
       const convos: Array<{ id: string }> = await adminApi(`/api/messages/conversations?limit=200`);
       await Promise.all(
@@ -257,13 +268,14 @@ export default function AdminChatWindow({
       setMessages([]);
       setConversationId(undefined);
       setNewMessage('');
-    } catch (e: unknown) {
+    } catch (e) {
       const msg = errorMessage(e);
       console.error('❌ Delete all failed (admin):', msg);
       setError('Failed to delete all conversations.');
     }
   }, [onDeleteAllThreads]);
 
+  // ------- Render -------
   return (
     <div className="chat-window-wrapper p-3 rounded shadow-sm">
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -314,14 +326,32 @@ export default function AdminChatWindow({
                 className="rounded-circle me-2"
               />
             )}
+
             <div
-              className={`p-2 ${
+              className={`p-2 rounded-3 ${
                 msg.sender === 'admin' ? 'chat-message-admin' : 'chat-message-user'
               }`}
+              style={{
+                backgroundColor: msg.is_toxic
+                  ? 'rgba(255, 0, 0, 0.1)'
+                  : msg.sender === 'admin'
+                  ? 'rgba(0, 123, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                border: msg.is_toxic ? '1px solid rgba(255,0,0,0.3)' : undefined,
+              }}
             >
-              <div className="small">{msg.content}</div>
+              <div className="small">
+                {msg.is_toxic ? (
+                  <span>
+                    ⚠️ <em>Flagged for review</em>
+                  </span>
+                ) : (
+                  msg.content
+                )}
+              </div>
               <div className="text-muted small mt-1">{msg.timestamp}</div>
             </div>
+
             {msg.sender === 'admin' && (
               <Image
                 src="/admin-avatar.png"
@@ -337,7 +367,6 @@ export default function AdminChatWindow({
         {!loading && messages.length === 0 && !error && (
           <div className="text-muted small">No messages yet. Start the conversation below.</div>
         )}
-
         <div ref={endRef} />
       </div>
 
@@ -361,10 +390,8 @@ export default function AdminChatWindow({
 
 
 
-
-
-
 /*
+
 
 // components/admin/messages/ChatWindow.tsx
 'use client';
