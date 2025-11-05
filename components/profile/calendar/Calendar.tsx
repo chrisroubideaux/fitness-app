@@ -90,7 +90,7 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ---------- Fetch Holidays (Enhanced + Custom Additions) ----------
+  // ---------- Fetch Holidays ----------
   useEffect(() => {
     (async () => {
       try {
@@ -100,7 +100,6 @@ export default function CalendarComponent({ token }: Props) {
         );
         const data: Holiday[] = await res.json();
 
-        // Normalize official public holidays
         const official: EventType[] = data.map((h) => {
           const utcDate = new Date(h.date + 'T00:00:00Z');
           const localDate = new Date(
@@ -119,13 +118,11 @@ export default function CalendarComponent({ token }: Props) {
           };
         });
 
-        // Add important non-federal observances manually
         const customDates = [
-          { month: 1, day: 1, name: "New Year's Day" },
           { month: 2, day: 14, name: "Valentine's Day" },
           { month: 3, day: 17, name: "St. Patrick's Day" },
-          { month: 10, day: 31, name: "Halloween" },
-          { month: 12, day: 24, name: "Christmas Eve" },
+          { month: 10, day: 31, name: 'Halloween' },
+          { month: 12, day: 24, name: 'Christmas Eve' },
           { month: 12, day: 31, name: "New Year's Eve" },
         ];
 
@@ -141,15 +138,7 @@ export default function CalendarComponent({ token }: Props) {
           };
         });
 
-        // Merge and remove duplicates (by title)
-        const merged = [
-          ...official,
-          ...custom.filter(
-            (c) => !official.some((o) => o.title.includes(c.title))
-          ),
-        ];
-
-        setHolidays(merged);
+        setHolidays([...official, ...custom]);
       } catch (err) {
         console.warn('⚠️ Failed to fetch holidays', err);
       }
@@ -333,17 +322,17 @@ export default function CalendarComponent({ token }: Props) {
   // ---------- Slot Select ----------
   const handleSelectSlot = (slot: SlotInfo) => {
     const date = new Date(slot.start);
-    const isHoliday = holidays.some(
-      (h) => h.start.toDateString() === date.toDateString()
-    );
-
-    if (isHoliday) {
-      toast.warn('🎉 It’s a holiday — bookings are disabled!');
-      return;
-    }
 
     if (date < new Date()) {
       toast.warn('⚠️ You cannot select a past date.');
+      return;
+    }
+
+    const isHoliday = holidays.some(
+      (h) => h.start.toDateString() === date.toDateString()
+    );
+    if (isHoliday) {
+      toast.warn('🎉 It’s a holiday — bookings are disabled!');
       return;
     }
 
@@ -395,7 +384,7 @@ export default function CalendarComponent({ token }: Props) {
 
   // ---------- Render ----------
   return (
-    <div className="p-3 shadow-lg rounded">
+    <div className="p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
       <Calendar
@@ -404,6 +393,7 @@ export default function CalendarComponent({ token }: Props) {
         startAccessor="start"
         endAccessor="end"
         selectable
+        min={new Date()} // ✅ Prevent selecting past dates
         onSelectSlot={handleSelectSlot}
         onSelectEvent={(event: EventType) => {
           if (!event.isHoliday) {
@@ -419,7 +409,7 @@ export default function CalendarComponent({ token }: Props) {
         style={{ height: '80vh' }}
       />
 
-      {/* Time Picker Modal */}
+      {/* ---------- Time Picker Modal ---------- */}
       {showTimeModal && selectedSlot && (
         <div
           className="modal fade show d-block"
@@ -506,7 +496,7 @@ export default function CalendarComponent({ token }: Props) {
         </div>
       )}
 
-      {/* Event Details Modal */}
+      {/* ---------- Event Details Modal (Modernized) ---------- */}
       {showEventModal && selectedEvent && (
         <div
           className="modal fade show d-block"
@@ -514,102 +504,133 @@ export default function CalendarComponent({ token }: Props) {
         >
           <div className="modal-dialog modal-dialog-centered">
             <div
-              className="modal-content rounded-4 border-0"
+              className="modal-content border-0 shadow-lg"
               style={{
-                background: 'linear-gradient(135deg,#f8eaff,#fff9ff)',
+                backdropFilter: 'blur(10px)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: '20px',
+                overflow: 'hidden',
               }}
             >
-              <div className="modal-header border-0">
-                <h5
-                  className="modal-title fw-bold"
+              {/* Header */}
+              <div
+                className="text-center p-4"
+                style={{
+                  background: 'linear-gradient(135deg,#b14cff,#f58fff)',
+                  color: 'white',
+                }}
+              >
+                <img
+                  src={
+                    selectedEvent.trainer?.profile_image_url ||
+                    '/default-avatar.png'
+                  }
+                  alt={selectedEvent.trainer?.full_name || 'Trainer'}
                   style={{
-                    background: 'linear-gradient(90deg,#b14cff,#f58fff)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
+                    width: 90,
+                    height: 90,
+                    borderRadius: '50%',
+                    border: '3px solid white',
+                    objectFit: 'cover',
+                    marginBottom: '12px',
                   }}
-                >
-                  {selectedEvent.title}
+                />
+                <h5 className="fw-bold mb-0">
+                  {selectedEvent.trainer?.full_name || 'Trainer'}
                 </h5>
-                <button className="btn-close" onClick={handleCloseModals}></button>
-              </div>
-
-              <div className="modal-body text-dark">
-                {selectedEvent.trainer && (
-                  <div className="d-flex align-items-center gap-3 mb-3">
-                    <img
-                      src={
-                        selectedEvent.trainer.profile_image_url ||
-                        '/default-avatar.png'
-                      }
-                      alt={selectedEvent.trainer.full_name || 'Trainer'}
-                      style={{
-                        width: 55,
-                        height: 55,
-                        borderRadius: '50%',
-                        border: '2px solid #b14cff',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <div>
-                      <strong style={{ color: '#8a2be2' }}>
-                        {selectedEvent.trainer.full_name}
-                      </strong>
-                      <p className="text-muted small mb-0">
-                        {selectedEvent.trainer.email}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <p>
-                  <strong style={{ color: '#8a2be2' }}>Date:</strong>{' '}
-                  {selectedEvent.start.toLocaleDateString()}
-                </p>
-                <p>
-                  <strong style={{ color: '#8a2be2' }}>Time:</strong>{' '}
-                  {formatTime(selectedEvent.start)} –{' '}
-                  {formatTime(selectedEvent.end)}
-                </p>
-                <p>
-                  <strong style={{ color: '#8a2be2' }}>Status:</strong>{' '}
-                  {selectedEvent.status}
-                </p>
-                {selectedEvent.description && (
-                  <p>
-                    <strong style={{ color: '#8a2be2' }}>Notes:</strong>{' '}
-                    {selectedEvent.description}
-                  </p>
+                {selectedEvent.trainer?.email && (
+                  <small className="text-light">
+                    {selectedEvent.trainer.email}
+                  </small>
                 )}
               </div>
 
-              <div className="modal-footer border-0 d-flex justify-content-between">
-                <button
-                  className="btn btn-danger btn-sm"
-                  disabled={loadingCancel}
-                  onClick={() => handleCancelEvent(selectedEvent.id)}
-                >
-                  {loadingCancel ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    'Cancel Appointment'
-                  )}
-                </button>
-                <button
-                  className="btn btn-warning btn-sm"
-                  onClick={() => {
-                    setRescheduleMode(true);
-                    setShowTimeModal(true);
-                    setShowEventModal(false);
+              {/* Body */}
+              <div className="modal-body p-4">
+                <div
+                  className="p-3 rounded-4 mb-3"
+                  style={{
+                    background: 'linear-gradient(135deg,#f8f3ff,#fff9ff)',
+                    boxShadow: '0 2px 10px rgba(177, 76, 255, 0.1)',
                   }}
                 >
-                  Reschedule
-                </button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleCloseModals}
-                >
-                  Close
-                </button>
+                  <div className="d-flex align-items-center mb-2">
+                    <span className="me-2">📅</span>
+                    <strong>Date:</strong>&nbsp;
+                    <span>{selectedEvent.start.toLocaleDateString()}</span>
+                  </div>
+                  <div className="d-flex align-items-center mb-2">
+                    <span className="me-2">⏰</span>
+                    <strong>Time:</strong>&nbsp;
+                    <span>
+                      {formatTime(selectedEvent.start)} –{' '}
+                      {formatTime(selectedEvent.end)}
+                    </span>
+                  </div>
+                  <div className="d-flex align-items-center mb-2">
+                    <span className="me-2">💬</span>
+                    <strong>Status:</strong>&ensp;
+                    <span
+                      style={{
+                        color:
+                          selectedEvent.status === 'approved'
+                            ? '#2ecc71'
+                            : selectedEvent.status === 'pending'
+                            ? '#f39c12'
+                            : selectedEvent.status === 'rescheduled'
+                            ? '#e67e22'
+                            : '#e74c3c',
+                      }}
+                    >
+                      {selectedEvent.status?.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {selectedEvent.description && (
+                    <div className="d-flex align-items-start">
+                      <span className="me-2 mt-1">📝</span>
+                      <div>
+                        <strong>Notes:</strong>
+                        <p className="mb-0">{selectedEvent.description}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div className="d-flex justify-content-between mt-4">
+                  <button
+                    className="btn btn-danger btn-sm px-3"
+                    disabled={loadingCancel}
+                    onClick={() => handleCancelEvent(selectedEvent.id)}
+                  >
+                    {loadingCancel ? (
+                      <span className="spinner-border spinner-border-sm" />
+                    ) : (
+                      <>
+                        ❌ Cancel
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    className="btn btn-warning btn-sm px-3"
+                    onClick={() => {
+                      setRescheduleMode(true);
+                      setShowTimeModal(true);
+                      setShowEventModal(false);
+                    }}
+                  >
+                    🔄 Reschedule
+                  </button>
+
+                  <button
+                    className="btn btn-secondary btn-sm px-3"
+                    onClick={handleCloseModals}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -618,6 +639,7 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
+
 
 
 /*
