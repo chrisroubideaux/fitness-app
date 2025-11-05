@@ -1,8 +1,7 @@
 // components/profile/calendar/CalendarComponent.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   Calendar,
   momentLocalizer,
@@ -10,15 +9,13 @@ import {
   Views,
   View,
 } from 'react-big-calendar';
-import Select from 'react-select';
+import Select, { type SingleValue } from 'react-select';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// ----------------------------
-// Types
-// ----------------------------
+// ---------- Types ----------
 type EventType = {
   id: string;
   title: string;
@@ -55,12 +52,12 @@ type Trainer = {
   email?: string;
   profile_image_url?: string;
 };
+
 type TrainerOption = {
   value: string;
   label: ReactNode;
   data: Trainer;
 };
-
 
 const localizer = momentLocalizer(moment);
 
@@ -68,11 +65,11 @@ type Props = {
   token: string | null;
 };
 
-// ----------------------------
-// Component
-// ----------------------------
+// ---------- Component ----------
 export default function CalendarComponent({ token }: Props) {
   const [events, setEvents] = useState<EventType[]>([]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
 
@@ -80,25 +77,18 @@ export default function CalendarComponent({ token }: Props) {
   const [showEventModal, setShowEventModal] = useState(false);
   const [rescheduleMode, setRescheduleMode] = useState(false);
 
-  const [currentView, setCurrentView] = useState<View>(Views.MONTH);
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  // Trainers
-  const [trainers, setTrainers] = useState<Trainer[]>([]);
-  const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
-
-  // Loading states
   const [loadingBook, setLoadingBook] = useState(false);
+  const [loadingCancel, setLoadingCancel] = useState(false);
   const [loadingReschedule, setLoadingReschedule] = useState(false);
   const [loadingTrainers, setLoadingTrainers] = useState(false);
-  const [loadingCancel, setLoadingCancel] = useState(false);
+
+  const [currentView, setCurrentView] = useState<View>(Views.MONTH);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ----------------------------
-  // Fetch events
-  // ----------------------------
+  // ---------- Fetch Events ----------
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -106,20 +96,18 @@ export default function CalendarComponent({ token }: Props) {
         const res = await fetch('http://localhost:5000/api/appointments/my-events', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error(`Failed with status ${res.status}`);
-
         const data: ApiEvent[] = await res.json();
-        const mapped: EventType[] = data.map((e) => ({
-          id: e.id,
-          title: e.title,
-          description: e.description,
-          start: new Date(e.start_time),
-          end: new Date(e.end_time),
-          status: e.status ?? 'pending',
-          trainer: e.trainer,
-        }));
-
-        setEvents(mapped);
+        setEvents(
+          data.map((e) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            start: new Date(e.start_time),
+            end: new Date(e.end_time),
+            status: e.status ?? 'pending',
+            trainer: e.trainer,
+          }))
+        );
       } catch (err) {
         toast.error('❌ Failed to load events.');
         console.error(err);
@@ -127,9 +115,7 @@ export default function CalendarComponent({ token }: Props) {
     })();
   }, [token]);
 
-  // ----------------------------
-  // Fetch trainers
-  // ----------------------------
+  // ---------- Fetch Trainers ----------
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -138,7 +124,6 @@ export default function CalendarComponent({ token }: Props) {
         const res = await fetch('http://localhost:5000/api/users/admins', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error(`Trainer fetch failed: ${res.status}`);
         const data: Trainer[] = await res.json();
         setTrainers(data);
       } catch (err) {
@@ -150,17 +135,11 @@ export default function CalendarComponent({ token }: Props) {
     })();
   }, [token]);
 
-  // ----------------------------
-  // Book
-  // ----------------------------
+  // ---------- Book Event ----------
   const handleBookEvent = async (date: Date, hour: number) => {
-    if (!token) return;
-    if (!selectedTrainer) {
-      toast.warn('⚠️ Please select a trainer before booking.');
-      return;
-    }
-
+    if (!token || !selectedTrainer) return;
     setLoadingBook(true);
+
     const start = new Date(date);
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -175,16 +154,13 @@ export default function CalendarComponent({ token }: Props) {
         body: JSON.stringify({
           title: `Workout with ${selectedTrainer.full_name || 'Trainer'}`,
           event_type: 'workout',
-          description: `Session with ${selectedTrainer.full_name || selectedTrainer.email}`,
+          description: `Session with ${selectedTrainer.full_name}`,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
           trainer_id: selectedTrainer.id,
         }),
       });
-
-      if (!res.ok) throw new Error(`Booking failed: ${res.status}`);
       const { event }: { event: ApiEvent } = await res.json();
-
       setEvents((prev) => [
         ...prev,
         {
@@ -197,46 +173,35 @@ export default function CalendarComponent({ token }: Props) {
           trainer: event.trainer,
         },
       ]);
-
       toast.success('✅ Appointment booked!');
-      setShowTimeModal(false);
-      setSelectedTrainer(null);
     } catch (err) {
-      toast.error('❌ Failed to book appointment.');
+      toast.error('❌ Booking failed.');
       console.error(err);
     } finally {
       setLoadingBook(false);
     }
   };
 
-  // ----------------------------
-  // Cancel
-  // ----------------------------
+  // ---------- Cancel Event ----------
   const handleCancelEvent = async (eventId: string) => {
     if (!token) return;
     setLoadingCancel(true);
-
     try {
-      const res = await fetch(`http://localhost:5000/api/appointments/delete/${eventId}`, {
+      await fetch(`http://localhost:5000/api/appointments/delete/${eventId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
-      setShowEventModal(false);
       toast.info('ℹ️ Appointment canceled.');
-    } catch (err) {
-      toast.error('❌ Failed to cancel appointment.');
-      console.error(err);
+      setShowEventModal(false);
+    } catch {
+      toast.error('❌ Cancel failed.');
     } finally {
       setLoadingCancel(false);
     }
   };
 
-  // ----------------------------
-  // Reschedule
-  // ----------------------------
+  // ---------- Reschedule ----------
   const handleReschedule = async (date: Date, hour: number) => {
     if (!token || !selectedEvent) return;
     setLoadingReschedule(true);
@@ -260,9 +225,7 @@ export default function CalendarComponent({ token }: Props) {
           }),
         }
       );
-
-      if (!res.ok) throw new Error(`Reschedule failed: ${res.status}`);
-
+      if (!res.ok) throw new Error();
       setEvents((prev) =>
         prev.map((e) =>
           e.id === selectedEvent.id
@@ -270,30 +233,25 @@ export default function CalendarComponent({ token }: Props) {
             : e
         )
       );
-
       toast.success('✅ Appointment rescheduled!');
       setShowTimeModal(false);
-      setShowEventModal(false);
       setRescheduleMode(false);
-    } catch (err) {
-      toast.error('❌ Failed to reschedule appointment.');
-      console.error(err);
+    } catch {
+      toast.error('❌ Reschedule failed.');
     } finally {
       setLoadingReschedule(false);
     }
   };
 
-  // ----------------------------
-  // Handlers
-  // ----------------------------
-  const handleSelectSlot = (slotInfo: SlotInfo) => {
-    const selectedDate = new Date(slotInfo.start);
-    if (selectedDate < new Date(new Date().setHours(0, 0, 0, 0))) {
-      toast.warn('⚠️ You cannot select a past date.');
+  // ---------- Handlers ----------
+  const handleSelectSlot = (slot: SlotInfo) => {
+    const date = new Date(slot.start);
+    if (date < new Date()) {
+      toast.warn('⚠️ Cannot book in the past.');
       return;
     }
-    setSelectedSlot(selectedDate);
-    if (currentView === 'month') setShowTimeModal(true);
+    setSelectedSlot(date);
+    setShowTimeModal(true);
   };
 
   const handleSelectEvent = (event: EventType) => {
@@ -304,40 +262,36 @@ export default function CalendarComponent({ token }: Props) {
   const handleCloseModals = () => {
     setShowTimeModal(false);
     setShowEventModal(false);
-    setSelectedSlot(null);
-    setSelectedEvent(null);
     setSelectedTrainer(null);
+    setSelectedEvent(null);
   };
 
-  // ----------------------------
-  // Styles
-  // ----------------------------
+  // ---------- Event Style ----------
   const eventStyleGetter = (event: EventType) => {
     let background = 'linear-gradient(135deg, #cfd9df, #e2ebf0)';
-    let color = '#333';
+    if (event.status === 'approved')
+      background = 'linear-gradient(135deg, #7ed957, #56ab2f)';
+    if (event.status === 'pending')
+      background = 'linear-gradient(135deg, #b14cff, #f58fff)';
+    if (event.status === 'rescheduled')
+      background = 'linear-gradient(135deg, #f6d365, #fda085)';
+    if (event.status === 'declined')
+      background = 'linear-gradient(135deg, #ff6a88, #ff99ac)';
 
-    switch (event.status) {
-      case 'approved':
-        background = 'linear-gradient(135deg, #a8e063, #56ab2f)';
-        color = '#fff';
-        break;
-      case 'declined':
-        background = 'linear-gradient(135deg, #ff758c, #ff7eb3)';
-        color = '#fff';
-        break;
-      case 'rescheduled':
-        background = 'linear-gradient(135deg, #f6d365, #fda085)';
-        color = '#fff';
-        break;
-    }
-    return { style: { background, color, borderRadius: '6px', padding: '2px 4px' } };
+    return {
+      style: {
+        background,
+        color: '#fff',
+        borderRadius: '6px',
+        padding: '2px 4px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+      },
+    };
   };
 
-  // ----------------------------
-  // Render
-  // ----------------------------
+  // ---------- Render ----------
   return (
-    <div className="box p-3 shadow-sm rounded">
+    <div className="p-3 shadow-lg rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
       <Calendar
@@ -350,174 +304,47 @@ export default function CalendarComponent({ token }: Props) {
         onSelectEvent={handleSelectEvent}
         view={currentView}
         date={currentDate}
-        onNavigate={(date) => setCurrentDate(date)}
-        onView={(view) => setCurrentView(view)}
-        style={{ height: '80vh' }}
+        onView={setCurrentView}
+        onNavigate={setCurrentDate}
         eventPropGetter={eventStyleGetter}
+        style={{ height: '80vh' }}
       />
 
-      {/* 📅 Event Details Modal */}
-      {showEventModal && selectedEvent && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content rounded-4">
-              <div className="modal-header">
-                <h5 className="modal-title">{selectedEvent.title}</h5>
-                <button className="btn-close" onClick={handleCloseModals}></button>
-              </div>
-
-              <div className="modal-body">
-                {selectedEvent.trainer && (
-                  <div className="d-flex align-items-center gap-3 mb-3">
-                    <img
-                      src={selectedEvent.trainer.profile_image_url || '/default-avatar.png'}
-                      alt={selectedEvent.trainer.full_name || selectedEvent.trainer.email}
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <div>
-                      <strong>{selectedEvent.trainer.full_name || 'Trainer'}</strong>
-                      <p className="text-muted small mb-0">
-                        {selectedEvent.trainer.email}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <p>
-                  <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}
-                </p>
-                <p>
-                  <strong>Status:</strong>{' '}
-                  <span className="badge bg-info text-dark">
-                    {selectedEvent.status}
-                  </span>
-                </p>
-                {selectedEvent.description && (
-                  <p>
-                    <strong>Notes:</strong> {selectedEvent.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="modal-footer d-flex justify-content-between">
-                <button
-                  className="btn btn-danger btn-sm"
-                  disabled={loadingCancel}
-                  onClick={() => handleCancelEvent(selectedEvent.id)}
-                >
-                  {loadingCancel ? <span className="spinner-border spinner-border-sm" /> : 'Cancel Appointment'}
-                </button>
-                <button
-                  className="btn btn-warning btn-sm"
-                  onClick={() => {
-                    setRescheduleMode(true);
-                    setShowEventModal(false);
-                    setShowTimeModal(true);
-                  }}
-                >
-                  Reschedule
-                </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🕒 Time Picker Modal (with Trainer Select) */}
+      {/* 🕒 Time Picker Modal */}
       {showTimeModal && selectedSlot && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal fade show d-block" style={{ background: 'rgba(0,0,0,0.6)' }}>
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content rounded-4">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {rescheduleMode
-                    ? 'Reschedule Appointment'
-                    : `Select Trainer & Time – ${selectedSlot.toLocaleDateString()}`}
+            <div className="modal-content rounded-4 border-0">
+              <div className="modal-header border-0">
+                <h5 className="modal-title fw-bold text-purple">
+                  {rescheduleMode ? 'Reschedule Appointment' : 'Book Appointment'}
                 </h5>
-                <button className="btn-close" onClick={handleCloseModals}></button>
-              </div>
+                <Select<TrainerOption, false>
+                  options={trainers.map((t) => ({
+                    value: t.id,
+                    label: (
+                      <div className="d-flex align-items-center gap-2">
+                        <img
+                          src={t.profile_image_url || '/default-avatar.png'}
+                          alt={t.full_name || 'Trainer'}
+                          style={{ width: 28, height: 28, borderRadius: '50%' }}
+                        />
+                        <span>{t.full_name || t.email}</span>
+                      </div>
+                    ),
+                    data: t,
+                  }))}
+                  onChange={(option: SingleValue<TrainerOption>) =>
+                    setSelectedTrainer(option?.data ?? null)
+                  }
+                  isLoading={loadingTrainers}
+                  placeholder="Choose a trainer…"
+                />
 
-              <div className="modal-body">
-                {/* Trainer Dropdown */}
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Select Trainer</label>
-                  {loadingTrainers ? (
-                    <div className="text-muted small">Loading trainers…</div>
-                  ) : (
-                    <Select<TrainerOption, false>
-                      options={trainers.map((t) => ({
-                        value: t.id,
-                        label: (
-                          <div className="d-flex align-items-center gap-2">
-                            <img
-                              src={t.profile_image_url || '/default-avatar.png'}
-                              alt={t.full_name || t.email}
-                              style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                              }}
-                            />
-                            <span>{t.full_name || t.email}</span>
-                          </div>
-                        ),
-                        data: t,
-                      }))}
-                      value={
-                        selectedTrainer
-                          ? {
-                              value: selectedTrainer.id,
-                              label: (
-                                <div className="d-flex align-items-center gap-2">
-                                  <img
-                                    src={
-                                      selectedTrainer.profile_image_url ||
-                                      '/default-avatar.png'
-                                    }
-                                    alt={
-                                      selectedTrainer.full_name ||
-                                      selectedTrainer.email
-                                    }
-                                    style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: '50%',
-                                      objectFit: 'cover',
-                                    }}
-                                  />
-                                  <span>
-                                    {selectedTrainer.full_name ||
-                                      selectedTrainer.email}
-                                  </span>
-                                </div>
-                              ),
-                              data: selectedTrainer,
-                            }
-                          : null
-                      }
-                      onChange={(option) => setSelectedTrainer(option?.data ?? null)}
-                      placeholder="Choose a trainer…"
-                    />
-                  )}
-                </div>
-
-                {/* Time Buttons */}
-                <div className="d-flex flex-wrap gap-2">
+                <div className="d-flex flex-wrap gap-2 justify-content-center mt-3">
                   {Array.from({ length: 9 }, (_, i) => {
                     const hour = 10 + i;
-                    const timeString = formatTime(new Date(0, 0, 0, hour));
+                    const time = formatTime(new Date(0, 0, 0, hour));
                     return (
                       <button
                         key={hour}
@@ -529,20 +356,103 @@ export default function CalendarComponent({ token }: Props) {
                             : handleBookEvent(selectedSlot, hour)
                         }
                       >
-                        {(loadingBook || loadingReschedule) ? (
+                        {loadingBook || loadingReschedule ? (
                           <span className="spinner-border spinner-border-sm" />
                         ) : (
-                          timeString
+                          time
                         )}
                       </button>
                     );
                   })}
                 </div>
               </div>
-
-              <div className="modal-footer">
+              <div className="modal-footer border-0">
                 <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💜 Event Details Modal */}
+      {showEventModal && selectedEvent && (
+        <div className="modal fade show d-block" style={{ background: 'rgba(0,0,0,0.6)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0"
+                 style={{ background: 'linear-gradient(135deg,#f8eaff,#fff9ff)' }}>
+              <div className="modal-header border-0">
+                <h5 className="modal-title fw-bold"
+                    style={{
+                      background: 'linear-gradient(90deg,#b14cff,#f58fff)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>
+                  {selectedEvent.title}
+                </h5>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+
+              <div className="modal-body text-dark">
+                {selectedEvent.trainer && (
+                  <div className="d-flex align-items-center gap-3 mb-3">
+                    <img
+                      src={
+                        selectedEvent.trainer.profile_image_url || '/default-avatar.png'
+                      }
+                      alt={selectedEvent.trainer.full_name || 'Trainer'}
+                      style={{
+                        width: 55,
+                        height: 55,
+                        borderRadius: '50%',
+                        border: '2px solid #b14cff',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <div>
+                      <strong style={{ color: '#8a2be2' }}>
+                        {selectedEvent.trainer.full_name}
+                      </strong>
+                      <p className="text-muted small mb-0">
+                        {selectedEvent.trainer.email}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <p><strong style={{ color: '#8a2be2' }}>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
+                <p><strong style={{ color: '#8a2be2' }}>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}</p>
+                <p><strong style={{ color: '#8a2be2' }}>Status:</strong> {selectedEvent.status}</p>
+                {selectedEvent.description && (
+                  <p><strong style={{ color: '#8a2be2' }}>Notes:</strong> {selectedEvent.description}</p>
+                )}
+              </div>
+
+              <div className="modal-footer border-0 d-flex justify-content-between">
+                <button
+                  className="btn btn-danger btn-sm"
+                  disabled={loadingCancel}
+                  onClick={() => handleCancelEvent(selectedEvent.id)}
+                >
+                  {loadingCancel ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    'Cancel Appointment'
+                  )}
+                </button>
+                <button
+                  className="btn btn-warning btn-sm"
+                  onClick={() => {
+                    setRescheduleMode(true);
+                    setShowTimeModal(true);
+                    setShowEventModal(false);
+                  }}
+                >
+                  Reschedule
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
+                  Close
                 </button>
               </div>
             </div>
@@ -558,361 +468,106 @@ export default function CalendarComponent({ token }: Props) {
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  Calendar,
-  momentLocalizer,
-  SlotInfo,
-  Views,
-  View,
-} from 'react-big-calendar';
+import { useState } from 'react';
+import { Calendar, momentLocalizer, SlotInfo } from 'react-big-calendar';
 import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 type EventType = {
-  id: string;
   title: string;
   start: Date;
   end: Date;
   description?: string;
-  status?: string;
-};
-
-type ApiEvent = {
-  id: string;
-  title: string;
-  description?: string;
-  start_time: string;
-  end_time: string;
-  status?: string;
 };
 
 const localizer = momentLocalizer(moment);
 
-type Props = {
-  token: string | null;
-};
+const initialEvents: EventType[] = [
+  {
+    title: 'Workout: Upper Body Strength',
+    start: new Date(),
+    end: new Date(new Date().getTime() + 60 * 60 * 1000),
+    description: 'Push, pull, and shoulder circuit.',
+  },
+  {
+    title: 'Trainer Meeting: Coach Lena',
+    start: new Date(new Date().setDate(new Date().getDate() + 2)),
+    end: new Date(new Date().setDate(new Date().getDate() + 2)),
+    description: 'Progress check-in and plan review.',
+  },
+];
 
-export default function CalendarComponent({ token }: Props) {
-  const [events, setEvents] = useState<EventType[]>([]);
+export default function CalendarComponent() {
+  const [events] = useState<EventType[]>(initialEvents);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
-
   const [showEventModal, setShowEventModal] = useState(false);
-  const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false);
+  const [showSlotModal, setShowSlotModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
 
-  const [rescheduleMode, setRescheduleMode] = useState(false);
-  const [currentView, setCurrentView] = useState<View>(Views.MONTH);
-  const [currentDate, setCurrentDate] = useState(new Date()); // ✅ controls pagination
-
-  // Loading states
-  const [loadingBook, setLoadingBook] = useState(false);
-  const [loadingCancel, setLoadingCancel] = useState(false);
-  const [loadingReschedule, setLoadingReschedule] = useState(false);
-
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-  // ---------------------
-  // Fetch events
-  // ---------------------
-  useEffect(() => {
-    if (!token) return;
-    (async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/appointments/my-events', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`Failed with status ${res.status}`);
-
-        const data: ApiEvent[] = await res.json();
-        const mapped: EventType[] = data.map((e) => ({
-          id: e.id,
-          title: e.title,
-          description: e.description,
-          start: new Date(e.start_time),
-          end: new Date(e.end_time),
-          status: e.status ?? 'pending',
-        }));
-
-        setEvents(mapped);
-      } catch (err) {
-        toast.error('❌ Failed to load events.');
-        console.error(err);
-      }
-    })();
-  }, [token]);
-
-  // ---------------------
-  // Book
-  // ---------------------
-  const handleBookEvent = async (date: Date, hour: number) => {
-    if (!token) return;
-    setLoadingBook(true);
-
-    const start = new Date(date);
-    start.setHours(hour, 0, 0, 0);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-
-    if (start < new Date()) {
-      toast.warn('⚠️ You cannot book in the past.');
-      setLoadingBook(false);
-      return;
-    }
-
-    try {
-      const res = await fetch('http://localhost:5000/api/appointments/book', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: 'Workout Session',
-          event_type: 'workout',
-          description: 'User booked session via calendar',
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-        }),
-      });
-
-      if (!res.ok) throw new Error(`Booking failed: ${res.status}`);
-      const { event }: { event: ApiEvent } = await res.json();
-
-      setEvents((prev) => [
-        ...prev,
-        {
-          id: event.id,
-          title: event.title,
-          description: event.description,
-          start: new Date(event.start_time),
-          end: new Date(event.end_time),
-          status: event.status ?? 'pending',
-        },
-      ]);
-
-      toast.success('✅ Appointment booked!');
-      setShowTimeModal(false);
-    } catch (err) {
-      toast.error('❌ Failed to book appointment.');
-      console.error(err);
-    } finally {
-      setLoadingBook(false);
-    }
-  };
-
-  // ---------------------
-  // Cancel
-  // ---------------------
-  const handleCancelEvent = async (eventId: string) => {
-    if (!token) return;
-    setLoadingCancel(true);
-
-    try {
-      const res = await fetch(`http://localhost:5000/api/appointments/delete/${eventId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error(`Cancel failed: ${res.status}`);
-
-      setEvents((prev) => prev.filter((e) => e.id !== eventId));
-      setShowEventModal(false);
-
-      toast.info('ℹ️ Appointment canceled.');
-    } catch (err) {
-      toast.error('❌ Failed to cancel appointment.');
-      console.error(err);
-    } finally {
-      setLoadingCancel(false);
-    }
-  };
-
-  // ---------------------
-  // Reschedule
-  // ---------------------
-  const handleReschedule = async (date: Date, hour: number) => {
-    if (!token || !selectedEvent) return;
-    setLoadingReschedule(true);
-
-    const start = new Date(date);
-    start.setHours(hour, 0, 0, 0);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-
-    if (start < new Date()) {
-      toast.warn('⚠️ You cannot reschedule to a past date.');
-      setLoadingReschedule(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/appointments/update/${selectedEvent.id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            start_time: start.toISOString(),
-            end_time: end.toISOString(),
-          }),
-        }
-      );
-
-      if (!res.ok) throw new Error(`Reschedule failed: ${res.status}`);
-      const { event }: { event: ApiEvent } = await res.json();
-
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === event.id
-            ? {
-                ...e,
-                start: new Date(event.start_time),
-                end: new Date(event.end_time),
-                status: event.status ?? 'pending',
-              }
-            : e
-        )
-      );
-
-      toast.success('✅ Appointment rescheduled!');
-      setShowTimeModal(false);
-      setShowRescheduleCalendar(false);
-      setRescheduleMode(false);
-      setSelectedEvent(null);
-    } catch (err) {
-      toast.error('❌ Failed to reschedule appointment.');
-      console.error(err);
-    } finally {
-      setLoadingReschedule(false);
-    }
-  };
-
-  // ---------------------
-  // Handlers
-  // ---------------------
   const handleSelectEvent = (event: EventType) => {
     setSelectedEvent(event);
     setShowEventModal(true);
   };
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
-    const selectedDate = new Date(slotInfo.start);
-    if (selectedDate < new Date(new Date().setHours(0, 0, 0, 0))) {
-      toast.warn('⚠️ You cannot select a past date.');
-      return;
-    }
-    setSelectedSlot(selectedDate);
-    if (currentView === 'month') {
-      setShowTimeModal(true);
-    }
+    setSelectedSlot(new Date(slotInfo.start));
+    setShowSlotModal(true);
   };
 
   const handleCloseModals = () => {
     setShowEventModal(false);
-    setShowRescheduleCalendar(false);
+    setShowSlotModal(false);
     setShowTimeModal(false);
-    setRescheduleMode(false);
     setSelectedEvent(null);
     setSelectedSlot(null);
   };
 
-  // ---------------------
-  // Event Styles
-  // ---------------------
-  const eventStyleGetter = (event: EventType) => {
-    let background = 'linear-gradient(135deg, #cfd9df, #e2ebf0)';
-    let color = '#333';
-
-    switch (event.status) {
-      case 'approved':
-        background = 'linear-gradient(135deg, #a8e063, #56ab2f)';
-        color = '#fff';
-        break;
-      case 'declined':
-        background = 'linear-gradient(135deg, #ff758c, #ff7eb3)';
-        color = '#fff';
-        break;
-      case 'rescheduled':
-        background = 'linear-gradient(135deg, #f6d365, #fda085)';
-        color = '#fff';
-        break;
-    }
-
-    return { style: { background, color, borderRadius: '6px', padding: '2px 4px' } };
-  };
-
-  // ---------------------
-  // Render
-  // ---------------------
   return (
-    <div className="box p-3 shadow-sm rounded">
-      <ToastContainer position="top-right" autoClose={3000} />
-
+    <div
+      className="box p-3 shadow-sm rounded"
+      style={{ background: 'linear-gradient(145deg, #f8f9ff, #eef1fc)' }}
+    >
       <Calendar
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
-        views={['month', 'week', 'day']}
-        defaultView={Views.MONTH}
-        view={currentView}
-        date={currentDate}                     // ✅ controlled date
-        onNavigate={(date) => setCurrentDate(date)} // ✅ pagination
-        onView={(view) => setCurrentView(view)}
         selectable
         onSelectEvent={handleSelectEvent}
         onSelectSlot={handleSelectSlot}
+        popup
         style={{ height: '80vh' }}
-        eventPropGetter={eventStyleGetter}
-        formats={{
-          timeGutterFormat: (date: Date) => formatTime(date),
-          eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
-            `${formatTime(start)} – ${formatTime(end)}`,
-        }}
-        min={new Date(2025, 0, 1, 10, 0)}
-        max={new Date(2025, 0, 1, 19, 0)}
       />
 
     
       {showEventModal && selectedEvent && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{selectedEvent.title}</h5>
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <p><strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
-                <p><strong>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}</p>
-                <p><strong>Description:</strong> {selectedEvent.description}</p>
-                <p><strong>Status:</strong> {selectedEvent.status}</p>
+                <p>
+                  <strong>Date:</strong> {selectedEvent.start.toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>Time:</strong>{' '}
+                  {selectedEvent.start.toLocaleTimeString()} –{' '}
+                  {selectedEvent.end.toLocaleTimeString()}
+                </p>
+                <p>
+                  <strong>Description:</strong> {selectedEvent.description}
+                </p>
               </div>
               <div className="modal-footer">
-                <button
-                  className="btn btn-danger btn-sm"
-                  disabled={loadingCancel}
-                  onClick={() => handleCancelEvent(selectedEvent.id)}
-                >
-                  {loadingCancel ? <span className="spinner-border spinner-border-sm" /> : 'Cancel'}
+                <button className="btn btn-primary" onClick={handleCloseModals}>
+                  Close
                 </button>
-                <button
-                  className="btn btn-warning btn-sm"
-                  onClick={() => {
-                    setRescheduleMode(true);
-                    setShowRescheduleCalendar(true);
-                    setShowEventModal(false);
-                  }}
-                >
-                  Reschedule
-                </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Close</button>
               </div>
             </div>
           </div>
@@ -920,80 +575,116 @@ export default function CalendarComponent({ token }: Props) {
       )}
 
     
-      {showRescheduleCalendar && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
+      {showSlotModal && selectedSlot && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Choose New Date</h5>
+                <h5 className="modal-title">Schedule Appointment</h5>
                 <button className="btn-close" onClick={handleCloseModals}></button>
               </div>
               <div className="modal-body">
-                <Calendar
-                  localizer={localizer}
-                  events={events}
-                  defaultView={Views.MONTH}
-                  views={['month']}
-                  selectable
-                  style={{ height: '60vh' }}
-                  min={new Date()}
-                  onSelectSlot={(slotInfo: SlotInfo) => {
-                    const newDate = new Date(slotInfo.start);
-                    if (newDate < new Date(new Date().setHours(0, 0, 0, 0))) {
-                      toast.warn('⚠️ You cannot reschedule to a past date.');
-                      return;
-                    }
-                    setSelectedSlot(newDate);
-                    setShowRescheduleCalendar(false);
+                <p>
+                  <strong>Date Selected:</strong> {selectedSlot.toLocaleDateString()}
+                </p>
+                <p>
+                  This date is available for booking. Would you like to schedule a
+                  workout or meeting?
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-success"
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={() => {
+                    setShowSlotModal(false);
                     setShowTimeModal(true);
                   }}
-                  eventPropGetter={eventStyleGetter}
-                />
+                >
+                  Select a Time
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={handleCloseModals}>
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-     
+
       {showTimeModal && selectedSlot && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  {rescheduleMode ? 'Reschedule Appointment' : `Select Time – ${selectedSlot.toLocaleDateString()}`}
+                  Available Times – {selectedSlot.toLocaleDateString()}
                 </h5>
-                <button className="btn-close" onClick={handleCloseModals}></button>
+                <button
+                  className="btn-close" 
+                  onClick={handleCloseModals}>
+
+                  </button>
               </div>
               <div className="modal-body">
                 <div className="d-flex flex-wrap gap-2">
-                  {Array.from({ length: 9 }, (_, i) => {
-                    const hour = 10 + i;
-                    const timeString = formatTime(new Date(0, 0, 0, hour));
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const hour = 10 + i; // 10 AM to 7 PM
+                    const timeString = new Date(0, 0, 0, hour).toLocaleTimeString([], {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    });
                     return (
-                      <button
-                        key={hour}
+                      <button key={hour}
                         className="btn btn-outline-primary btn-sm"
-                        disabled={loadingBook || loadingReschedule}
-                        onClick={() =>
-                          rescheduleMode
-                            ? handleReschedule(selectedSlot, hour)
-                            : handleBookEvent(selectedSlot, hour)
-                        }
-                      >
-                        {(loadingBook || loadingReschedule) ? (
-                          <span className="spinner-border spinner-border-sm" />
-                        ) : (
-                          timeString
-                        )}
+                        style={{
+                        padding: '4px 10px',
+                        fontSize: '0.8rem',
+                        lineHeight: '1.2',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}>
+                        {timeString}
                       </button>
                     );
                   })}
                 </div>
               </div>
               <div className="modal-footer">
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>Cancel</button>
+                <button 
+                  className="btn btn-sm" 
+                  style={{
+                      padding: '4px 10px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.2',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  onClick={handleCloseModals}>
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -1002,7 +693,5 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
-
-
 
 */
