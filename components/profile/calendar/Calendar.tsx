@@ -1,7 +1,6 @@
-// components/profile/calendar/CalendarComponent.tsx
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Calendar,
   momentLocalizer,
@@ -9,7 +8,7 @@ import {
   Views,
   View,
 } from 'react-big-calendar';
-import Select, { type SingleValue } from 'react-select';
+import Select from 'react-select';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast, ToastContainer } from 'react-toastify';
@@ -29,6 +28,7 @@ type EventType = {
     email?: string;
     profile_image_url?: string;
   };
+  isHoliday?: boolean;
 };
 
 type ApiEvent = {
@@ -53,10 +53,10 @@ type Trainer = {
   profile_image_url?: string;
 };
 
-type TrainerOption = {
-  value: string;
-  label: ReactNode;
-  data: Trainer;
+type Holiday = {
+  date: string;
+  localName: string;
+  name: string;
 };
 
 const localizer = momentLocalizer(moment);
@@ -67,7 +67,9 @@ type Props = {
 
 // ---------- Component ----------
 export default function CalendarComponent({ token }: Props) {
+  // State
   const [events, setEvents] = useState<EventType[]>([]);
+  const [holidays, setHolidays] = useState<EventType[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
@@ -88,26 +90,52 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ---------- Fetch Events ----------
+  // ---------- Fetch Holidays ----------
+  useEffect(() => {
+    (async () => {
+      try {
+        const year = new Date().getFullYear();
+        const res = await fetch(
+          `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
+        );
+        const data: Holiday[] = await res.json();
+        const mapped: EventType[] = data.map((h) => ({
+          id: `holiday-${h.date}`,
+          title: `🎉 ${h.localName}`,
+          start: new Date(h.date),
+          end: new Date(h.date),
+          description: h.name,
+          isHoliday: true,
+        }));
+        setHolidays(mapped);
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch holidays', err);
+      }
+    })();
+  }, []);
+
+  // ---------- Fetch User Events ----------
   useEffect(() => {
     if (!token) return;
     (async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/appointments/my-events', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data: ApiEvent[] = await res.json();
-        setEvents(
-          data.map((e) => ({
-            id: e.id,
-            title: e.title,
-            description: e.description,
-            start: new Date(e.start_time),
-            end: new Date(e.end_time),
-            status: e.status ?? 'pending',
-            trainer: e.trainer,
-          }))
+        const res = await fetch(
+          'http://localhost:5000/api/appointments/my-events',
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
+        const data: ApiEvent[] = await res.json();
+        const mapped: EventType[] = data.map((e) => ({
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          start: new Date(e.start_time),
+          end: new Date(e.end_time),
+          status: e.status ?? 'pending',
+          trainer: e.trainer,
+        }));
+        setEvents(mapped);
       } catch (err) {
         toast.error('❌ Failed to load events.');
         console.error(err);
@@ -135,11 +163,14 @@ export default function CalendarComponent({ token }: Props) {
     })();
   }, [token]);
 
-  // ---------- Book Event ----------
+  // ---------- Booking ----------
   const handleBookEvent = async (date: Date, hour: number) => {
-    if (!token || !selectedTrainer) return;
-    setLoadingBook(true);
+    if (!token || !selectedTrainer) {
+      toast.warn('⚠️ Please select a trainer first.');
+      return;
+    }
 
+    setLoadingBook(true);
     const start = new Date(date);
     start.setHours(hour, 0, 0, 0);
     const end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -160,7 +191,10 @@ export default function CalendarComponent({ token }: Props) {
           trainer_id: selectedTrainer.id,
         }),
       });
+
+      if (!res.ok) throw new Error(`Booking failed: ${res.status}`);
       const { event }: { event: ApiEvent } = await res.json();
+
       setEvents((prev) => [
         ...prev,
         {
@@ -173,29 +207,38 @@ export default function CalendarComponent({ token }: Props) {
           trainer: event.trainer,
         },
       ]);
+
       toast.success('✅ Appointment booked!');
+      setShowTimeModal(false);
     } catch (err) {
-      toast.error('❌ Booking failed.');
+      toast.error('❌ Failed to book appointment.');
       console.error(err);
     } finally {
       setLoadingBook(false);
     }
   };
 
-  // ---------- Cancel Event ----------
+  // ---------- Cancel ----------
   const handleCancelEvent = async (eventId: string) => {
     if (!token) return;
     setLoadingCancel(true);
+
     try {
-      await fetch(`http://localhost:5000/api/appointments/delete/${eventId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `http://localhost:5000/api/appointments/delete/${eventId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) throw new Error();
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
-      toast.info('ℹ️ Appointment canceled.');
       setShowEventModal(false);
-    } catch {
+      toast.info('ℹ️ Appointment canceled.');
+    } catch (err) {
       toast.error('❌ Cancel failed.');
+      console.error(err);
     } finally {
       setLoadingCancel(false);
     }
@@ -225,7 +268,8 @@ export default function CalendarComponent({ token }: Props) {
           }),
         }
       );
-      if (!res.ok) throw new Error();
+
+      if (!res.ok) throw new Error(`Reschedule failed: ${res.status}`);
       setEvents((prev) =>
         prev.map((e) =>
           e.id === selectedEvent.id
@@ -236,47 +280,58 @@ export default function CalendarComponent({ token }: Props) {
       toast.success('✅ Appointment rescheduled!');
       setShowTimeModal(false);
       setRescheduleMode(false);
-    } catch {
+    } catch (err) {
       toast.error('❌ Reschedule failed.');
+      console.error(err);
     } finally {
       setLoadingReschedule(false);
     }
   };
 
-  // ---------- Handlers ----------
+  // ---------- Slot Select ----------
   const handleSelectSlot = (slot: SlotInfo) => {
     const date = new Date(slot.start);
-    if (date < new Date()) {
-      toast.warn('⚠️ Cannot book in the past.');
+    const isHoliday = holidays.some(
+      (h) => h.start.toDateString() === date.toDateString()
+    );
+
+    if (isHoliday) {
+      toast.warn('🎉 It’s a holiday — bookings are disabled!');
       return;
     }
+
+    if (date < new Date()) {
+      toast.warn('⚠️ You cannot select a past date.');
+      return;
+    }
+
     setSelectedSlot(date);
     setShowTimeModal(true);
   };
 
-  const handleSelectEvent = (event: EventType) => {
-    setSelectedEvent(event);
-    setShowEventModal(true);
-  };
-
-  const handleCloseModals = () => {
-    setShowTimeModal(false);
-    setShowEventModal(false);
-    setSelectedTrainer(null);
-    setSelectedEvent(null);
-  };
-
   // ---------- Event Style ----------
   const eventStyleGetter = (event: EventType) => {
-    let background = 'linear-gradient(135deg, #cfd9df, #e2ebf0)';
+    if (event.isHoliday) {
+      return {
+        style: {
+          background: 'linear-gradient(135deg,#f2e6ff,#e5ccff)',
+          color: '#6c2db5',
+          border: '1px solid #c79dff',
+          borderRadius: '6px',
+          opacity: 0.9,
+        },
+      };
+    }
+
+    let background = 'linear-gradient(135deg,#cfd9df,#e2ebf0)';
     if (event.status === 'approved')
-      background = 'linear-gradient(135deg, #7ed957, #56ab2f)';
+      background = 'linear-gradient(135deg,#7ed957,#56ab2f)';
     if (event.status === 'pending')
-      background = 'linear-gradient(135deg, #b14cff, #f58fff)';
+      background = 'linear-gradient(135deg,#b14cff,#f58fff)';
     if (event.status === 'rescheduled')
-      background = 'linear-gradient(135deg, #f6d365, #fda085)';
+      background = 'linear-gradient(135deg,#f6d365,#fda085)';
     if (event.status === 'declined')
-      background = 'linear-gradient(135deg, #ff6a88, #ff99ac)';
+      background = 'linear-gradient(135deg,#ff6a88,#ff99ac)';
 
     return {
       style: {
@@ -284,24 +339,36 @@ export default function CalendarComponent({ token }: Props) {
         color: '#fff',
         borderRadius: '6px',
         padding: '2px 4px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
       },
     };
   };
 
+  // ---------- Close ----------
+  const handleCloseModals = () => {
+    setShowTimeModal(false);
+    setShowEventModal(false);
+    setSelectedTrainer(null);
+    setSelectedEvent(null);
+  };
+
   // ---------- Render ----------
   return (
-    <div className="p-3 shadow-lg rounded">
+    <div className="p-3 shadow-sm rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
       <Calendar
         localizer={localizer}
-        events={events}
+        events={[...events, ...holidays]}
         startAccessor="start"
         endAccessor="end"
         selectable
         onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
+        onSelectEvent={(event: EventType) => {
+          if (!event.isHoliday) {
+            setSelectedEvent(event);
+            setShowEventModal(true);
+          }
+        }}
         view={currentView}
         date={currentDate}
         onView={setCurrentView}
@@ -310,16 +377,34 @@ export default function CalendarComponent({ token }: Props) {
         style={{ height: '80vh' }}
       />
 
-      {/* 🕒 Time Picker Modal */}
+      {/* Time Picker Modal */}
       {showTimeModal && selectedSlot && (
-        <div className="modal fade show d-block" style={{ background: 'rgba(0,0,0,0.6)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content rounded-4 border-0">
               <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold text-purple">
-                  {rescheduleMode ? 'Reschedule Appointment' : 'Book Appointment'}
+                <h5
+                  className="modal-title fw-bold"
+                  style={{
+                    background:
+                      'linear-gradient(90deg,#b14cff,#f58fff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  {rescheduleMode
+                    ? 'Reschedule Appointment'
+                    : `Book Trainer – ${selectedSlot.toLocaleDateString()}`}
                 </h5>
-                <Select<TrainerOption, false>
+                <button className="btn-close" onClick={handleCloseModals}></button>
+              </div>
+
+              <div className="modal-body">
+                <label className="form-label fw-semibold">Select Trainer</label>
+                <Select
                   options={trainers.map((t) => ({
                     value: t.id,
                     label: (
@@ -334,7 +419,7 @@ export default function CalendarComponent({ token }: Props) {
                     ),
                     data: t,
                   }))}
-                  onChange={(option: SingleValue<TrainerOption>) =>
+                  onChange={(option: { data?: Trainer } | null) =>
                     setSelectedTrainer(option?.data ?? null)
                   }
                   isLoading={loadingTrainers}
@@ -366,8 +451,12 @@ export default function CalendarComponent({ token }: Props) {
                   })}
                 </div>
               </div>
+
               <div className="modal-footer border-0">
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleCloseModals}
+                >
                   Cancel
                 </button>
               </div>
@@ -376,19 +465,29 @@ export default function CalendarComponent({ token }: Props) {
         </div>
       )}
 
-      {/* 💜 Event Details Modal */}
+      {/* Event Details Modal */}
       {showEventModal && selectedEvent && (
-        <div className="modal fade show d-block" style={{ background: 'rgba(0,0,0,0.6)' }}>
+        <div
+          className="modal fade show d-block"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+        >
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content rounded-4 border-0"
-                 style={{ background: 'linear-gradient(135deg,#f8eaff,#fff9ff)' }}>
+            <div
+              className="modal-content rounded-4 border-0"
+              style={{
+                background: 'linear-gradient(135deg,#f8eaff,#fff9ff)',
+              }}
+            >
               <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold"
-                    style={{
-                      background: 'linear-gradient(90deg,#b14cff,#f58fff)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}>
+                <h5
+                  className="modal-title fw-bold"
+                  style={{
+                    background:
+                      'linear-gradient(90deg,#b14cff,#f58fff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
                   {selectedEvent.title}
                 </h5>
                 <button className="btn-close" onClick={handleCloseModals}></button>
@@ -399,7 +498,8 @@ export default function CalendarComponent({ token }: Props) {
                   <div className="d-flex align-items-center gap-3 mb-3">
                     <img
                       src={
-                        selectedEvent.trainer.profile_image_url || '/default-avatar.png'
+                        selectedEvent.trainer.profile_image_url ||
+                        '/default-avatar.png'
                       }
                       alt={selectedEvent.trainer.full_name || 'Trainer'}
                       style={{
@@ -421,11 +521,24 @@ export default function CalendarComponent({ token }: Props) {
                   </div>
                 )}
 
-                <p><strong style={{ color: '#8a2be2' }}>Date:</strong> {selectedEvent.start.toLocaleDateString()}</p>
-                <p><strong style={{ color: '#8a2be2' }}>Time:</strong> {formatTime(selectedEvent.start)} – {formatTime(selectedEvent.end)}</p>
-                <p><strong style={{ color: '#8a2be2' }}>Status:</strong> {selectedEvent.status}</p>
+                <p>
+                  <strong style={{ color: '#8a2be2' }}>Date:</strong>{' '}
+                  {selectedEvent.start.toLocaleDateString()}
+                </p>
+                <p>
+                  <strong style={{ color: '#8a2be2' }}>Time:</strong>{' '}
+                  {formatTime(selectedEvent.start)} –{' '}
+                  {formatTime(selectedEvent.end)}
+                </p>
+                <p>
+                  <strong style={{ color: '#8a2be2' }}>Status:</strong>{' '}
+                  {selectedEvent.status}
+                </p>
                 {selectedEvent.description && (
-                  <p><strong style={{ color: '#8a2be2' }}>Notes:</strong> {selectedEvent.description}</p>
+                  <p>
+                    <strong style={{ color: '#8a2be2' }}>Notes:</strong>{' '}
+                    {selectedEvent.description}
+                  </p>
                 )}
               </div>
 
@@ -451,7 +564,10 @@ export default function CalendarComponent({ token }: Props) {
                 >
                   Reschedule
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={handleCloseModals}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleCloseModals}
+                >
                   Close
                 </button>
               </div>
@@ -462,6 +578,7 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
+
 
 
 /*
