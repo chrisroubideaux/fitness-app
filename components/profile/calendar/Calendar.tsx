@@ -1,3 +1,4 @@
+// components/profile/calendar/Calendar.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -394,7 +395,7 @@ export default function CalendarComponent({ token }: Props) {
 
   // ---------- Render ----------
   return (
-    <div className="p-3 shadow-sm rounded">
+    <div className="p-3 shadow-lg rounded">
       <ToastContainer position="top-right" autoClose={3000} />
 
       <Calendar
@@ -617,7 +618,6 @@ export default function CalendarComponent({ token }: Props) {
     </div>
   );
 }
-
 
 
 /*
