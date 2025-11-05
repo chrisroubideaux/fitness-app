@@ -90,7 +90,7 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ---------- Fetch Holidays ----------
+  // ---------- Fetch Holidays (FIXED TIMEZONE) ----------
   useEffect(() => {
     (async () => {
       try {
@@ -99,14 +99,26 @@ export default function CalendarComponent({ token }: Props) {
           `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
         );
         const data: Holiday[] = await res.json();
-        const mapped: EventType[] = data.map((h) => ({
-          id: `holiday-${h.date}`,
-          title: `🎉 ${h.localName}`,
-          start: new Date(h.date),
-          end: new Date(h.date),
-          description: h.name,
-          isHoliday: true,
-        }));
+
+        // 🕒 Fix timezone offset by anchoring to local midnight
+        const mapped: EventType[] = data.map((h) => {
+          const utcDate = new Date(h.date + 'T00:00:00Z');
+          const localDate = new Date(
+            utcDate.getUTCFullYear(),
+            utcDate.getUTCMonth(),
+            utcDate.getUTCDate()
+          );
+
+          return {
+            id: `holiday-${h.date}`,
+            title: `🎉 ${h.localName}`,
+            start: localDate,
+            end: localDate,
+            description: h.name,
+            isHoliday: true,
+          };
+        });
+
         setHolidays(mapped);
       } catch (err) {
         console.warn('⚠️ Failed to fetch holidays', err);
@@ -389,8 +401,7 @@ export default function CalendarComponent({ token }: Props) {
                 <h5
                   className="modal-title fw-bold"
                   style={{
-                    background:
-                      'linear-gradient(90deg,#b14cff,#f58fff)',
+                    background: 'linear-gradient(90deg,#b14cff,#f58fff)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                   }}
@@ -482,8 +493,7 @@ export default function CalendarComponent({ token }: Props) {
                 <h5
                   className="modal-title fw-bold"
                   style={{
-                    background:
-                      'linear-gradient(90deg,#b14cff,#f58fff)',
+                    background: 'linear-gradient(90deg,#b14cff,#f58fff)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                   }}
