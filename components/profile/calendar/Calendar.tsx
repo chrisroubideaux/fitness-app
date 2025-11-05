@@ -67,7 +67,6 @@ type Props = {
 
 // ---------- Component ----------
 export default function CalendarComponent({ token }: Props) {
-  // State
   const [events, setEvents] = useState<EventType[]>([]);
   const [holidays, setHolidays] = useState<EventType[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -90,7 +89,7 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-  // ---------- Fetch Holidays (FIXED TIMEZONE) ----------
+  // ---------- Fetch Holidays (Enhanced + Custom Additions) ----------
   useEffect(() => {
     (async () => {
       try {
@@ -100,8 +99,8 @@ export default function CalendarComponent({ token }: Props) {
         );
         const data: Holiday[] = await res.json();
 
-        // 🕒 Fix timezone offset by anchoring to local midnight
-        const mapped: EventType[] = data.map((h) => {
+        // Normalize official public holidays
+        const official: EventType[] = data.map((h) => {
           const utcDate = new Date(h.date + 'T00:00:00Z');
           const localDate = new Date(
             utcDate.getUTCFullYear(),
@@ -119,7 +118,37 @@ export default function CalendarComponent({ token }: Props) {
           };
         });
 
-        setHolidays(mapped);
+        // Add important non-federal observances manually
+        const customDates = [
+          { month: 1, day: 1, name: "New Year's Day" },
+          { month: 2, day: 14, name: "Valentine's Day" },
+          { month: 3, day: 17, name: "St. Patrick's Day" },
+          { month: 10, day: 31, name: "Halloween" },
+          { month: 12, day: 24, name: "Christmas Eve" },
+          { month: 12, day: 31, name: "New Year's Eve" },
+        ];
+
+        const custom: EventType[] = customDates.map((d) => {
+          const localDate = new Date(year, d.month - 1, d.day);
+          return {
+            id: `custom-${d.name.replace(/\s+/g, '-')}`,
+            title: `🎊 ${d.name}`,
+            start: localDate,
+            end: localDate,
+            description: d.name,
+            isHoliday: true,
+          };
+        });
+
+        // Merge and remove duplicates (by title)
+        const merged = [
+          ...official,
+          ...custom.filter(
+            (c) => !official.some((o) => o.title.includes(c.title))
+          ),
+        ];
+
+        setHolidays(merged);
       } catch (err) {
         console.warn('⚠️ Failed to fetch holidays', err);
       }
