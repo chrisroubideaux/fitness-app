@@ -1,3 +1,4 @@
+
 // components/profile/Login.tsx
 // components/profile/Login.tsx
 'use client';
@@ -242,13 +243,13 @@ const Login = () => {
 };
 
 export default Login;
-
 
 
 
 // Previous version without Next.js navigation
 /*
 // components/profile/Login.tsx
+// components/profile/Login.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -491,6 +492,7 @@ const Login = () => {
 };
 
 export default Login;
+
 
 
 

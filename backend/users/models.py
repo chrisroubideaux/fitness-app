@@ -1,4 +1,3 @@
-# users/models.py
 # backend/users/models.py
 import uuid
 from datetime import datetime

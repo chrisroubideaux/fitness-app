@@ -1,0 +1,114 @@
+// store/api/userApi.ts
+// store/api/userApi.ts
+import axios, { AxiosInstance } from "axios";
+import type { UserProfile } from "../slices/userSlice";
+
+const api: AxiosInstance = axios.create({
+  baseURL: "http://localhost:5000/api/users",
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  },
+});
+
+// Attach Bearer token automatically
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log("🔐 Attached token:", token.slice(0, 25) + "...");
+    } else {
+      console.warn("⚠️ No token found when calling:", config.url);
+    }
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    console.error(
+      "❌ userApi error:",
+      err.response?.status,
+      err.response?.data || err.message
+    );
+    return Promise.reject(err);
+  }
+);
+
+export const userApi = {
+  async register(
+    full_name: string,
+    email: string,
+    password: string
+  ): Promise<{ message: string; user_id: string }> {
+    const res = await api.post<{ message: string; user_id: string }>("/register", {
+      full_name,
+      email,
+      password,
+    });
+    return res.data;
+  },
+
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ message: string; token: string; user_id: string }> {
+    const res = await api.post<{ message: string; token: string; user_id: string }>(
+      "/login",
+      { email, password }
+    );
+    console.log("✅ login success:", res.data);
+    return res.data;
+  },
+
+  async fetchProfile(): Promise<UserProfile> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await api.get<UserProfile>("/me", { headers });
+    console.log("✅ fetchProfile success:", res.data);
+    return res.data;
+  },
+
+  async updateProfile(
+    userId: string,
+    formData: Partial<UserProfile>
+  ): Promise<UserProfile> {
+    const res = await api.put<UserProfile>(`/${userId}`, formData);
+    console.log("✅ updateProfile success:", res.data);
+    return res.data;
+  },
+
+  async uploadProfileImage(
+    imageFile: File
+  ): Promise<{ message: string; url: string }> {
+    const fd = new FormData();
+    fd.append("image", imageFile);
+    const res = await api.post<{ message: string; url: string }>("/upload-profile", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    console.log("✅ uploadProfileImage success:", res.data);
+    return res.data;
+  },
+
+  async logout(): Promise<boolean> {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      console.log("🚪 User logged out");
+    }
+    return true;
+  },
+
+  async fetchAdminsForUsers(): Promise<
+    { id: string; full_name: string; email: string; profile_image_url?: string }[]
+  > {
+    const res = await api.get<
+      { id: string; full_name: string; email: string; profile_image_url?: string }[]
+    >("/admins");
+    console.log("✅ fetchAdminsForUsers success:", res.data.length, "admins");
+    return res.data;
+  },
+};
+
+export default api;

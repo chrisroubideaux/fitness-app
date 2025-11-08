@@ -402,6 +402,9 @@ def upload_banner_image(current_admin):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+
 """""""""""
 # -------------------------
 # REGISTER new admin (any authenticated admin)
