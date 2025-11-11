@@ -4,6 +4,9 @@ import type { AxiosResponse } from "axios";
 import type { AdminProfile } from "../slices/adminSlice";
 import axiosClient from "./axiosClient";
 
+/** Basic user shape when a specific type is not available */
+export type UserDTO = Record<string, unknown>;
+
 /**
  * Admin API — uses the shared axiosClient (with token auto-injection)
  */
@@ -81,8 +84,8 @@ export const adminApi = {
   },
 
   /** 🧍‍♂️ Fetch all users (for admin dashboard) */
-  async fetchAllUsers(): Promise<any[]> {
-    const res: AxiosResponse<any[]> = await axiosClient.get("/admins/users");
+  async fetchAllUsers(): Promise<UserDTO[]> {
+    const res: AxiosResponse<UserDTO[]> = await axiosClient.get("/admins/users");
     return res.data;
   },
 
