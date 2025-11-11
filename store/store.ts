@@ -7,14 +7,16 @@ import storage from "redux-persist/lib/storage";
 import userReducer from "./slices/userSlice";
 import testReducer from "./slices/testSlice";
 import appointmentsReducer from "./slices/appointmentsSlice"; // ✅ Add this line
+import membershipsReducer from "./slices/membershipsSlice"; 
 
 // ✅ Combine all reducers
 const rootReducer = combineReducers({
   user: userReducer,
   test: testReducer,
   appointments: appointmentsReducer, // ✅ Register appointments slice here
+  memberships: membershipsReducer, // ✅ Register memberships slice here
   // admin: adminReducer,
-  // memberships: membershipsReducer,
+ 
   // payments: paymentsReducer,
   // calendar: calendarReducer,
   // ui: uiReducer,

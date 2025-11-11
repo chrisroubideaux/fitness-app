@@ -1,5 +1,4 @@
 # memberships/routes.py
-# memberships/routes.py
 from flask import Blueprint, request, jsonify
 from extensions import db
 from .models import MembershipPlan
