@@ -105,6 +105,9 @@ const appointmentsSlice = createSlice({
 export const { clearAppointments } = appointmentsSlice.actions;
 export default appointmentsSlice.reducer;
 
+
+
+
 {/*
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { appointmentsApi, type CalendarEvent } from "../api/appointmentsApi";
