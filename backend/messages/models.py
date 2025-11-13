@@ -1,5 +1,4 @@
 # messages/models.py
-# messages/models.py
 
 import uuid
 from datetime import datetime, timezone

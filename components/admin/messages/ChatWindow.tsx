@@ -1,5 +1,5 @@
 // components/admin/messages/ChatWindow.tsx
-// components/admin/messages/ChatWindow.tsx
+
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

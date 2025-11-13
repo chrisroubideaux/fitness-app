@@ -8,6 +8,8 @@ import userReducer from "./slices/userSlice";
 import testReducer from "./slices/testSlice";
 import appointmentsReducer from "./slices/appointmentsSlice"; // ✅ Add this line
 import membershipsReducer from "./slices/membershipsSlice"; 
+import messagesReducer from "./slices/messagesSlice";
+import adminReducer from "./slices/adminSlice";
 
 // ✅ Combine all reducers
 const rootReducer = combineReducers({
@@ -15,7 +17,8 @@ const rootReducer = combineReducers({
   test: testReducer,
   appointments: appointmentsReducer, // ✅ Register appointments slice here
   memberships: membershipsReducer, // ✅ Register memberships slice here
-  // admin: adminReducer,
+  messages: messagesReducer,
+   admin: adminReducer,
  
   // payments: paymentsReducer,
   // calendar: calendarReducer,
