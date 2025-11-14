@@ -1,4 +1,5 @@
-# memberships/models.py
+# backend/memberships/models.py
+
 import uuid
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import UUID

@@ -1,4 +1,4 @@
-// components/presentation/FeatureCards.tsx
+// components/misc/FeatureCards.tsx
 'use client';
 
 import { motion } from 'framer-motion';

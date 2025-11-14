@@ -1,5 +1,5 @@
-# scripts/seed_stripe_prices.py
-# payments/seed_stripe_prices.py
+# backend/payments/seed_stripe_prices.py
+
 import os
 import sys
 from typing import Optional, Dict

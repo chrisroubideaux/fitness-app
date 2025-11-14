@@ -1,5 +1,5 @@
 // components/profile/charts/WorkoutPlan.tsx 
-// components/profile/charts/WorkoutPlan.tsx
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";

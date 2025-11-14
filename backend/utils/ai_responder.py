@@ -1,5 +1,5 @@
-# utils/ai_responder.py
-# utils/ai_responder.py
+# backend/utils/ai_responder.py
+
 from openai import OpenAI
 import os
 import threading

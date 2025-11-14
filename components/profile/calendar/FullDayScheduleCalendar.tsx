@@ -1,5 +1,5 @@
 // components/profile/calendar/FullDayScheduleCalendar.tsx
-// components/profile/calendar/FullDayScheduleCalendar.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';

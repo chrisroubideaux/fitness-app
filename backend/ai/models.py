@@ -1,4 +1,5 @@
-# ai/models.py
+# backend/ai/models.py
+
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.dialects.postgresql import UUID

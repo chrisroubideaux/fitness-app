@@ -1,5 +1,5 @@
 // store/api/axiosClient.ts
-// store/api/axiosClient.ts
+
 import axios, { AxiosInstance } from "axios";
 
 /**
@@ -60,45 +60,3 @@ axiosClient.interceptors.response.use(
 export default axiosClient;
 
 
-
-{/*
-
-// store/api/axiosClient.ts
-import axios, { AxiosInstance } from "axios";
-
-const axiosClient: AxiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
-  withCredentials: false,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// ✅ Attach the appropriate token (user or admin)
-axiosClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const userToken = localStorage.getItem("token");
-    const adminToken = localStorage.getItem("adminToken");
-
-    // Give priority to admin if both exist (for admin routes)
-    const token = adminToken || userToken;
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-// ✅ Optionally log or handle global errors
-axiosClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error("❌ API error:", error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
-
-export default axiosClient;
-
-*/}

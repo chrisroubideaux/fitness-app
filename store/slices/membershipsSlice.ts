@@ -1,5 +1,5 @@
 // store/slices/membershipsSlice.ts
-// store/slices/membershipsSlice.ts
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { membershipsApi, type MembershipPlan } from "../api/membershipsApi";
 
@@ -114,89 +114,3 @@ const membershipsSlice = createSlice({
 
 export const { clearMemberships } = membershipsSlice.actions;
 export default membershipsSlice.reducer;
-
-
-{/*
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { membershipsApi, type MembershipPlan } from "../api/membershipsApi";
-
-// ----------------------------------------------------
-// 🧠 State type
-// ----------------------------------------------------
-interface MembershipsState {
-  list: MembershipPlan[];
-  loading: boolean;
-  error: string | null;
-}
-
-// ----------------------------------------------------
-// 🧱 Initial state
-// ----------------------------------------------------
-const initialState: MembershipsState = {
-  list: [],
-  loading: false,
-  error: null,
-};
-
-// ----------------------------------------------------
-// ⚙️ Async thunk - fetch all plans
-// ----------------------------------------------------
-export const fetchMemberships = createAsyncThunk<
-  MembershipPlan[],
-  void,
-  { rejectValue: string }
->("memberships/fetchAll", async (_, { rejectWithValue }) => {
-  try {
-    return await membershipsApi.fetchAllPlans();
-  } catch (err: unknown) {
-    let msg = "Failed to load membership plans";
-    if (err && typeof err === "object") {
-      const e = err as {
-        message?: string;
-        response?: { data?: { error?: string; message?: string } };
-      };
-      msg =
-        e.response?.data?.error ||
-        e.response?.data?.message ||
-        e.message ||
-        msg;
-    }
-    return rejectWithValue(msg);
-  }
-});
-
-// ----------------------------------------------------
-// 🧩 Slice definition
-// ----------------------------------------------------
-const membershipsSlice = createSlice({
-  name: "memberships",
-  initialState,
-  reducers: {
-    clearMemberships: (state) => {
-      state.list = [];
-      state.error = null;
-      state.loading = false;
-    },
-  },
-  extraReducers: (builder) => {
-    builder
-      // Fetch all plans
-      .addCase(fetchMemberships.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchMemberships.fulfilled, (state, action) => {
-        state.loading = false;
-        state.list = action.payload;
-      })
-      .addCase(fetchMemberships.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to fetch memberships";
-      });
-  },
-});
-
-export const { clearMemberships } = membershipsSlice.actions;
-export default membershipsSlice.reducer;
-
-*/}

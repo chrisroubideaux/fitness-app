@@ -1,5 +1,5 @@
 // app/billing/checkout/page.tsx
-// app/billing/checkout/page.tsx
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';

@@ -1,3 +1,4 @@
+// components/profile/charts/MonthlySummaryChart.tsx
 "use client";
 
 import { useMemo, useRef } from "react";

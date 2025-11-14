@@ -1,5 +1,4 @@
-// components/about/StatsSection.tsx
-// components/about/StatsSection.tsx
+// components/admin/about/StatsSection.tsx
 'use client';
 
 import { motion } from 'framer-motion';

@@ -1,5 +1,4 @@
 # admin/identity_linking.py
-# admin/identity_linking.py
 
 from extensions import db
 from admin.models import Admin, AdminIdentity

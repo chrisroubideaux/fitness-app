@@ -1,5 +1,4 @@
 // app/trainers/[id]/page.tsx
-// app/trainers/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";

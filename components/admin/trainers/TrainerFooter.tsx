@@ -1,4 +1,4 @@
-// components/layout/Footer.tsx
+// components/admin/trainers/TrainerFooter.tsx
 "use client";
 
 import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa";

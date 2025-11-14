@@ -1,5 +1,5 @@
 // store/api/adminApi.ts
-// store/api/adminApi.ts
+
 import type { AxiosResponse } from "axios";
 import type { AdminProfile } from "../slices/adminSlice";
 import axiosClient from "./axiosClient";

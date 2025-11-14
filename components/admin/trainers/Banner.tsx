@@ -1,4 +1,5 @@
 // components/admin/trainers/Banner.tsx
+
 "use client";
 
 type Props = {

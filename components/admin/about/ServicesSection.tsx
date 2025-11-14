@@ -1,4 +1,5 @@
 // components/about/ServicesSection.tsx
+
 import { FaDumbbell, FaUtensils, FaCalendarAlt, FaHeartbeat } from "react-icons/fa";
 
 export default function ServicesSection() {

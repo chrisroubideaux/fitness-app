@@ -1,4 +1,5 @@
- # ai/routes.py
+ # backend/ai/routes.py
+ 
 from flask import Blueprint, request, jsonify
 from ai.workout_generator import generate_workout_plan
 from ai.models import WorkoutPlan

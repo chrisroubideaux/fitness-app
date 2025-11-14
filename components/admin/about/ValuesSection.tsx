@@ -1,4 +1,5 @@
-// components/about/ValuesSection.tsx
+// components/admin/about/ValuesSection.tsx
+
 'use client';
 
 import { motion } from 'framer-motion';

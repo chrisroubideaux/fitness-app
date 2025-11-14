@@ -1,4 +1,4 @@
-// admin contact component
+// components/admin/about/adminContact.tsx
 
 import Image from "next/image";
 export default function AdminContact() {

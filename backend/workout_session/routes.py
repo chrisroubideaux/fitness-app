@@ -1,5 +1,4 @@
-# routes for workout sessions
-# workout_session/routes.py
+# backend/workout_session/routes.py
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta

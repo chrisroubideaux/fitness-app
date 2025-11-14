@@ -1,5 +1,4 @@
-// Workout Plan Chart
-
+// components/profile/charts/workoutplantest.tsx
 'use client';
 
 import { useEffect, useState } from 'react';

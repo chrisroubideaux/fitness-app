@@ -1,4 +1,3 @@
-# chats/models.py
 # backend/chats/models.py
 
 import uuid
@@ -14,21 +13,21 @@ class Chat(db.Model):
     __tablename__ = "chats"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = db.Column(db.String(120))                  # guest name or user display name
-    email = db.Column(db.String(120), nullable=False) # required for guests/users
-    message = db.Column(db.Text, nullable=False)      # the user/guest’s message
-    response = db.Column(db.Text)                     # Lena’s AI-generated reply
+    name = db.Column(db.String(120))                  
+    email = db.Column(db.String(120), nullable=False)
+    message = db.Column(db.Text, nullable=False)    
+    response = db.Column(db.Text)                   
 
     # 🧠 NLP / AI analysis metadata
     is_toxic = db.Column(db.Boolean, default=False)
     toxicity_score = db.Column(db.Float)
-    sentiment = db.Column(db.String(50))              # e.g. "positive", "negative", "neutral"
-    sentiment_score = db.Column(db.Float)             # confidence value
-    emotion = db.Column(db.String(50))                # e.g. "joy", "sadness", "anger"
-    intent = db.Column(db.String(50))                 # e.g. "question", "goal", "nutrition", etc.
+    sentiment = db.Column(db.String(50))           
+    sentiment_score = db.Column(db.Float)            
+    emotion = db.Column(db.String(50))              
+    intent = db.Column(db.String(50))              
 
     # 🧩 Chat lifecycle status
-    status = db.Column(db.String(20), default="new")  # new, responded, rejected, etc.
+    status = db.Column(db.String(20), default="new")  
 
     # 🕓 Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

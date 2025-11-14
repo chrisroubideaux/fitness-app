@@ -1,5 +1,5 @@
 // components/profile/charts/ExerciseTrendChart.tsx
-// components/profile/charts/ExerciseTrendChart.tsx
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";

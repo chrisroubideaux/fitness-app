@@ -1,3 +1,4 @@
+# backend/appointments/email_utils.py
 import smtplib
 from email.mime.text import MIMEText
 import os

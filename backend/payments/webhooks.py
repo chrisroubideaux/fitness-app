@@ -1,4 +1,4 @@
-# payments/webhooks.py
+# backend/payments/webhooks.py
 import os
 import stripe
 from flask import Blueprint, request, jsonify, current_app

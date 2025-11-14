@@ -1,5 +1,5 @@
 # admin/face_routes.py
-# admin/face_routes.py
+
 from flask import Blueprint, request, jsonify
 from extensions import db
 from gcs_client import upload_file_to_gcs

@@ -1,4 +1,4 @@
-// Home.tsx
+// components/cover/Home.tsx
 
 export default function Home() {
   return (

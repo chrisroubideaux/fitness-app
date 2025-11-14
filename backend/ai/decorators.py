@@ -1,5 +1,4 @@
-# ai/token.py
-# ai/decorators.py
+# backend/ai/decorators.py
 
 from functools import wraps
 from flask import request, jsonify

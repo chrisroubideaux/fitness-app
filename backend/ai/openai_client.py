@@ -1,3 +1,5 @@
+# backend/ai/openai_client.py
+
 import os
 from openai import OpenAI
 

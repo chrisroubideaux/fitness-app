@@ -1,3 +1,4 @@
+// components/admin/trainers/BioDescription.tsx
 "use client";
 
 import { motion, Variants } from "framer-motion";

@@ -1,5 +1,5 @@
 // components/about/MiniTestimonialsCarousel.tsx
-// components/about/MiniTestimonialsCarousel.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
