@@ -36,7 +36,7 @@ export default function Contact() {
                 filter: 'drop-shadow(0 0 6px rgba(218,112,255,0.4))',
               }}
             >
-              Let’s Chat
+             Chat with Lena!
             </h3>
           </div>
 
@@ -60,7 +60,7 @@ export default function Contact() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Drop a message or ask Lena about fitness, nutrition, or your workout plans.
+            Drop a message or ask Lena about fitness, nutrition, workout plans.
           </motion.p>
         </motion.div>
 
