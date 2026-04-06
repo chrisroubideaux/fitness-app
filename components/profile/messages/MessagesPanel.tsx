@@ -1,6 +1,45 @@
 // components/profile/messages/MessagesPanel.tsx
 'use client';
 
+import { motion } from 'framer-motion';
+import ChatWindow from './ChatWindow';
+
+type MessagesPanelProps = {
+  userName?: string;
+};
+
+export default function MessagesPanel({ userName = '' }: MessagesPanelProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="mb-3 text-start">
+        <h4
+          className="fw-semibold mb-1"
+          style={{
+            background:
+              'linear-gradient(90deg, rgba(218,112,255,1) 0%, rgba(255,128,171,1) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Chat with Lena
+        </h4>
+        <p className="text-muted mb-0">
+          Your AI coach is here to help with training, recovery, nutrition, and plan questions.
+        </p>
+      </div>
+
+      <ChatWindow userName={userName} />
+    </motion.div>
+  );
+}
+
+{/*
+'use client';
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -50,7 +89,7 @@ export default function MessagesPanel() {
 
   return (
     <div className="panel-wrapper shadow-lg">
-      {/* Top navigation buttons */}
+     
       <div className="d-flex justify-content-start gap-2 mb-3">
         <button
           className={`btn btn-sm btn-${activeSubTab === 'chat' ? 'primary' : 'outline-primary'}`}
@@ -76,7 +115,6 @@ export default function MessagesPanel() {
         </button>
       </div>
 
-      {/* Tab content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSubTab}
@@ -105,3 +143,5 @@ export default function MessagesPanel() {
     </div>
   );
 }
+
+*/}

@@ -27,9 +27,10 @@ Goals:
 - Explain membership options clearly and recommend the right plan for their goals.
 - Encourage people to start small if they’re new or level up if they’re advanced.
 - Never hard-sell — guide with empathy and confidence.
-- If you know the user’s real name, you may greet them naturally by name.
+- If you know the user's real name, you may greet them naturally by name.
 - If the user is a guest with no real name, do not call them "Guest" in the reply.
-- If you know the time of day, greet them naturally.
+- If you know the time of day, greet them naturally when appropriate.
+- Do not keep repeating greetings on every follow-up message.
 - If the user is a guest, keep recommendations general and welcoming.
 - If the user is a member, make replies feel more personal and relevant to their goals.
 """
@@ -69,10 +70,6 @@ Guidance:
 
 
 def get_user_context_from_user(user: User | None) -> str:
-    """
-    Optional helper for future reuse.
-    Builds a concise natural-language summary from a User model.
-    """
     if not user:
         return "The user is a guest browsing fitness plans."
 
@@ -94,6 +91,66 @@ def get_user_context_from_user(user: User | None) -> str:
     return " ".join(parts)
 
 
+def is_brief_followup_message(user_message: str) -> bool:
+    """
+    Detects short follow-up or acknowledgment style messages where
+    repeating 'Good morning/afternoon/evening' feels unnatural.
+    """
+    text = (user_message or "").strip().lower()
+
+    brief_phrases = {
+        "thanks",
+        "thank you",
+        "thx",
+        "ty",
+        "ok",
+        "okay",
+        "kk",
+        "cool",
+        "nice",
+        "sounds good",
+        "got it",
+        "perfect",
+        "awesome",
+        "great",
+        "that helps",
+        "helpful",
+        "appreciate it",
+        "thank you lena",
+        "thanks lena",
+        "alright",
+        "i see",
+        "makes sense",
+        "understood",
+        "good to know",
+        "gotcha",
+        "yep",
+        "yes",
+    }
+
+    if text in brief_phrases:
+        return True
+
+    if len(text.split()) <= 5 and any(
+        phrase in text
+        for phrase in [
+            "thank",
+            "thanks",
+            "got it",
+            "sounds good",
+            "makes sense",
+            "appreciate",
+            "helpful",
+            "perfect",
+            "awesome",
+            "great",
+        ]
+    ):
+        return True
+
+    return False
+
+
 # ---------- MAIN FUNCTION ----------
 def generate_reply(
     user_message: str,
@@ -112,13 +169,6 @@ def generate_reply(
     medical_conditions: str | None = None,
     plan_name: str | None = None,
 ) -> str:
-    """
-    Generates a Lena response.
-
-    Supports:
-    - new route-based personalized context
-    - legacy calls that only pass user_message / conversation_id / user_role
-    """
     try:
         mood_label, mood_score = detect_mood(user_message)
         mood_context = f"User mood detected as {mood_label} (confidence {mood_score:.2f})."
@@ -139,15 +189,22 @@ def generate_reply(
         resolved_first_name = raw_first_name if raw_first_name else "there"
         resolved_plan_name = plan_name or ("Guest" if resolved_is_guest else "Free")
 
+        is_followup = is_brief_followup_message(user_message)
+
         greeting_parts = []
 
-        if time_of_day and has_real_name:
+        if not is_followup:
+            if time_of_day and has_real_name:
+                greeting_parts.append(
+                    f"It is currently {time_of_day}. You may open naturally with a greeting like 'Good {time_of_day}, {resolved_first_name}'."
+                )
+            elif time_of_day:
+                greeting_parts.append(
+                    f"It is currently {time_of_day}. If you greet the user, use only 'Good {time_of_day}' and do not add a name."
+                )
+        else:
             greeting_parts.append(
-                f"It is currently {time_of_day}. You may open naturally with a greeting like 'Good {time_of_day}, {resolved_first_name}'."
-            )
-        elif time_of_day:
-            greeting_parts.append(
-                f"It is currently {time_of_day}. If you greet the user, use only 'Good {time_of_day}' and do not add a name."
+                "This message reads like a short follow-up or acknowledgment. Do not start the reply with a time-of-day greeting."
             )
 
         if day_name and full_time:
@@ -219,8 +276,9 @@ Instructions for your reply:
 - If the user is logged in, make the reply feel more personalized.
 - If the user is a guest, keep things general and welcoming.
 - If you do not know the user's real name, do not use a placeholder name.
-- For unnamed guests, prefer greetings like 'Good morning', 'Good afternoon', 'Good evening', or 'Good night'.
+- For unnamed guests, prefer greetings like 'Good morning', 'Good afternoon', 'Good evening', or 'Good night' only when greeting actually makes sense.
 - Never say 'Good morning, Guest' or similar placeholder greetings.
+- Do not repeat time-of-day greetings on short follow-up replies.
 - Do not invent account data you were not given.
 - Do not sound like customer support reading a script.
 """

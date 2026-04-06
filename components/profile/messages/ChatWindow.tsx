@@ -1,387 +1,620 @@
 // components/profile/messages/ChatWindow.tsx
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import ChatAvatar from './ChatAvatar';
+import MessageBubble from './MessageBubble';
+import ChatInput from '@/components/contact/ChatInput';
 
-type ApiMessage = {
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+const USER_TOKEN_KEYS = ['authToken', 'token'];
+
+type ChatSummary = {
   id: string;
-  conversation_id: string;
-  sender_role: 'admin' | 'user';
-  body: string;
-  created_at: string | null;
-  read_by_user_at: string | null;
-  read_by_admin_at: string | null;
-  is_toxic?: boolean;
-  toxicity_score?: number;
+  message?: string | null;
+  response?: string | null;
 };
 
-type UIMessage = {
+type Message = {
   id: string;
-  sender: 'admin' | 'user';
-  content: string;
-  timestamp: string;
-  is_toxic?: boolean;
-  toxicity_score?: number;
+  sender: 'lena' | 'user';
+  text: string;
 };
 
-type ThreadProps = {
-  id?: string;
-  admin_id?: string;
-  sender: string;
-  subject: string;
-  messages?: UIMessage[];
+type ChatWindowProps = {
+  userName?: string;
 };
 
-type ApiConversation = {
-  id: string;
-  user_id: string;
-  admin_id: string;
-};
+function TypingBubble() {
+  return (
+    <div className="d-flex justify-content-start mb-3">
+      <motion.div
+        className="px-3 py-2 rounded-4"
+        style={{
+          background: 'rgba(214, 132, 255, 0.12)',
+          border: '1px solid rgba(214, 132, 255, 0.2)',
+          maxWidth: '90px',
+        }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <span
+            style={{
+              fontSize: '0.85rem',
+              color: 'rgba(120, 70, 150, 0.9)',
+              fontWeight: 500,
+            }}
+          >
+            Lena
+          </span>
 
-type Props = {
-  selectedThread: ThreadProps;
-  onDeleteThread?: (threadId: string) => void;
-  onDeleteAllThreads?: () => void;
-};
-
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-
-// 🔧 Helper for API calls
-async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(init.headers || {}),
-  };
-
-  const url = path.includes('?') ? `${path}&ts=${Date.now()}` : `${path}?ts=${Date.now()}`;
-  const res = await fetch(`${BASE}${url}`, { cache: 'no-store', ...init, headers });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
-  }
-  return res.json();
+          <div className="d-flex align-items-center gap-1">
+            {[0, 1, 2].map((dot) => (
+              <motion.span
+                key={dot}
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: 'rgba(214, 132, 255, 0.9)',
+                  display: 'inline-block',
+                }}
+                animate={{
+                  y: [0, -4, 0],
+                  opacity: [0.4, 1, 0.4],
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  delay: dot * 0.15,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
-// ✅ Safe date formatter to prevent "Invalid Date"
-const fmtTime = (iso?: string | null) => {
-  if (!iso) return '';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
+function getUserToken() {
+  if (typeof window === 'undefined') return null;
+
+  for (const key of USER_TOKEN_KEYS) {
+    const token = localStorage.getItem(key);
+    if (token) return token;
   }
-};
 
-export default function ChatWindow({ selectedThread, onDeleteThread, onDeleteAllThreads }: Props) {
-  const [conversationId, setConversationId] = useState<string | undefined>(selectedThread.id);
-  const [messages, setMessages] = useState<UIMessage[]>(selectedThread.messages ?? []);
-  const [newMessage, setNewMessage] = useState('');
+  return null;
+}
+
+function getFirstName(fullName?: string) {
+  const trimmed = (fullName || '').trim();
+  if (!trimmed) return '';
+  return trimmed.split(' ')[0];
+}
+
+function mapChatsToMessages(chats: ChatSummary[]): Message[] {
+  const ordered = [...chats].reverse();
+  const mapped: Message[] = [];
+
+  for (const chat of ordered) {
+    if (chat.message) {
+      mapped.push({
+        id: `${chat.id}-user`,
+        sender: 'user',
+        text: chat.message,
+      });
+    }
+
+    if (chat.response) {
+      mapped.push({
+        id: `${chat.id}-lena`,
+        sender: 'lena',
+        text: chat.response,
+      });
+    }
+  }
+
+  return mapped;
+}
+
+export default function ChatWindow({ userName = '' }: ChatWindowProps) {
+  const firstName = getFirstName(userName);
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'init',
+      sender: 'lena',
+      text: firstName
+        ? `Hey ${firstName} 👋 I’m Lena. I’m here to help with your workouts, recovery, nutrition, and membership questions whenever you need me 💪`
+        : "Hey 👋 I’m Lena. Ask me about your workouts, recovery, nutrition, or membership plan and I’ll help however I can 💪",
+    },
+  ]);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true);
 
-  const toUi = (data: ApiMessage[]): UIMessage[] =>
-    data.map((m) => ({
-      id: m.id,
-      sender: m.sender_role,
-      content: m.body,
-      timestamp: fmtTime(m.created_at),
-      is_toxic: m.is_toxic ?? false,
-      toxicity_score: m.toxicity_score ?? 0,
-    }));
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const historyLoadedRef = useRef(false);
 
-  // Ensure conversation ID exists
   useEffect(() => {
-    let abort = false;
-    async function ensureConversationId() {
-      if (conversationId) return;
-      if (selectedThread.id) {
-        setConversationId(selectedThread.id);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  useEffect(() => {
+    if (historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+
+    const loadChatHistory = async () => {
+      const token = getUserToken();
+
+      if (!token) {
+        setMessages([
+          {
+            id: 'missing-token',
+            sender: 'lena',
+            text: 'I couldn’t verify your session. Please log in again to chat with Lena.',
+          },
+        ]);
+        setBootLoading(false);
         return;
       }
-      if (!selectedThread.admin_id) return;
 
       try {
-        const conv = await api<ApiConversation>(`/api/messages/conversations`, {
-          method: 'POST',
-          body: JSON.stringify({ admin_id: selectedThread.admin_id }),
+        const res = await fetch(`${API_BASE}/api/chats/me`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
-        if (!abort) setConversationId(conv.id);
-      } catch (e) {
-        console.error('❌ Failed to ensure conversation id:', e);
-      }
-    }
-    ensureConversationId();
-    return () => {
-      abort = true;
-    };
-  }, [selectedThread.id, selectedThread.admin_id, conversationId]);
 
-  // Load messages
-  useEffect(() => {
-    let abort = false;
-    async function load() {
-      if (!conversationId) return;
-      setLoading(true);
-      try {
-        const data = await api<ApiMessage[]>(`/api/messages/conversations/${conversationId}/messages?limit=50`);
-        if (abort) return;
-        setMessages(toUi(Array.isArray(data) ? data : []));
-        await api<{ ok: boolean; read_at?: string }>(
-          `/api/messages/conversations/${conversationId}/read`,
-          { method: 'POST' }
-        );
-      } catch (e) {
-        console.error('❌ Load messages failed:', e);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || 'Failed to load chat history.');
+        }
+
+        const chats = Array.isArray(data?.chats) ? data.chats : [];
+        const historicalMessages = mapChatsToMessages(chats);
+
+        if (historicalMessages.length > 0) {
+          setMessages(historicalMessages);
+        }
+      } catch (error) {
+        console.error('Failed to load Lena chats:', error);
       } finally {
-        if (!abort) setLoading(false);
+        setBootLoading(false);
       }
-    }
-    load();
-    return () => {
-      abort = true;
     };
-  }, [conversationId]);
 
-  // Sync thread switch
-  useEffect(() => {
-    setConversationId(selectedThread.id);
-    setMessages(selectedThread.messages ?? []);
-  }, [selectedThread]);
+    loadChatHistory();
+  }, []);
 
-  // Send message
-  const handleSendMessage = useCallback(async () => {
-    const body = newMessage.trim();
-    if (!body) return;
+  const sendMessage = async (message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const token = getUserToken();
+    if (!token) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: 'Your session looks expired. Please log in again so I can respond properly.',
+        },
+      ]);
+      return;
+    }
+
+    setLoading(true);
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: trimmed,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
 
     try {
-      setBusy(true);
-      const payload =
-        conversationId
-          ? { conversation_id: conversationId, body }
-          : selectedThread.admin_id
-          ? { admin_id: selectedThread.admin_id, body }
-          : null;
-
-      if (!payload) {
-        console.error('Missing conversation_id/admin_id; cannot send.');
-        setBusy(false);
-        return;
-      }
-
-      const res = await fetch(`${BASE}/api/messages/send`, {
+      const res = await fetch(`${API_BASE}/api/chats/`, {
         method: 'POST',
         headers: {
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          ...(typeof window !== 'undefined' && localStorage.getItem('authToken')
-            ? { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
-            : {}),
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          message: trimmed,
+        }),
       });
 
-      if (res.status === 422) {
-        const data = await res.json().catch(() => ({}));
-        const reason = data?.error || 'Message blocked for toxicity.';
-        alert(`⚠️ ${reason}`);
-        setNewMessage('');
-        setBusy(false);
-        return;
-      }
+      const data = await res.json();
 
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`${res.status} ${res.statusText}: ${text || 'Request failed'}`);
+        throw new Error(data?.error || 'Something went wrong while sending your message.');
       }
 
-      const data = await res.json();
-      const created = data.message ?? data;
-
-      if (!conversationId) setConversationId(created.conversation_id);
+      const replyText = data?.chat?.response || "I'm here to help!";
 
       setMessages((prev) => [
         ...prev,
         {
-          id: created.id || `${Date.now()}-${Math.random()}`,
-          sender: created.sender_role,
-          content: created.body,
-          timestamp: fmtTime(created.created_at),
-          is_toxic: created.is_toxic ?? false,
-          toxicity_score: created.toxicity_score ?? 0,
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: replyText,
         },
-        ...(data.auto_reply
-          ? [
-              {
-                id: data.auto_reply.id || `auto-${Date.now()}-${Math.random()}`,
-                sender: data.auto_reply.sender_role,
-                content: data.auto_reply.body,
-                timestamp: fmtTime(data.auto_reply.created_at),
-              },
-            ]
-          : []),
       ]);
-      setNewMessage('');
-    } catch (e) {
-      console.error('❌ Send failed:', e);
-      alert('Failed to send message.');
+    } catch (error) {
+      const fallbackText =
+        error instanceof Error
+          ? error.message
+          : 'Oops — something went wrong! Please try again 💭';
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: fallbackText,
+        },
+      ]);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  }, [conversationId, newMessage, selectedThread.admin_id]);
-
-  // Delete one
-  const handleDeleteThread = useCallback(async () => {
-    if (!conversationId) return;
-    if (!confirm('Remove this conversation from your inbox?')) return;
-    try {
-      await api<{ ok: boolean }>(`/api/messages/conversations/${conversationId}?for=me`, {
-        method: 'DELETE',
-      });
-      onDeleteThread?.(conversationId);
-      setMessages([]);
-      setConversationId(undefined);
-      setNewMessage('');
-    } catch (e) {
-      console.error('❌ Delete conversation failed:', e);
-      alert('Failed to delete conversation.');
-    }
-  }, [conversationId, onDeleteThread]);
-
-  // Delete all
-  const handleDeleteAll = useCallback(async () => {
-    if (!confirm('Remove ALL conversations from your inbox?')) return;
-    try {
-      const convos: Array<{ id: string }> = await api(`/api/messages/conversations?limit=200`);
-      await Promise.all(
-        convos.map((c) =>
-          api(`/api/messages/conversations/${c.id}?for=me`, { method: 'DELETE' }).catch((e) =>
-            console.error('Delete failed for', c.id, e)
-          )
-        )
-      );
-      onDeleteAllThreads?.();
-      setMessages([]);
-      setConversationId(undefined);
-      setNewMessage('');
-    } catch (e) {
-      console.error('❌ Delete all failed:', e);
-      alert('Failed to delete all conversations.');
-    }
-  }, [onDeleteAllThreads]);
+  };
 
   return (
-    <div className="chat-window-wrapper p-3 rounded shadow-lg">
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6 className="mb-0 fw-bold">Messages: {selectedThread.sender}</h6>
-        <div className="d-flex gap-2">
-          <button
-            className="btn btn-outline-danger btn-sm"
-            onClick={handleDeleteThread}
-            disabled={!conversationId || busy}
+    <motion.div
+      className="card border-0 shadow-lg rounded-4 p-4 d-flex"
+      style={{
+        width: '100%',
+        minHeight: '560px',
+        background: 'rgba(255,255,255,0.93)',
+        backdropFilter: 'blur(12px)',
+      }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
+      <ChatAvatar />
+
+      <div
+        className="flex-grow-1 overflow-auto mb-3"
+        style={{
+          maxHeight: '390px',
+          padding: '12px',
+          borderRadius: '14px',
+          background: 'rgba(248,248,252,0.82)',
+          border: '1px solid rgba(214,132,255,0.08)',
+        }}
+      >
+        {bootLoading ? (
+          <TypingBubble />
+        ) : (
+          messages.map((msg) => (
+            <MessageBubble key={msg.id} sender={msg.sender} text={msg.text} />
+          ))
+        )}
+
+        {loading && <TypingBubble />}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <ChatInput onSend={sendMessage} loading={loading} />
+    </motion.div>
+  );
+}
+
+{/*
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import ChatAvatar from './ChatAvatar';
+import MessageBubble from './MessageBubble';
+import ChatInput from '@/components/contact/ChatInput';
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+const USER_TOKEN_KEYS = ['authToken', 'token'];
+
+type ChatSummary = {
+  id: string;
+  message?: string | null;
+  response?: string | null;
+};
+
+type Message = {
+  id: string;
+  sender: 'lena' | 'user';
+  text: string;
+};
+
+function TypingBubble() {
+  return (
+    <div className="d-flex justify-content-start mb-3">
+      <motion.div
+        className="px-3 py-2 rounded-4"
+        style={{
+          background: 'rgba(214, 132, 255, 0.12)',
+          border: '1px solid rgba(214, 132, 255, 0.2)',
+          maxWidth: '90px',
+        }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+      >
+        <div className="d-flex align-items-center gap-2">
+          <span
+            style={{
+              fontSize: '0.85rem',
+              color: 'rgba(120, 70, 150, 0.9)',
+              fontWeight: 500,
+            }}
           >
-            🗑️ Delete
-          </button>
-          <button
-            className="btn btn-outline-secondary btn-sm"
-            onClick={handleDeleteAll}
-            disabled={busy}
-          >
-            🧹 Delete All
-          </button>
+            Lena
+          </span>
+
+          <div className="d-flex align-items-center gap-1">
+            {[0, 1, 2].map((dot) => (
+              <motion.span
+                key={dot}
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: 'rgba(214, 132, 255, 0.9)',
+                  display: 'inline-block',
+                }}
+                animate={{
+                  y: [0, -4, 0],
+                  opacity: [0.4, 1, 0.4],
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  delay: dot * 0.15,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Messages */}
-      <div className="chat-messages" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-        {loading && messages.length === 0 && (
-          <div className="text-muted small mb-2">Loading messages…</div>
-        )}
-
-        {messages.map((msg, index) => (
-          <motion.div
-            key={msg.id || `msg-${index}-${msg.sender}-${msg.timestamp}`}
-            className={`d-flex mb-3 ${
-              msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'
-            }`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {msg.sender === 'admin' && (
-              <Image
-                src="/admin-avatar.png"
-                alt="Admin"
-                width={32}
-                height={32}
-                className="rounded-circle me-2"
-              />
-            )}
-
-            <div
-              className={`p-2 rounded-3 ${
-                msg.sender === 'user' ? 'chat-message-user' : 'chat-message-admin'
-              }`}
-              style={{
-                backgroundColor: msg.is_toxic
-                  ? 'rgba(255, 0, 0, 0.1)'
-                  : msg.sender === 'user'
-                  ? 'rgba(0, 123, 255, 0.1)'
-                  : 'rgba(255, 255, 255, 0.05)',
-                border: msg.is_toxic ? '1px solid rgba(255,0,0,0.3)' : undefined,
-              }}
-            >
-              <div className="small">
-                {msg.is_toxic ? (
-                  <span>
-                    ⚠️ <em>Flagged for review</em>
-                  </span>
-                ) : (
-                  msg.content
-                )}
-              </div>
-              {msg.timestamp && (
-                <div className="text-muted small mt-1">{msg.timestamp}</div>
-              )}
-            </div>
-
-            {msg.sender === 'user' && (
-              <Image
-                src="/user-avatar.png"
-                alt="You"
-                width={32}
-                height={32}
-                className="rounded-circle ms-2"
-              />
-            )}
-          </motion.div>
-        ))}
-
-        {!loading && messages.length === 0 && (
-          <div className="text-muted small">No messages yet. Start the conversation below.</div>
-        )}
-      </div>
-
-      {/* Composer */}
-      <div className="chat-input d-flex gap-2 mt-2">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Type a message…"
-          value={newMessage}
-          disabled={busy || (!conversationId && !selectedThread.admin_id)}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !busy && handleSendMessage()}
-        />
-        <button className="btn btn-sm btn-primary" onClick={handleSendMessage} disabled={busy}>
-          {busy ? 'Sending…' : 'Send'}
-        </button>
-      </div>
+      </motion.div>
     </div>
   );
 }
+
+function getUserToken() {
+  if (typeof window === 'undefined') return null;
+
+  for (const key of USER_TOKEN_KEYS) {
+    const token = localStorage.getItem(key);
+    if (token) return token;
+  }
+
+  return null;
+}
+
+function mapChatsToMessages(chats: ChatSummary[]): Message[] {
+  const ordered = [...chats].reverse();
+  const mapped: Message[] = [];
+
+  for (const chat of ordered) {
+    if (chat.message) {
+      mapped.push({
+        id: `${chat.id}-user`,
+        sender: 'user',
+        text: chat.message,
+      });
+    }
+
+    if (chat.response) {
+      mapped.push({
+        id: `${chat.id}-lena`,
+        sender: 'lena',
+        text: chat.response,
+      });
+    }
+  }
+
+  return mapped;
+}
+
+export default function ChatWindow() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'init',
+      sender: 'lena',
+      text: "Hey 👋 I’m Lena. Ask me about your workouts, recovery, nutrition, or membership plan and I’ll help however I can 💪",
+    },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const historyLoadedRef = useRef(false);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  useEffect(() => {
+    if (historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+
+    const loadChatHistory = async () => {
+      const token = getUserToken();
+
+      if (!token) {
+        setMessages([
+          {
+            id: 'missing-token',
+            sender: 'lena',
+            text: 'I couldn’t verify your session. Please log in again to chat with Lena.',
+          },
+        ]);
+        setBootLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/chats/me`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || 'Failed to load chat history.');
+        }
+
+        const chats = Array.isArray(data?.chats) ? data.chats : [];
+        const historicalMessages = mapChatsToMessages(chats);
+
+        if (historicalMessages.length > 0) {
+          setMessages(historicalMessages);
+        }
+      } catch (error) {
+        console.error('Failed to load Lena chats:', error);
+      } finally {
+        setBootLoading(false);
+      }
+    };
+
+    loadChatHistory();
+  }, []);
+
+  const sendMessage = async (message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+
+    const token = getUserToken();
+    if (!token) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: 'Your session looks expired. Please log in again so I can respond properly.',
+        },
+      ]);
+      return;
+    }
+
+    setLoading(true);
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: trimmed,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chats/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: trimmed,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Something went wrong while sending your message.');
+      }
+
+      const replyText = data?.chat?.response || "I'm here to help!";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: replyText,
+        },
+      ]);
+    } catch (error) {
+      const fallbackText =
+        error instanceof Error
+          ? error.message
+          : 'Oops — something went wrong! Please try again 💭';
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          sender: 'lena',
+          text: fallbackText,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      className="card border-0 shadow-lg rounded-4 p-4 d-flex"
+      style={{
+        width: '100%',
+        minHeight: '560px',
+        background: 'rgba(255,255,255,0.93)',
+        backdropFilter: 'blur(12px)',
+      }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
+      <ChatAvatar />
+
+      <div
+        className="flex-grow-1 overflow-auto mb-3"
+        style={{
+          maxHeight: '390px',
+          padding: '12px',
+          borderRadius: '14px',
+          background: 'rgba(248,248,252,0.82)',
+          border: '1px solid rgba(214,132,255,0.08)',
+        }}
+      >
+        {bootLoading ? (
+          <TypingBubble />
+        ) : (
+          messages.map((msg) => (
+            <MessageBubble key={msg.id} sender={msg.sender} text={msg.text} />
+          ))
+        )}
+
+        {loading && <TypingBubble />}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <ChatInput onSend={sendMessage} loading={loading} />
+    </motion.div>
+  );
+}
+
+
+*/}
