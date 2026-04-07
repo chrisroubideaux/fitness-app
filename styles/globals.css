@@ -256,3 +256,336 @@ h6 {
   color: #fff;
   background: #7E8EF1; /* solid brand hover background */
 }
+/* home page */
+.fitness-hero {
+  margin-top: 0 !important;
+  margin-bottom: 5rem !important;
+  padding: 0;
+}
+
+.fitness-hero-stage {
+  position: relative;
+  min-height: 92vh;
+  overflow: hidden;
+  border-radius: 0 0 32px 32px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+.fitness-hero-bg,
+.fitness-hero-image-layer,
+.fitness-hero-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.fitness-hero-bg {
+  z-index: 0;
+  background-size: 200% 200%;
+}
+
+.fitness-hero-image-layer {
+  z-index: 1;
+}
+
+.fitness-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.fitness-hero-overlay {
+  z-index: 2;
+}
+
+.fitness-hero-content-wrap {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
+
+.fitness-hero-content {
+  max-width: 620px;
+  padding: 6.5rem 0 4.5rem;
+  color: #ffffff;
+}
+
+.fitness-hero-eyebrow {
+  display: inline-block;
+  margin-bottom: 1.15rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.fitness-hero-title {
+  margin: 0 0 1.25rem;
+  font-size: clamp(2.6rem, 5vw, 4.6rem);
+  line-height: 1.02;
+  font-weight: 800;
+  color: #ffffff;
+  max-width: 620px;
+}
+
+.fitness-hero-title span {
+  background: linear-gradient(135deg, #ffffff, #d9dfff, #b8fff0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.fitness-hero-description {
+  max-width: 560px;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.88);
+  margin-bottom: 2rem;
+}
+
+.fitness-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.fitness-hero-btn-primary,
+.fitness-hero-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.95rem 1.35rem;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.fitness-hero-btn-primary {
+  box-shadow: 0 0 24px rgba(126, 142, 241, 0.32);
+}
+
+.fitness-hero-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.fitness-hero-btn-secondary:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.fitness-hero-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fitness-hero-arrows {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fitness-hero-arrow {
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.fitness-hero-arrow:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.fitness-hero-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.fitness-hero-dot {
+  width: 11px;
+  height: 11px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: all 0.25s ease;
+}
+
+.fitness-hero-dot.active {
+  width: 30px;
+  background: linear-gradient(135deg, #ffffff, #d6dcff);
+}
+
+@media (min-width: 992px) {
+  .fitness-hero-content-wrap {
+    padding-left: 5rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .fitness-hero {
+    padding: 0;
+  }
+
+  .fitness-hero-stage {
+    min-height: 84vh;
+    max-width: 100%;
+    border-radius: 0 0 24px 24px;
+  }
+
+  .fitness-hero-content-wrap {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .fitness-hero-content {
+    max-width: 100%;
+    padding: 7rem 0 4rem;
+  }
+
+  .fitness-hero-title {
+    font-size: clamp(2.2rem, 10vw, 3.4rem);
+    line-height: 1.04;
+    max-width: 100%;
+  }
+
+  .fitness-hero-description {
+    max-width: 100%;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .fitness-hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.fitness-hero-btn-primary,
+.fitness-hero-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.95rem 1.35rem;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.fitness-hero-btn-primary {
+  box-shadow: 0 0 24px rgba(126, 142, 241, 0.32);
+}
+
+.fitness-hero-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.fitness-hero-btn-secondary:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.fitness-hero-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fitness-hero-arrows {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fitness-hero-arrow {
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.fitness-hero-arrow:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.fitness-hero-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.fitness-hero-dot {
+  width: 11px;
+  height: 11px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: all 0.25s ease;
+}
+
+.fitness-hero-dot.active {
+  width: 30px;
+  background: linear-gradient(135deg, #ffffff, #d6dcff);
+}
+
+@media (max-width: 991.98px) {
+  .fitness-hero-stage {
+    min-height: 86vh;
+    border-radius: 0 0 28px 28px;
+  }
+
+  .fitness-hero-content {
+    padding: 7rem 0 4rem;
+  }
+
+  .fitness-hero-title {
+    font-size: clamp(2.2rem, 10vw, 3.6rem);
+    line-height: 1.02;
+  }
+
+  .fitness-hero-description {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .fitness-hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

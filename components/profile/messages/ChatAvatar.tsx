@@ -1,3 +1,5 @@
+// components/profile/messages/ChatAvatar.tsx
+
 'use client';
 
 import { motion } from 'framer-motion';
