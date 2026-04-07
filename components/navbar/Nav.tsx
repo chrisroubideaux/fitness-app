@@ -97,10 +97,10 @@ export default function Nav() {
         style={{
           width: 78,
           position: 'fixed',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          height: '100vh',
+          top: 12,
+          bottom: 12,
+          left: 10,
+          height: 'calc(100vh - 24px)',
           zIndex: 2000,
           padding: '1rem 0.4rem',
           display: 'flex',
@@ -110,16 +110,14 @@ export default function Nav() {
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
           background: panelBg,
-          borderRight: `1px solid ${panelBorder}`,
-          borderTop: 'none',
-          borderBottom: 'none',
-          borderLeft: 'none',
-          borderRadius: 0,
+          border: `1px solid ${panelBorder}`,
+          borderRadius: 22,
           boxShadow: `
             inset 0 0 25px rgba(68, 124, 235, 0.02),
             0 10px 40px rgba(0,0,0,0.35),
             0 0 24px rgba(139,92,246,0.14)
           `,
+          overflow: 'hidden',
         }}
       >
         <div style={{ width: '100%' }}>
@@ -375,6 +373,7 @@ export default function Nav() {
     </>
   );
 }
+
 
 {/*
 

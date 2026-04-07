@@ -102,6 +102,18 @@ const slides: HeroSlide[] = [
 export default function Home() {
   const [index, setIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 992);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -202,7 +214,7 @@ export default function Home() {
             position: 'relative',
             zIndex: 2,
             width: '100%',
-            padding: '0 3.5rem 0 3rem',
+            padding: isDesktop ? '0 3.5rem 0 7.25rem' : '0 1.25rem',
           }}
         >
           <motion.div
@@ -412,7 +424,6 @@ export default function Home() {
     </section>
   );
 }
-
 
 {/*
 
