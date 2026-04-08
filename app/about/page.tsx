@@ -1,11 +1,11 @@
 // app/about/page.tsx
-
+import Nav from "@/components/navbar/Nav";
 import AboutIntro from "@/components/admin/about/aboutIntro";
 import JourneyTimeline from "@/components/admin/about/JourneyTimeline";
 import ValuesSection from "@/components/admin/about/ValuesSection";
 import MiniTestimonialsCarousel from "@/components/admin/about/MiniTestimonialsCarousel";
-import Footer from "@/components/misc/Footer";
-import Nav from "@/components/navbar/Nav";
+import TrainerFooter from '@/components/admin/trainers/TrainerFooter';
+
 
 export default function About() {
   return (
@@ -27,7 +27,7 @@ export default function About() {
           </div>
         </div>
         <div className="pt-5">
-        <Footer />
+        <TrainerFooter />
         </div>
       </div>
     </>
