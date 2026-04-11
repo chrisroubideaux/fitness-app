@@ -30,14 +30,16 @@ export default function Nav() {
 
   const accent = '#8b5cf6';
   const textPrimary = '#ffffff';
-  const textMuted = 'rgba(255,255,255,0.68)';
-  const panelBg = 'rgba(15, 15, 22, 0.78)';
-  const panelBorder = 'rgba(255,255,255,0.08)';
-  const mobileBg = 'rgba(10,10,16,0.97)';
+  const textMuted = 'rgba(30,41,59,0.82)';
+  const iconMuted = '#334155';
+  const panelBg =
+    'linear-gradient(180deg, rgba(104,129,255,0.18), rgba(167,139,250,0.16), rgba(255,255,255,0.08))';
+  const panelBorder = 'rgba(255,255,255,0.18)';
+  const mobileBg =
+    'linear-gradient(180deg, rgba(37,99,235,0.94), rgba(79,70,229,0.92), rgba(124,58,237,0.92))';
 
   return (
     <>
-      {/* MOBILE FLOATING HAMBURGER */}
       <div
         className="d-flex d-lg-none align-items-center justify-content-between"
         style={{
@@ -51,16 +53,17 @@ export default function Nav() {
           borderRadius: 18,
           backdropFilter: 'blur(18px)',
           WebkitBackdropFilter: 'blur(18px)',
-          background: 'rgba(243, 243, 249, 0.45)',
+          background:
+            'linear-gradient(135deg, rgba(255,255,255,0.28), rgba(219,234,254,0.22), rgba(237,233,254,0.22))',
           border: `1px solid ${panelBorder}`,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+          boxShadow: '0 10px 30px rgba(15,23,42,0.12)',
         }}
       >
         <Link
           href="/"
           style={{
             textDecoration: 'none',
-            color: textPrimary,
+            color: '#ffffff',
             fontSize: '1rem',
             fontWeight: 700,
             letterSpacing: '0.04em',
@@ -76,7 +79,7 @@ export default function Nav() {
           style={{
             border: 'none',
             background: 'transparent',
-            color: textPrimary,
+            color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -88,7 +91,6 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* DESKTOP SIDEBAR */}
       <motion.aside
         className="d-none d-lg-flex"
         initial={{ x: -20, opacity: 0 }}
@@ -107,20 +109,30 @@ export default function Nav() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          backdropFilter: 'blur(26px)',
+          WebkitBackdropFilter: 'blur(26px)',
           background: panelBg,
           border: `1px solid ${panelBorder}`,
           borderRadius: 22,
           boxShadow: `
-            inset 0 0 25px rgba(68, 124, 235, 0.02),
-            0 10px 40px rgba(0,0,0,0.35),
-            0 0 24px rgba(139,92,246,0.14)
+            inset 0 0 24px rgba(255,255,255,0.08),
+            0 12px 34px rgba(15,23,42,0.14),
+            0 0 22px rgba(96,165,250,0.10)
           `,
           overflow: 'hidden',
         }}
       >
-        <div style={{ width: '100%' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background:
+              'radial-gradient(circle at top left, rgba(255,255,255,0.20), transparent 32%), radial-gradient(circle at bottom right, rgba(191,219,254,0.16), transparent 28%)',
+          }}
+        />
+
+        <div style={{ width: '100%', position: 'relative', zIndex: 1 }}>
           <div
             style={{
               display: 'flex',
@@ -138,6 +150,7 @@ export default function Nav() {
                 letterSpacing: '0.04em',
                 textAlign: 'center',
                 lineHeight: 1.1,
+                textShadow: '0 1px 10px rgba(15,23,42,0.16)',
               }}
             >
               FitByLena
@@ -176,13 +189,13 @@ export default function Nav() {
                       gap: 4,
                       color: active ? textPrimary : textMuted,
                       background: active
-                        ? 'linear-gradient(180deg, rgba(139,92,246,0.24), rgba(139,92,246,0.10))'
-                        : 'transparent',
+                        ? 'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(139,92,246,0.18))'
+                        : 'rgba(255,255,255,0.08)',
                       border: active
-                        ? '1px solid rgba(139,92,246,0.35)'
-                        : '1px solid transparent',
+                        ? '1px solid rgba(255,255,255,0.28)'
+                        : '1px solid rgba(255,255,255,0.08)',
                       boxShadow: active
-                        ? '0 0 18px rgba(139,92,246,0.18)'
+                        ? '0 0 18px rgba(139,92,246,0.16)'
                         : 'none',
                       transition: 'all 0.25s ease',
                     }}
@@ -206,13 +219,21 @@ export default function Nav() {
                       />
                     )}
 
-                    <div style={{ fontSize: 18 }}>{item.icon}</div>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        color: active ? '#ffffff' : iconMuted,
+                      }}
+                    >
+                      {item.icon}
+                    </div>
 
                     <span
                       style={{
                         fontSize: 9,
-                        fontWeight: 600,
+                        fontWeight: 700,
                         letterSpacing: '0.02em',
+                        color: active ? '#ffffff' : textMuted,
                       }}
                     >
                       {item.label}
@@ -224,7 +245,15 @@ export default function Nav() {
           </nav>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
           <Link href="/login" style={{ textDecoration: 'none' }}>
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -239,7 +268,7 @@ export default function Nav() {
                 justifyContent: 'center',
                 gap: 4,
                 color: textPrimary,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(255,255,255,0.12)',
                 border: `1px solid ${panelBorder}`,
               }}
             >
@@ -258,7 +287,6 @@ export default function Nav() {
         </div>
       </motion.aside>
 
-      {/* MOBILE DRAWER */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -297,7 +325,7 @@ export default function Nav() {
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 borderRight: `1px solid ${panelBorder}`,
-                boxShadow: '0 0 30px rgba(0,0,0,0.35)',
+                boxShadow: '0 0 30px rgba(15,23,42,0.22)',
               }}
             >
               <div
@@ -325,14 +353,14 @@ export default function Nav() {
                           gap: 12,
                           padding: '0.9rem 1rem',
                           borderRadius: 14,
-                          color: active ? textPrimary : textMuted,
+                          color: active ? '#ffffff' : 'rgba(255,255,255,0.82)',
                           background: active
-                            ? 'rgba(139,92,246,0.18)'
-                            : 'rgba(255,255,255,0.03)',
+                            ? 'rgba(255,255,255,0.18)'
+                            : 'rgba(255,255,255,0.06)',
                           border: active
-                            ? '1px solid rgba(139,92,246,0.28)'
-                            : `1px solid ${panelBorder}`,
-                          fontWeight: active ? 600 : 500,
+                            ? '1px solid rgba(255,255,255,0.24)'
+                            : '1px solid rgba(255,255,255,0.08)',
+                          fontWeight: active ? 700 : 600,
                         }}
                       >
                         <span style={{ fontSize: 18 }}>{item.icon}</span>
@@ -356,8 +384,8 @@ export default function Nav() {
                       padding: '0.9rem 1rem',
                       borderRadius: 14,
                       color: textPrimary,
-                      background: 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${panelBorder}`,
+                      background: 'rgba(255,255,255,0.10)',
+                      border: '1px solid rgba(255,255,255,0.14)',
                       fontWeight: 600,
                     }}
                   >

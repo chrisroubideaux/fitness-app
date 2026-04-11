@@ -7,6 +7,11 @@ import Nav from '@/components/navbar/Nav';
 import Hero from '@/components/plans/Hero';
 import MembershipCard, { type UIMembershipPlan } from '@/components/profile/memberships/MembershipCard';
 import TrainersFooter from '@/components/admin/trainers/TrainerFooter';
+import WhyChoose from '@/components/plans/WhyChoose';
+import PlansFAQ from '@/components/plans/PlansFAQ';
+
+
+
 
 type BackendPlan = {
   id: string;
@@ -228,6 +233,8 @@ export default function PlansPage() {
               })}
             </div>
           )}
+        <WhyChoose />
+        <PlansFAQ />
         </div>
         </div>
         <TrainersFooter />
