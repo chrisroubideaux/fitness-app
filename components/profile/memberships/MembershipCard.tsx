@@ -1,5 +1,823 @@
 // components/profile/memberships/MembershipCard.tsx
+// components/profile/memberships/MembershipCard.tsx
 
+'use client';
+
+import React, { useId, useMemo, useState } from 'react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import {
+  FiCheck,
+  FiX,
+  FiZap,
+  FiAlertTriangle,
+  FiArrowRight,
+} from 'react-icons/fi';
+
+export type UIMembershipPlan = {
+  id: string | null;
+  name: string;
+  price: string;
+  badge?: string | null;
+  gradient?: string | null;
+  description?: string | null;
+  features?: string[];
+};
+
+type Props = {
+  plan: UIMembershipPlan;
+  isCurrent: boolean;
+  saving?: boolean;
+  onSelect: () => Promise<void> | void;
+  previewCount?: number;
+  isAuthenticated?: boolean;
+  loginPath?: string;
+  onAuthRedirect?: (planId?: string | null) => void;
+};
+
+export default function MembershipCard({
+  plan,
+  isCurrent,
+  saving = false,
+  onSelect,
+  previewCount = 4,
+  isAuthenticated = false,
+  loginPath = '/login',
+  onAuthRedirect,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const [openWarn, setOpenWarn] = useState(false);
+  const titleId = useId();
+
+  const hasFeatures = Array.isArray(plan.features) && plan.features.length > 0;
+  const preview = hasFeatures ? plan.features!.slice(0, previewCount) : [];
+  const hiddenCount = hasFeatures
+    ? Math.max(0, plan.features!.length - preview.length)
+    : 0;
+
+  const cardGradient = useMemo(
+    () =>
+      plan.gradient ||
+      'linear-gradient(135deg, rgba(139,92,246,.18), rgba(96,165,250,.16))',
+    [plan.gradient]
+  );
+
+  async function confirm() {
+    if (!isAuthenticated) {
+      setOpenWarn(true);
+      return;
+    }
+
+    await onSelect?.();
+    setOpen(false);
+  }
+
+  function handleWarnContinue() {
+    const chosenId = plan.id ?? 'free';
+
+    try {
+      localStorage.setItem('preselectedPlanId', chosenId);
+    } catch {}
+
+    if (onAuthRedirect) {
+      onAuthRedirect(chosenId);
+    } else {
+      window.location.href = `${loginPath}?planId=${encodeURIComponent(
+        chosenId
+      )}`;
+    }
+  }
+
+  const cardVariants: Variants = {
+    hidden: { opacity: 0, y: 28 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.45, ease: 'easeOut' },
+    },
+    hover: {
+      y: -7,
+      transition: { duration: 0.22, ease: 'easeOut' },
+    },
+    tap: { scale: 0.985 },
+  };
+
+  const actionLabel = isCurrent
+    ? 'Current plan'
+    : plan.name.toLowerCase() === 'free'
+    ? 'Switch to Free'
+    : 'Choose Plan';
+
+  const confirmLabel = isCurrent
+    ? 'Current plan'
+    : plan.name.toLowerCase() === 'free'
+    ? 'Switch to Free'
+    : 'Confirm Plan';
+
+  return (
+    <>
+      <motion.article
+        variants={cardVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        whileHover="hover"
+        whileTap="tap"
+        style={{
+          height: '100%',
+          borderRadius: 30,
+          overflow: 'hidden',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.94))',
+          border: isCurrent
+            ? '1px solid rgba(139,92,246,0.24)'
+            : '1px solid rgba(139,92,246,0.08)',
+          boxShadow: isCurrent
+            ? '0 20px 50px rgba(139,92,246,0.14), inset 0 0 0 1px rgba(255,255,255,0.35)'
+            : '0 14px 36px rgba(15,23,42,0.07), inset 0 0 0 1px rgba(255,255,255,0.35)',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+        }}
+      >
+        {isCurrent && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 14,
+              zIndex: 3,
+              padding: '0.38rem 0.7rem',
+              borderRadius: 999,
+              background: 'rgba(139,92,246,0.13)',
+              color: '#7c3aed',
+              fontWeight: 850,
+              fontSize: '0.76rem',
+            }}
+          >
+            Active
+          </div>
+        )}
+
+        <div
+          style={{
+            background: cardGradient,
+            padding: '1.25rem',
+            color: '#111827',
+            borderBottom: '1px solid rgba(255,255,255,0.34)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(circle at top right, rgba(255,255,255,0.28), transparent 30%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div
+            className="d-flex align-items-start justify-content-between gap-3"
+            style={{ position: 'relative', zIndex: 2 }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: '1.15rem',
+                  fontWeight: 950,
+                  letterSpacing: '-0.03em',
+                  color: '#111827',
+                }}
+              >
+                {plan.name}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
+                  fontWeight: 950,
+                  lineHeight: 1,
+                  color: '#111827',
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                {plan.price}
+              </div>
+            </div>
+
+            {plan.badge && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: 999,
+                  fontSize: '0.74rem',
+                  fontWeight: 850,
+                  whiteSpace: 'nowrap',
+                  color: '#111827',
+                  background: 'rgba(255,255,255,0.74)',
+                  border: '1px solid rgba(255,255,255,0.55)',
+                }}
+              >
+                {plan.badge}
+              </span>
+            )}
+          </div>
+
+          {plan.description && (
+            <p
+              style={{
+                position: 'relative',
+                zIndex: 2,
+                marginTop: '0.9rem',
+                marginBottom: 0,
+                fontSize: '0.95rem',
+                lineHeight: 1.7,
+                color: 'rgba(17,24,39,0.76)',
+              }}
+            >
+              {plan.description}
+            </p>
+          )}
+        </div>
+
+        <div
+          style={{
+            padding: '1.25rem',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {hasFeatures ? (
+            <ul
+              style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'grid',
+                gap: '0.8rem',
+              }}
+            >
+              {preview.map((label) => (
+                <li
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.7rem',
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 24,
+                      height: 24,
+                      minWidth: 24,
+                      borderRadius: 999,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(139,92,246,.12)',
+                      color: '#8b5cf6',
+                      marginTop: 1,
+                    }}
+                  >
+                    <FiCheck size={14} />
+                  </span>
+
+                  <span
+                    style={{
+                      color: '#334155',
+                      fontSize: '0.95rem',
+                      lineHeight: 1.6,
+                      fontWeight: 650,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div
+              style={{
+                color: '#64748b',
+                fontSize: '0.95rem',
+                lineHeight: 1.6,
+                fontWeight: 700,
+              }}
+            >
+              No features listed for this plan yet.
+            </div>
+          )}
+
+          {hiddenCount > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.42rem 0.72rem',
+                  borderRadius: 999,
+                  background: 'rgba(148,163,184,0.10)',
+                  color: '#475569',
+                  fontSize: '0.8rem',
+                  fontWeight: 850,
+                }}
+              >
+                +{hiddenCount} more
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '0 1.25rem 1.25rem' }}>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            disabled={saving}
+            style={{
+              width: '100%',
+              border: isCurrent
+                ? '1px solid rgba(148,163,184,0.28)'
+                : '1px solid transparent',
+              background: isCurrent
+                ? 'rgba(255,255,255,0.86)'
+                : 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+              color: isCurrent ? '#475569' : '#ffffff',
+              borderRadius: 16,
+              minHeight: 48,
+              padding: '0.9rem 1rem',
+              fontWeight: 900,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              boxShadow: isCurrent
+                ? 'none'
+                : '0 12px 28px rgba(139,92,246,0.22)',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            <span>{actionLabel}</span>
+            {!isCurrent && <FiZap size={16} />}
+          </button>
+        </div>
+      </motion.article>
+
+      <AnimatePresence>
+        {open && (
+          <PlanModal
+            titleId={titleId}
+            plan={plan}
+            cardGradient={cardGradient}
+            hasFeatures={hasFeatures}
+            isCurrent={isCurrent}
+            saving={saving}
+            confirmLabel={confirmLabel}
+            onClose={() => setOpen(false)}
+            onConfirm={confirm}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {openWarn && (
+          <AuthWarningModal
+            plan={plan}
+            onClose={() => setOpenWarn(false)}
+            onContinue={handleWarnContinue}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+function PlanModal({
+  titleId,
+  plan,
+  cardGradient,
+  hasFeatures,
+  isCurrent,
+  saving,
+  confirmLabel,
+  onClose,
+  onConfirm,
+}: {
+  titleId: string;
+  plan: UIMembershipPlan;
+  cardGradient: string;
+  hasFeatures: boolean;
+  isCurrent: boolean;
+  saving: boolean;
+  confirmLabel: string;
+  onClose: () => void;
+  onConfirm: () => Promise<void> | void;
+}) {
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1060 }}
+    >
+      <div
+        onClick={onClose}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(15,23,42,0.50)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      />
+
+      <motion.div
+        initial={{ y: 24, scale: 0.98, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        exit={{ y: 12, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 230, damping: 24 }}
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          width: 'min(92vw, 580px)',
+          maxHeight: '86vh',
+          overflowY: 'auto',
+          margin: '7vh auto 0',
+          borderRadius: 30,
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.98))',
+          border: '1px solid rgba(139,92,246,0.10)',
+          boxShadow: '0 30px 80px rgba(15,23,42,0.24)',
+        }}
+      >
+        <div
+          style={{
+            background: cardGradient,
+            padding: '1.2rem',
+            borderBottom: '1px solid rgba(255,255,255,0.34)',
+          }}
+        >
+          <div className="d-flex align-items-start justify-content-between gap-3">
+            <div>
+              <h5
+                id={titleId}
+                style={{
+                  margin: 0,
+                  fontWeight: 950,
+                  fontSize: '1.2rem',
+                  color: '#111827',
+                }}
+              >
+                {plan.name}
+              </h5>
+
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: '1.75rem',
+                  fontWeight: 950,
+                  color: '#111827',
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                {plan.price}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={closeButtonStyle}
+            >
+              <FiX size={16} />
+            </button>
+          </div>
+
+          {plan.badge && (
+            <span
+              style={{
+                display: 'inline-flex',
+                marginTop: '0.8rem',
+                padding: '0.4rem 0.7rem',
+                borderRadius: 999,
+                background: 'rgba(255,255,255,0.72)',
+                border: '1px solid rgba(255,255,255,0.55)',
+                color: '#111827',
+                fontWeight: 850,
+                fontSize: '0.76rem',
+              }}
+            >
+              {plan.badge}
+            </span>
+          )}
+        </div>
+
+        <div style={{ padding: '1.2rem' }}>
+          {plan.description && (
+            <p
+              style={{
+                color: '#64748b',
+                fontSize: '0.96rem',
+                lineHeight: 1.75,
+                marginBottom: '1rem',
+                fontWeight: 650,
+              }}
+            >
+              {plan.description}
+            </p>
+          )}
+
+          {hasFeatures && (
+            <ul
+              style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'grid',
+                gap: '0.8rem',
+              }}
+            >
+              {plan.features!.map((label) => (
+                <li
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.7rem',
+                  }}
+                >
+                  <span aria-hidden style={checkIconStyle}>
+                    <FiCheck size={14} />
+                  </span>
+
+                  <span
+                    style={{
+                      color: '#334155',
+                      fontSize: '0.95rem',
+                      lineHeight: 1.6,
+                      fontWeight: 650,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div
+          style={{
+            padding: '0 1.2rem 1.2rem',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button type="button" onClick={onClose} style={secondaryButtonStyle}>
+            Close
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={saving || isCurrent}
+            style={{
+              ...primaryButtonStyle,
+              background: isCurrent
+                ? 'rgba(148,163,184,0.18)'
+                : primaryButtonStyle.background,
+              color: isCurrent ? '#64748b' : '#ffffff',
+              cursor: saving || isCurrent ? 'not-allowed' : 'pointer',
+              opacity: saving || isCurrent ? 0.8 : 1,
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function AuthWarningModal({
+  plan,
+  onClose,
+  onContinue,
+}: {
+  plan: UIMembershipPlan;
+  onClose: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal="true"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1061 }}
+    >
+      <div
+        onClick={onClose}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(15,23,42,0.50)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      />
+
+      <motion.div
+        initial={{ y: 24, scale: 0.98, opacity: 0 }}
+        animate={{ y: 0, scale: 1, opacity: 1 }}
+        exit={{ y: 12, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 230, damping: 24 }}
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          width: 'min(92vw, 520px)',
+          margin: '10vh auto 0',
+          borderRadius: 30,
+          overflow: 'hidden',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.99), rgba(248,250,252,0.98))',
+          border: '1px solid rgba(139,92,246,0.10)',
+          boxShadow: '0 30px 80px rgba(15,23,42,0.24)',
+        }}
+      >
+        <div
+          style={{
+            padding: '1.15rem',
+            background:
+              'linear-gradient(135deg, rgba(255,247,237,1), rgba(255,255,255,1))',
+            borderBottom: '1px solid rgba(15,23,42,0.06)',
+          }}
+        >
+          <div className="d-flex align-items-start justify-content-between gap-3">
+            <h5
+              style={{
+                margin: 0,
+                fontWeight: 950,
+                fontSize: '1.1rem',
+                color: '#111827',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <FiAlertTriangle />
+              Create an account to continue
+            </h5>
+
+            <button type="button" onClick={onClose} style={closeButtonStyle}>
+              <FiX size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '1.15rem' }}>
+          <p
+            style={{
+              color: '#64748b',
+              fontSize: '0.96rem',
+              lineHeight: 1.75,
+              marginBottom: '1rem',
+              fontWeight: 650,
+            }}
+          >
+            You need an account to choose a plan and manage billing.
+          </p>
+
+          <div
+            style={{
+              padding: '1rem',
+              borderRadius: 20,
+              background: 'rgba(139,92,246,0.06)',
+              border: '1px solid rgba(139,92,246,0.08)',
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between gap-3">
+              <div>
+                <div
+                  style={{
+                    color: '#111827',
+                    fontWeight: 900,
+                    marginBottom: 2,
+                  }}
+                >
+                  {plan.name}
+                </div>
+
+                <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                  Selected membership
+                </div>
+              </div>
+
+              <div style={{ color: '#111827', fontWeight: 950 }}>
+                {plan.price}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '0 1.15rem 1.15rem',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button type="button" onClick={onClose} style={secondaryButtonStyle}>
+            Back
+          </button>
+
+          <button
+            type="button"
+            onClick={onContinue}
+            style={{
+              ...primaryButtonStyle,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <span>Sign in / Create account</span>
+            <FiArrowRight size={16} />
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const checkIconStyle: React.CSSProperties = {
+  width: 24,
+  height: 24,
+  minWidth: 24,
+  borderRadius: 999,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(139,92,246,.12)',
+  color: '#8b5cf6',
+  marginTop: 1,
+};
+
+const closeButtonStyle: React.CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.48)',
+  background: 'rgba(255,255,255,0.74)',
+  color: '#111827',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  border: '1px solid transparent',
+  background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+  color: '#ffffff',
+  borderRadius: 15,
+  minHeight: 44,
+  padding: '0.8rem 1rem',
+  fontWeight: 900,
+  cursor: 'pointer',
+  boxShadow: '0 12px 26px rgba(139,92,246,0.18)',
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  border: '1px solid rgba(148,163,184,0.28)',
+  background: '#ffffff',
+  color: '#475569',
+  borderRadius: 15,
+  minHeight: 44,
+  padding: '0.8rem 1rem',
+  fontWeight: 850,
+  cursor: 'pointer',
+};
+
+{/*
 'use client';
 
 import React, { useId, useMemo, useState } from 'react';
