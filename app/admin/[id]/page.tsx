@@ -1,4 +1,379 @@
 // app/admin/[id]/page.tsx
+
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+import AdminSidebar, {
+  type AdminSidebarTab,
+} from '@/components/admin/sidebar/Sidebar';
+
+import AdminCalendarComponent from '@/components/admin/calendar/Calendar';
+import AdminMessagesPanel from '@/components/admin/messages/MessagesPanel';
+import AdminNotificationsPanel from '@/components/admin/messages/NotificationsPanel';
+import PlansPanel from '@/components/admin/plans/PlansPanel';
+import UsersPanel from '@/components/admin/users/UsersPanel';
+import AdminBioCard from '@/components/admin/bio/BioCard';
+
+type Tab = AdminSidebarTab | 'dashboard';
+
+type PageAdmin = {
+  id: string;
+  full_name: string;
+  email: string;
+  bio?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  phone_number?: string | null;
+  profile_image_url?: string | null;
+  membership_plan_id?: string | null;
+};
+
+export default function AdminPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [admin, setAdmin] = useState<PageAdmin | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [token, setToken] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 992);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const tokenFromURL = url.searchParams.get('token');
+
+    if (tokenFromURL) {
+      localStorage.setItem('adminToken', tokenFromURL);
+    }
+
+    const storedToken = tokenFromURL || localStorage.getItem('adminToken');
+    setToken(storedToken);
+
+    if (!storedToken) {
+      setError('No token found. Please log in again.');
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const apiBase =
+          process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
+
+        const res = await fetch(`${apiBase}/api/admins/me`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+
+        const data = (await res.json()) as PageAdmin;
+        setAdmin(data);
+      } catch (err) {
+        console.error('❌ Failed to fetch admin:', err);
+        setError('Failed to load admin profile.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [searchParams]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    router.push('/admin');
+  };
+
+  const handleMessageUser = async (user: { id: string; full_name: string }) => {
+    setActiveTab('messages');
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000';
+
+    try {
+      const res = await fetch(`${apiBase}/api/messages/conversations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch conversations: ${res.status}`);
+      }
+
+      type Conversation = { id: string; user_id: string };
+      const conversations: Conversation[] = await res.json();
+      const convo = conversations.find((c) => c.user_id === user.id);
+
+      if (convo) {
+        window.dispatchEvent(
+          new CustomEvent('openAdminChat', {
+            detail: { conversation: convo },
+          })
+        );
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('startAdminNewMessage', {
+            detail: { userId: user.id, userName: user.full_name },
+          })
+        );
+      }
+    } catch (err) {
+      console.error('❌ Failed to check conversations', err);
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'calendar':
+        return <AdminCalendarComponent token={token} />;
+
+      case 'notifications':
+        return <AdminNotificationsPanel />;
+
+      case 'messages':
+        return <AdminMessagesPanel />;
+
+      case 'plans':
+        return <PlansPanel />;
+
+      case 'users':
+        return <UsersPanel onMessageUser={handleMessageUser} />;
+
+      case 'dashboard':
+        return admin ? (
+          <AdminBioCard
+            admin={{
+              id: admin.id,
+              full_name: admin.full_name ?? null,
+              email: admin.email ?? null,
+              profile_image_url: admin.profile_image_url ?? null,
+              phone_number: admin.phone_number ?? admin.phone ?? null,
+              address: admin.address ?? null,
+              membership_plan_id: admin.membership_plan_id ?? null,
+              bio: admin.bio ?? null,
+            }}
+            onSaved={(updated) =>
+              setAdmin((a) =>
+                a
+                  ? {
+                      ...a,
+                      ...updated,
+                      full_name: updated.full_name ?? a.full_name,
+                      email: updated.email ?? a.email,
+                      id: updated.id ?? a.id,
+                      phone_number: updated.phone_number ?? null,
+                    }
+                  : a
+              )
+            }
+            apiBase={
+              process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'
+            }
+          />
+        ) : null;
+
+      default:
+        return null;
+    }
+  };
+
+  if (loading) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'linear-gradient(135deg, #f8fbff 0%, #eef4ff 34%, #ede9fe 70%, #fdfcff 100%)',
+          padding: '2rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '2rem',
+            borderRadius: 28,
+            background: 'rgba(255,255,255,0.75)',
+            boxShadow: '0 18px 45px rgba(15,23,42,0.08)',
+            textAlign: 'center',
+          }}
+        >
+          <h2 style={{ margin: 0, fontWeight: 900, color: '#111827' }}>
+            Loading admin profile...
+          </h2>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !admin) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background:
+            'linear-gradient(135deg, #f8fbff 0%, #eef4ff 34%, #ede9fe 70%, #fdfcff 100%)',
+          padding: '2rem',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 520,
+            width: '100%',
+            padding: '2rem',
+            borderRadius: 30,
+            background: 'rgba(255,255,255,0.78)',
+            border: '1px solid rgba(239,68,68,0.16)',
+            boxShadow: '0 18px 45px rgba(15,23,42,0.08)',
+            textAlign: 'center',
+          }}
+        >
+          <h2 style={{ color: '#111827', fontWeight: 900 }}>
+            Error loading profile
+          </h2>
+
+          <p style={{ color: '#64748b' }}>{error || 'Admin not found.'}</p>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            style={{
+              minHeight: 44,
+              padding: '0.8rem 1rem',
+              borderRadius: 15,
+              border: '1px solid transparent',
+              background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+              color: '#ffffff',
+              fontWeight: 900,
+            }}
+          >
+            Back to Login
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        background:
+          'linear-gradient(135deg, #f8fbff 0%, #eef4ff 34%, #ede9fe 70%, #fdfcff 100%)',
+        overflowX: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          minHeight: '100vh',
+          display: isMobile ? 'block' : 'flex',
+          alignItems: 'stretch',
+          gap: isMobile ? 0 : '1.25rem',
+          padding: isMobile ? '4.75rem 1rem 1rem' : '0 1.25rem 0 0',
+        }}
+      >
+        <div style={{ flex: '0 0 auto' }}>
+          <AdminSidebar
+            adminId={admin.id}
+            adminName={admin.full_name}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onLogout={handleLogout}
+          />
+        </div>
+
+        <section
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: isMobile ? '0 0 2rem' : '1.25rem 0 2rem',
+          }}
+        >
+          {!isMobile && (
+            <div
+              style={{
+                marginBottom: '1.25rem',
+                borderRadius: 30,
+                padding: '1.1rem 1.25rem',
+                background: 'rgba(255,255,255,0.64)',
+                border: '1px solid rgba(139,92,246,0.08)',
+                boxShadow: '0 14px 36px rgba(15,23,42,0.06)',
+              }}
+            >
+              <div
+                style={{
+                  color: '#8b5cf6',
+                  fontWeight: 900,
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  marginBottom: 4,
+                }}
+              >
+                Admin Dashboard
+              </div>
+
+              <h1
+                style={{
+                  margin: 0,
+                  color: '#111827',
+                  fontSize: 'clamp(1.6rem, 3vw, 2.35rem)',
+                  fontWeight: 950,
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                Welcome back, {admin.full_name.split(' ')[0]}
+              </h1>
+            </div>
+          )}
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              style={{
+                width: '100%',
+                minWidth: 0,
+              }}
+            >
+              {renderTabContent()}
+            </motion.div>
+          </AnimatePresence>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+{/*
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -210,7 +585,7 @@ export default function AdminPage() {
             <div className="col-lg-8 col-xxl-9">
               <div className="mb-4 position-relative">
                 <div className="d-flex justify-content-center flex-wrap gap-2">
-                  {/* buttons same as before */}
+          
                   <button
                     className={`btn btn-sm btn-${
                       activeTab === 'calendar' ? 'primary' : 'outline-primary'
@@ -259,3 +634,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+*/}
