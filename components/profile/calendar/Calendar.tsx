@@ -1,4 +1,5 @@
 // components/profile/calendar/Calendar.tsx
+// components/profile/calendar/Calendar.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -89,6 +90,66 @@ export default function CalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
+  const getImageUrl = (url?: string | null) => {
+    if (!url || url.trim() === '') return '/default-avatar.png';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    if (url.startsWith('/')) {
+      return `http://localhost:5000${url}`;
+    }
+
+    return `http://localhost:5000/${url}`;
+  };
+
+  const createLocalDate = (year: number, month: number, day: number) =>
+    new Date(year, month - 1, day);
+
+  const calculateEaster = (year: number) => {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+    return new Date(year, month - 1, day);
+  };
+
+  const getNthWeekdayOfMonth = (
+    year: number,
+    monthIndex: number,
+    weekday: number,
+    nth: number
+  ) => {
+    const firstDay = new Date(year, monthIndex, 1);
+    const firstWeekdayOffset = (7 + weekday - firstDay.getDay()) % 7;
+    const day = 1 + firstWeekdayOffset + (nth - 1) * 7;
+    return new Date(year, monthIndex, day);
+  };
+
+  const getLastWeekdayOfMonth = (
+    year: number,
+    monthIndex: number,
+    weekday: number
+  ) => {
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    const offset = (7 + lastDay.getDay() - weekday) % 7;
+    return new Date(year, monthIndex, lastDay.getDate() - offset);
+  };
+
+  const toDateKey = (date: Date) => date.toDateString();
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -100,21 +161,18 @@ export default function CalendarComponent({ token }: Props) {
     (async () => {
       try {
         const year = new Date().getFullYear();
+
         const res = await fetch(
           `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
         );
         const data: Holiday[] = await res.json();
 
         const official: EventType[] = data.map((h) => {
-          const utcDate = new Date(h.date + 'T00:00:00Z');
-          const localDate = new Date(
-            utcDate.getUTCFullYear(),
-            utcDate.getUTCMonth(),
-            utcDate.getUTCDate()
-          );
+          const [y, m, d] = h.date.split('-').map(Number);
+          const localDate = new Date(y, m - 1, d);
 
           return {
-            id: `holiday-${h.date}`,
+            id: `holiday-${h.date}-${h.localName.replace(/\s+/g, '-')}`,
             title: `🎉 ${h.localName}`,
             start: localDate,
             end: localDate,
@@ -123,25 +181,114 @@ export default function CalendarComponent({ token }: Props) {
           };
         });
 
-        const customDates = [
-          { month: 2, day: 14, name: "Valentine's Day" },
-          { month: 3, day: 17, name: "St. Patrick's Day" },
-          { month: 10, day: 31, name: 'Halloween' },
-          { month: 12, day: 24, name: 'Christmas Eve' },
-          { month: 12, day: 31, name: "New Year's Eve" },
+        const easter = calculateEaster(year);
+        const goodFriday = new Date(easter);
+        goodFriday.setDate(easter.getDate() - 2);
+
+        const mothersDay = getNthWeekdayOfMonth(year, 4, 0, 2); // May, 2nd Sunday
+        const fathersDay = getNthWeekdayOfMonth(year, 5, 0, 3); // June, 3rd Sunday
+        const thanksgiving = getNthWeekdayOfMonth(year, 10, 4, 4); // Nov, 4th Thursday
+        const memorialDay = getLastWeekdayOfMonth(year, 4, 1); // May, last Monday
+
+        const customHolidaySeeds = [
+          {
+            id: `custom-new-years-day-${year}`,
+            title: `🎊 New Year's Day`,
+            start: createLocalDate(year, 1, 1),
+            description: "New Year's Day",
+          },
+          {
+            id: `custom-valentines-day-${year}`,
+            title: `🎊 Valentine's Day`,
+            start: createLocalDate(year, 2, 14),
+            description: "Valentine's Day",
+          },
+          {
+            id: `custom-st-patricks-day-${year}`,
+            title: `🎊 St. Patrick's Day`,
+            start: createLocalDate(year, 3, 17),
+            description: "St. Patrick's Day",
+          },
+          {
+            id: `custom-good-friday-${year}`,
+            title: `🎊 Good Friday`,
+            start: goodFriday,
+            description: 'Good Friday',
+          },
+          {
+            id: `custom-easter-${year}`,
+            title: `🎊 Easter`,
+            start: easter,
+            description: 'Easter Sunday',
+          },
+          {
+            id: `custom-mothers-day-${year}`,
+            title: `🎊 Mother's Day`,
+            start: mothersDay,
+            description: "Mother's Day",
+          },
+          {
+            id: `custom-memorial-day-${year}`,
+            title: `🎊 Memorial Day`,
+            start: memorialDay,
+            description: 'Memorial Day',
+          },
+          {
+            id: `custom-fathers-day-${year}`,
+            title: `🎊 Father's Day`,
+            start: fathersDay,
+            description: "Father's Day",
+          },
+          {
+            id: `custom-independence-day-${year}`,
+            title: `🎊 Independence Day`,
+            start: createLocalDate(year, 7, 4),
+            description: 'Independence Day',
+          },
+          {
+            id: `custom-halloween-${year}`,
+            title: `🎊 Halloween`,
+            start: createLocalDate(year, 10, 31),
+            description: 'Halloween',
+          },
+          {
+            id: `custom-thanksgiving-${year}`,
+            title: `🎊 Thanksgiving`,
+            start: thanksgiving,
+            description: 'Thanksgiving',
+          },
+          {
+            id: `custom-christmas-eve-${year}`,
+            title: `🎊 Christmas Eve`,
+            start: createLocalDate(year, 12, 24),
+            description: 'Christmas Eve',
+          },
+          {
+            id: `custom-christmas-day-${year}`,
+            title: `🎊 Christmas Day`,
+            start: createLocalDate(year, 12, 25),
+            description: 'Christmas Day',
+          },
+          {
+            id: `custom-new-years-eve-${year}`,
+            title: `🎊 New Year's Eve`,
+            start: createLocalDate(year, 12, 31),
+            description: "New Year's Eve",
+          },
         ];
 
-        const custom: EventType[] = customDates.map((d) => {
-          const localDate = new Date(year, d.month - 1, d.day);
-          return {
-            id: `custom-${d.name.replace(/\s+/g, '-')}`,
-            title: `🎊 ${d.name}`,
-            start: localDate,
-            end: localDate,
-            description: d.name,
+        const officialDateKeys = new Set(official.map((h) => toDateKey(h.start)));
+
+        const custom: EventType[] = customHolidaySeeds
+          .filter((h) => !officialDateKeys.has(toDateKey(h.start)))
+          .map((h) => ({
+            id: h.id,
+            title: h.title,
+            start: h.start,
+            end: h.start,
+            description: h.description,
             isHoliday: true,
-          };
-        });
+          }));
 
         setHolidays([...official, ...custom]);
       } catch (err) {
@@ -372,14 +519,18 @@ export default function CalendarComponent({ token }: Props) {
 
     let background = 'linear-gradient(135deg,#cbd5e1,#e2e8f0)';
 
-    if (event.status === 'approved')
+    if (event.status === 'approved') {
       background = 'linear-gradient(135deg,#22c55e,#16a34a)';
-    if (event.status === 'pending')
+    }
+    if (event.status === 'pending') {
       background = 'linear-gradient(135deg,#8b5cf6,#a855f7)';
-    if (event.status === 'rescheduled')
+    }
+    if (event.status === 'rescheduled') {
       background = 'linear-gradient(135deg,#f59e0b,#fb923c)';
-    if (event.status === 'declined')
+    }
+    if (event.status === 'declined') {
       background = 'linear-gradient(135deg,#ef4444,#fb7185)';
+    }
 
     return {
       style: {
@@ -399,6 +550,7 @@ export default function CalendarComponent({ token }: Props) {
     setShowEventModal(false);
     setSelectedTrainer(null);
     setSelectedEvent(null);
+    setRescheduleMode(false);
   };
 
   return (
@@ -486,7 +638,7 @@ export default function CalendarComponent({ token }: Props) {
           style={{
             width: '100%',
             borderRadius: 30,
-            overflow: 'hidden',
+            overflow: isMobile ? 'auto' : 'hidden',
             background: 'rgba(255,255,255,0.82)',
             border: '1px solid rgba(139,92,246,0.08)',
             boxShadow: '0 14px 36px rgba(15,23,42,0.06)',
@@ -554,8 +706,7 @@ export default function CalendarComponent({ token }: Props) {
               style={{
                 borderRadius: 28,
                 overflow: 'hidden',
-                background:
-                  'linear-gradient(135deg, #faf7ff 0%, #eef7ff 100%)',
+                background: 'linear-gradient(135deg, #faf7ff 0%, #eef7ff 100%)',
                 boxShadow: '0 28px 80px rgba(15,23,42,0.22)',
               }}
             >
@@ -617,14 +768,18 @@ export default function CalendarComponent({ token }: Props) {
                         <img
                           src={t.profile_image_url || '/default-avatar.png'}
                           alt={t.full_name || 'Trainer'}
+                          onError={(e) => {
+                            e.currentTarget.src = '/default-avatar.png';
+                          }}
                           style={{
                             width: 30,
                             height: 30,
                             borderRadius: '50%',
                             objectFit: 'cover',
+                            background: '#f1f5f9',
                           }}
                         />
-                        <span>{t.full_name || t.email}</span>
+                        <span>{t.full_name || t.email || 'Trainer'}</span>
                       </div>
                     ),
                     data: t,
@@ -733,11 +888,11 @@ export default function CalendarComponent({ token }: Props) {
                 }}
               >
                 <img
-                  src={
-                    selectedEvent.trainer?.profile_image_url ||
-                    '/default-avatar.png'
-                  }
+                  src={getImageUrl(selectedEvent.trainer?.profile_image_url)}
                   alt={selectedEvent.trainer?.full_name || 'Trainer'}
+                  onError={(e) => {
+                    e.currentTarget.src = '/default-avatar.png';
+                  }}
                   style={{
                     width: 92,
                     height: 92,
@@ -746,6 +901,7 @@ export default function CalendarComponent({ token }: Props) {
                     objectFit: 'cover',
                     marginBottom: '0.85rem',
                     boxShadow: '0 14px 30px rgba(15,23,42,0.22)',
+                    background: '#f1f5f9',
                   }}
                 />
 
@@ -765,8 +921,7 @@ export default function CalendarComponent({ token }: Props) {
                   style={{
                     padding: '1rem',
                     borderRadius: 22,
-                    background:
-                      'linear-gradient(135deg, #faf7ff 0%, #eef7ff 100%)',
+                    background: 'linear-gradient(135deg, #faf7ff 0%, #eef7ff 100%)',
                     border: '1px solid rgba(139,92,246,0.08)',
                     boxShadow: '0 12px 28px rgba(15,23,42,0.05)',
                   }}
@@ -879,8 +1034,6 @@ export default function CalendarComponent({ token }: Props) {
     </section>
   );
 }
-
-
 
 {/*
 'use client';

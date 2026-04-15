@@ -22,7 +22,6 @@ import {
   FiUser,
   FiInfo,
   FiCheckCircle,
-  FiXCircle,
 } from 'react-icons/fi';
 
 type EventType = {
@@ -33,6 +32,7 @@ type EventType = {
   description?: string;
   status?: string;
   userName?: string;
+  isHoliday?: boolean;
 };
 
 type ApiEvent = {
@@ -45,6 +45,12 @@ type ApiEvent = {
   userName?: string;
 };
 
+type Holiday = {
+  date: string;
+  localName: string;
+  name: string;
+};
+
 const localizer = momentLocalizer(moment);
 
 type Props = {
@@ -53,6 +59,7 @@ type Props = {
 
 export default function AdminCalendarComponent({ token }: Props) {
   const [events, setEvents] = useState<EventType[]>([]);
+  const [holidays, setHolidays] = useState<EventType[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
 
@@ -72,11 +79,197 @@ export default function AdminCalendarComponent({ token }: Props) {
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
+  const createLocalDate = (year: number, month: number, day: number) =>
+    new Date(year, month - 1, day);
+
+  const calculateEaster = (year: number) => {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+    return new Date(year, month - 1, day);
+  };
+
+  const getNthWeekdayOfMonth = (
+    year: number,
+    monthIndex: number,
+    weekday: number,
+    nth: number
+  ) => {
+    const firstDay = new Date(year, monthIndex, 1);
+    const firstWeekdayOffset = (7 + weekday - firstDay.getDay()) % 7;
+    const day = 1 + firstWeekdayOffset + (nth - 1) * 7;
+    return new Date(year, monthIndex, day);
+  };
+
+  const getLastWeekdayOfMonth = (
+    year: number,
+    monthIndex: number,
+    weekday: number
+  ) => {
+    const lastDay = new Date(year, monthIndex + 1, 0);
+    const offset = (7 + lastDay.getDay() - weekday) % 7;
+    return new Date(year, monthIndex, lastDay.getDate() - offset);
+  };
+
+  const toDateKey = (date: Date) => date.toDateString();
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const year = new Date().getFullYear();
+
+        const res = await fetch(
+          `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
+        );
+        const data: Holiday[] = await res.json();
+
+        const official: EventType[] = data.map((h) => {
+          const [y, m, d] = h.date.split('-').map(Number);
+          const localDate = new Date(y, m - 1, d);
+
+          return {
+            id: `holiday-${h.date}-${h.localName.replace(/\s+/g, '-')}`,
+            title: `🎉 ${h.localName}`,
+            start: localDate,
+            end: localDate,
+            description: h.name,
+            isHoliday: true,
+          };
+        });
+
+        const easter = calculateEaster(year);
+        const goodFriday = new Date(easter);
+        goodFriday.setDate(easter.getDate() - 2);
+
+        const mothersDay = getNthWeekdayOfMonth(year, 4, 0, 2); // May 2nd Sunday
+        const fathersDay = getNthWeekdayOfMonth(year, 5, 0, 3); // June 3rd Sunday
+        const thanksgiving = getNthWeekdayOfMonth(year, 10, 4, 4); // Nov 4th Thursday
+        const memorialDay = getLastWeekdayOfMonth(year, 4, 1); // May last Monday
+
+        const customHolidaySeeds = [
+          {
+            id: `custom-new-years-day-${year}`,
+            title: `🎊 New Year's Day`,
+            start: createLocalDate(year, 1, 1),
+            description: "New Year's Day",
+          },
+          {
+            id: `custom-valentines-day-${year}`,
+            title: `🎊 Valentine's Day`,
+            start: createLocalDate(year, 2, 14),
+            description: "Valentine's Day",
+          },
+          {
+            id: `custom-st-patricks-day-${year}`,
+            title: `🎊 St. Patrick's Day`,
+            start: createLocalDate(year, 3, 17),
+            description: "St. Patrick's Day",
+          },
+          {
+            id: `custom-good-friday-${year}`,
+            title: `🎊 Good Friday`,
+            start: goodFriday,
+            description: 'Good Friday',
+          },
+          {
+            id: `custom-easter-${year}`,
+            title: `🎊 Easter`,
+            start: easter,
+            description: 'Easter Sunday',
+          },
+          {
+            id: `custom-mothers-day-${year}`,
+            title: `🎊 Mother's Day`,
+            start: mothersDay,
+            description: "Mother's Day",
+          },
+          {
+            id: `custom-memorial-day-${year}`,
+            title: `🎊 Memorial Day`,
+            start: memorialDay,
+            description: 'Memorial Day',
+          },
+          {
+            id: `custom-fathers-day-${year}`,
+            title: `🎊 Father's Day`,
+            start: fathersDay,
+            description: "Father's Day",
+          },
+          {
+            id: `custom-independence-day-${year}`,
+            title: `🎊 Independence Day`,
+            start: createLocalDate(year, 7, 4),
+            description: 'Independence Day',
+          },
+          {
+            id: `custom-halloween-${year}`,
+            title: `🎊 Halloween`,
+            start: createLocalDate(year, 10, 31),
+            description: 'Halloween',
+          },
+          {
+            id: `custom-thanksgiving-${year}`,
+            title: `🎊 Thanksgiving`,
+            start: thanksgiving,
+            description: 'Thanksgiving',
+          },
+          {
+            id: `custom-christmas-eve-${year}`,
+            title: `🎊 Christmas Eve`,
+            start: createLocalDate(year, 12, 24),
+            description: 'Christmas Eve',
+          },
+          {
+            id: `custom-christmas-day-${year}`,
+            title: `🎊 Christmas Day`,
+            start: createLocalDate(year, 12, 25),
+            description: 'Christmas Day',
+          },
+          {
+            id: `custom-new-years-eve-${year}`,
+            title: `🎊 New Year's Eve`,
+            start: createLocalDate(year, 12, 31),
+            description: "New Year's Eve",
+          },
+        ];
+
+        const officialDateKeys = new Set(official.map((h) => toDateKey(h.start)));
+
+        const custom: EventType[] = customHolidaySeeds
+          .filter((h) => !officialDateKeys.has(toDateKey(h.start)))
+          .map((h) => ({
+            id: h.id,
+            title: h.title,
+            start: h.start,
+            end: h.start,
+            description: h.description,
+            isHoliday: true,
+          }));
+
+        setHolidays([...official, ...custom]);
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch holidays', err);
+      }
+    })();
   }, []);
 
   const fetchEvents = async (start: Date, end: Date) => {
@@ -245,12 +438,24 @@ export default function AdminCalendarComponent({ token }: Props) {
   };
 
   const handleSelectEvent = (event: EventType) => {
+    if (event.isHoliday) return;
     setSelectedEvent(event);
     setShowEventModal(true);
   };
 
   const handleSelectSlot = (slotInfo: SlotInfo) => {
-    setSelectedSlot(new Date(slotInfo.start));
+    const newDate = new Date(slotInfo.start);
+
+    const isHoliday = holidays.some(
+      (h) => h.start.toDateString() === newDate.toDateString()
+    );
+
+    if (isHoliday) {
+      toast.warn('🎉 It’s a holiday — scheduling is disabled!');
+      return;
+    }
+
+    setSelectedSlot(newDate);
 
     if (currentView === 'month') {
       setShowTimeModal(true);
@@ -267,6 +472,19 @@ export default function AdminCalendarComponent({ token }: Props) {
   };
 
   const eventStyleGetter = (event: EventType) => {
+    if (event.isHoliday) {
+      return {
+        style: {
+          background: 'linear-gradient(135deg,#eef4ff,#ede9fe)',
+          color: '#6d28d9',
+          border: '1px solid rgba(139,92,246,0.18)',
+          borderRadius: '10px',
+          fontWeight: 700,
+          opacity: 0.95,
+        },
+      };
+    }
+
     let background = 'linear-gradient(135deg,#8b5cf6,#a855f7)';
 
     if (event.status === 'approved') {
@@ -469,7 +687,7 @@ export default function AdminCalendarComponent({ token }: Props) {
           >
             <Calendar
               localizer={localizer}
-              events={events}
+              events={[...events, ...holidays]}
               startAccessor="start"
               endAccessor="end"
               views={['month', 'week', 'day']}
@@ -573,16 +791,31 @@ export default function AdminCalendarComponent({ token }: Props) {
                   >
                     <Calendar
                       localizer={localizer}
-                      events={events}
+                      events={[...events, ...holidays]}
                       defaultView={Views.MONTH}
                       views={['month']}
                       selectable
                       style={{ height: '100%' }}
                       onSelectSlot={(slotInfo: SlotInfo) => {
                         const newDate = new Date(slotInfo.start);
+
+                        const isHoliday = holidays.some(
+                          (h) => h.start.toDateString() === newDate.toDateString()
+                        );
+
+                        if (isHoliday) {
+                          toast.warn('🎉 It’s a holiday — rescheduling is disabled!');
+                          return;
+                        }
+
                         setSelectedSlot(newDate);
                         setShowRescheduleCalendar(false);
                         setShowTimeModal(true);
+                      }}
+                      onSelectEvent={(event: EventType) => {
+                        if (event.isHoliday) {
+                          toast.warn('🎉 Holidays cannot be selected for rescheduling.');
+                        }
                       }}
                       eventPropGetter={eventStyleGetter}
                     />
@@ -947,6 +1180,7 @@ const secondaryButtonStyle: React.CSSProperties = {
   color: '#475569',
   border: '1px solid rgba(148,163,184,0.24)',
 };
+
 
 {/*
 'use client';
