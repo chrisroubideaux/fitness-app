@@ -1,4 +1,5 @@
 // app/profile/[id]/page.tsx
+// app/profile/[id]/page.tsx
 'use client';
 
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
@@ -14,8 +15,6 @@ import MembershipsPanel from '@/components/profile/memberships/MembershipsPanel'
 import BioCard, { type User as BioUser } from '@/components/profile/bio/BioCard';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCalendarAlt, FaComments } from 'react-icons/fa';
-import { IoNotificationsOutline } from 'react-icons/io5';
 
 const WorkoutModal = dynamic<{ onClose: () => void }>(
   () => import('@/components/profile/questionnaire/WorkoutModal'),
@@ -58,8 +57,6 @@ export default function ProfilePage() {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SidebarTab>('dashboard');
   const [isMobile, setIsMobile] = useState(false);
-
-  const notificationCount = 3;
 
   useEffect(() => {
     const handleResize = () => {
@@ -121,7 +118,9 @@ export default function ProfilePage() {
               : null);
 
           if (chosen) {
-            router.replace(`/billing/checkout?planId=${encodeURIComponent(chosen)}`);
+            router.replace(
+              `/billing/checkout?planId=${encodeURIComponent(chosen)}`
+            );
             return;
           }
         }
@@ -192,14 +191,18 @@ export default function ProfilePage() {
                   : u
               )
             }
-            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+            apiBase={
+              process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'
+            }
           />
         ) : null;
 
       case 'progress':
         return (
           <WeeklyProgressChart
-            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+            apiBase={
+              process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'
+            }
             tz="America/Chicago"
           />
         );
@@ -208,9 +211,13 @@ export default function ProfilePage() {
         return user ? (
           <MembershipsPanel
             currentPlanId={user.membership_plan_id ?? null}
-            apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'}
+            apiBase={
+              process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:5000'
+            }
             onPlanChanged={(planId) =>
-              setUser((u) => (u ? { ...u, membership_plan_id: planId ?? null } : u))
+              setUser((u) =>
+                u ? { ...u, membership_plan_id: planId ?? null } : u
+              )
             }
           />
         ) : null;
@@ -281,15 +288,10 @@ export default function ProfilePage() {
           display: isMobile ? 'block' : 'flex',
           alignItems: 'stretch',
           gap: isMobile ? 0 : '1.25rem',
-          padding: isMobile ? '1rem' : '0 1.25rem 0 0',
+          padding: isMobile ? '4.75rem 1rem 1rem' : '0 1.25rem 0 0',
         }}
       >
-        <div
-          style={{
-            display: isMobile ? 'none' : 'block',
-            flex: '0 0 auto',
-          }}
-        >
+        <div style={{ flex: '0 0 auto' }}>
           <Sidebar
             userId={user.id}
             userName={user.full_name}
@@ -298,74 +300,6 @@ export default function ProfilePage() {
             onLogout={handleLogout}
           />
         </div>
-
-        {isMobile && (
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 1000,
-              padding: '0.75rem 0',
-              marginBottom: '1rem',
-              background:
-                'linear-gradient(180deg, rgba(248,251,255,0.96), rgba(248,251,255,0.78))',
-              backdropFilter: 'blur(14px)',
-              WebkitBackdropFilter: 'blur(14px)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.6rem',
-                overflowX: 'auto',
-                paddingBottom: '0.35rem',
-              }}
-            >
-              {[
-                ['dashboard', 'Home'],
-                ['calendar', 'Calendar'],
-                ['notifications', 'Alerts'],
-                ['WorkoutPlan', 'Workout'],
-                ['progress', 'Progress'],
-                ['memberships', 'Plans'],
-                ['messages', 'Chat'],
-                ['ai', 'AI'],
-                ['settings', 'Settings'],
-              ].map(([tab, label]) => {
-                const isActive = activeTab === tab;
-
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab as SidebarTab)}
-                    style={{
-                      flex: '0 0 auto',
-                      minHeight: 42,
-                      padding: '0.7rem 0.9rem',
-                      borderRadius: 999,
-                      border: isActive
-                        ? '1px solid rgba(139,92,246,0.24)'
-                        : '1px solid rgba(148,163,184,0.18)',
-                      background: isActive
-                        ? 'linear-gradient(135deg, rgba(139,92,246,0.16), rgba(96,165,250,0.12))'
-                        : 'rgba(255,255,255,0.72)',
-                      color: isActive ? '#7c3aed' : '#475569',
-                      fontWeight: 800,
-                      fontSize: '0.86rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {label}
-                    {tab === 'notifications' && notificationCount > 0
-                      ? ` (${notificationCount})`
-                      : ''}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         <section
           style={{
@@ -402,6 +336,7 @@ export default function ProfilePage() {
                 >
                   Member Dashboard
                 </div>
+
                 <h1
                   style={{
                     margin: 0,
